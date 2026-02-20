@@ -1,0 +1,29 @@
+name: Research Task
+description: Literature review, methodology refinement, or theoretical clarification
+title: "[RESEARCH] "
+labels: ["research"]
+body:
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What research question or concept needs clarification?
+    validations:
+      required: true
+
+  - type: textarea
+    id: related_section
+    attributes:
+      label: Related Thesis Section
+      description: (e.g., Temporal Modeling, SHAP, Data Preprocessing)
+
+  - type: textarea
+    id: deliverables
+    attributes:
+      label: Expected Output
+      description: Summary, citation list, methodology update, etc.
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References (if any)

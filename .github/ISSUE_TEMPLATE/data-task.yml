@@ -1,0 +1,38 @@
+name: Data Task
+description: Data cleaning, feature engineering, schema harmonization
+title: "[DATA] "
+labels: ["data"]
+body:
+  - type: textarea
+    id: dataset
+    attributes:
+      label: Dataset Component
+      description: (Demographics, Diagnostic, Treatment, Follow-up, etc.)
+    validations:
+      required: true
+
+  - type: textarea
+    id: task_description
+    attributes:
+      label: Task Description
+      description: What needs to be done? (Imputation, encoding, scaling, etc.)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: preprocessing_steps
+    attributes:
+      label: Preprocessing Checklist
+      options:
+        - label: Remove identifiers
+        - label: Handle missing values (MICE)
+        - label: Feature encoding
+        - label: Scaling/Normalization
+        - label: Outlier detection
+        - label: Schema validation
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Expected Output
+      description: Cleaned CSV, feature matrix, preprocessing script, etc.

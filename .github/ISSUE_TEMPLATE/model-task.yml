@@ -1,0 +1,42 @@
+name: Model Development
+description: Train or evaluate ML model
+title: "[MODEL] "
+labels: ["model"]
+body:
+  - type: dropdown
+    id: model_type
+    attributes:
+      label: Model Type
+      options:
+        - Logistic Regression
+        - SVM
+        - XGBoost
+        - RNN
+        - LSTM
+        - Hybrid Ensemble
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What are we optimizing? (Accuracy, Recall for Failure, AUC, etc.)
+    validations:
+      required: true
+
+  - type: textarea
+    id: dataset_split
+    attributes:
+      label: Dataset Split
+      description: Train/Test ratio, cross-validation strategy
+
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Evaluation Metrics
+      description: Confusion matrix, Accuracy, Sensitivity, Specificity, F1, AUC
+
+  - type: textarea
+    id: results
+    attributes:
+      label: Results
+      description: Paste performance summary
