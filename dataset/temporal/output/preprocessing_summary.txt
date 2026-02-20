@@ -1,0 +1,78 @@
+TB-DOTS CAR CDSS - Preprocessing Pipeline Summary
+==================================================
+
+Patients:              205
+Time steps:            13 (M0–M12)
+Temporal features:     8
+Static features:       56
+X_temporal shape:      (205, 13, 8)
+X_static shape:        (205, 56)
+X_combined_flat shape: (205, 160)
+
+Static feature names:
+  - age
+  - xpert_mtb_rif
+  - smear_microscopy
+  - heart_rate
+  - respiratory_rate
+  - temperature
+  - o2_sat
+  - data_year
+  - weight_kg
+  - height_cm
+  - bp_systolic
+  - bp_diastolic
+  - sex_Female
+  - sex_Male
+  - civil_status_Married
+  - civil_status_Single
+  - civil_status_Widowed
+  - nationality_Filipino
+  - chest_x_ray_at_case_notification_Normal
+  - chest_x_ray_at_case_notification_Other
+  - chest_x_ray_at_case_notification_Suggestive of PTB
+  - diagnosis_TB Disease
+  - diagnosis_TB Infection
+  - bacteriologic_status_Bacteriologically Confirmed
+  - bacteriologic_status_Clinically Diagnosed
+  - case_registration_group_New
+  - case_registration_group_Relapse
+  - case_registration_group_Treatment After Failure
+  - case_registration_group_Treatment After Lost to Follow-Up
+  - drug_resistance_bacteriological_status_Drug Susceptible
+  - drug_resistance_bacteriological_status_MDR-TB
+  - prior_history_of_tb_No
+  - prior_history_of_tb_Yes
+  - treatment_regimen_Regimen 1
+  - treatment_regimen_Regimen 1a
+  - treatment_regimen_Regimen 2
+  - outcome_Cured
+  - outcome_Died
+  - outcome_Lost to Follow-Up
+  - outcome_Not Evaluated
+  - outcome_Treatment Completed
+  - co_morbidities_Cancer
+  - co_morbidities_Cardiovascular
+  - co_morbidities_Diabetes
+  - co_morbidities_Hypertension
+  - co_morbidities_Kidney Disease
+  - co_morbidities_None
+  - co_morbidities_Other
+  - regimen_type_at_start_of_treatment_Regimen 1
+  - regimen_type_at_start_of_treatment_Regimen 1a
+  - regimen_type_at_start_of_treatment_Regimen 2
+  - dat_supported_No
+  - facility_Campo Filipino
+  - facility_Engineer's Hill
+  - facility_Pacdal
+  - facility_Scout Barrio
+
+Temporal feature names (per timestep):
+  - cumulative_doses_taken
+  - height
+  - monthly_doses_taken
+  - monthly_missed_doses
+  - pct_adherence
+  - smear_tb_lamp
+  - weight
+  - xpert_mtb_rif
