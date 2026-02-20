@@ -77,17 +77,30 @@ def process_dates(df):
     # Compute age from birthdate
     if "Birthdate" in df.columns:
         df["Computed_Age"] = df["Year"] - df["Birthdate"].dt.year
+        
+        # Fix impossible computed ages
+        # Set negative ages and ages > 110 to NaN (will be imputed later)
+        df.loc[(df["Computed_Age"] < 0) | (df["Computed_Age"] > 110), "Computed_Age"] = np.nan
 
     return df
 
 
 # -----------------------------
-# OUTLIER REMOVAL
+# OUTLIER REMOVAL & AGE VALIDATION
 # -----------------------------
 def remove_outliers(df):
     if "Age" in df.columns:
         df["Age"] = pd.to_numeric(df["Age"], errors="coerce")
         df = df[(df["Age"] >= 0) & (df["Age"] <= 110)]
+    
+    # If both Age and Computed_Age exist, use Age as ground truth when available
+    if "Age" in df.columns and "Computed_Age" in df.columns:
+        # Where Age is valid, copy it to Computed_Age if Computed_Age is invalid
+        valid_age_mask = df["Age"].notna()
+        invalid_computed_age_mask = (df["Computed_Age"] < 0) | (df["Computed_Age"] > 110) | df["Computed_Age"].isna()
+        
+        df.loc[valid_age_mask & invalid_computed_age_mask, "Computed_Age"] = df.loc[valid_age_mask & invalid_computed_age_mask, "Age"]
+    
     return df
 
 
@@ -123,6 +136,13 @@ def apply_mice_encoded(df_encoded):
 
     df_imputed = df_encoded.copy()
     df_imputed[impute_cols] = imputer.fit_transform(df_imputed[impute_cols])
+    
+    # Post-imputation validation: clip ages to reasonable range
+    if "Age" in df_imputed.columns:
+        df_imputed["Age"] = df_imputed["Age"].clip(0, 110)
+    
+    if "Computed_Age" in df_imputed.columns:
+        df_imputed["Computed_Age"] = df_imputed["Computed_Age"].clip(0, 110)
 
     return df_imputed
 
