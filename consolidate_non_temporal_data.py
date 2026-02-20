@@ -2,6 +2,7 @@
 """
 Consolidate yearly TB case CSV files (2015–2025)
 Apply preprocessing including MICE imputation.
+Output human-readable clean CSV, then ML-ready scaled CSV.
 """
 
 import pandas as pd
@@ -91,24 +92,9 @@ def remove_outliers(df):
 
 
 # -----------------------------
-# ENCODING (for MICE compatibility)
+# MICE IMPUTATION (on encoded data)
 # -----------------------------
-def encode_categoricals(df):
-    encoders = {}
-    cat_cols = df.select_dtypes(include="object").columns
-
-    for col in cat_cols:
-        le = LabelEncoder()
-        df[col] = le.fit_transform(df[col].astype(str))
-        encoders[col] = le
-
-    return df, encoders
-
-
-# -----------------------------
-# MICE IMPUTATION
-# -----------------------------
-def apply_mice(df):
+def apply_mice_encoded(df_encoded):
     """
     Apply MICE only to safe predictor columns.
     Avoid imputing outcome variables.
@@ -127,7 +113,7 @@ def apply_mice(df):
         "Year"
     ]
 
-    impute_cols = [c for c in impute_cols if c in df.columns]
+    impute_cols = [c for c in impute_cols if c in df_encoded.columns]
 
     imputer = IterativeImputer(
         max_iter=10,
@@ -135,11 +121,51 @@ def apply_mice(df):
         sample_posterior=True
     )
 
-    df_impute = df.copy()
+    df_imputed = df_encoded.copy()
+    df_imputed[impute_cols] = imputer.fit_transform(df_imputed[impute_cols])
 
-    df_impute[impute_cols] = imputer.fit_transform(df_impute[impute_cols])
+    return df_imputed
 
-    return df_impute
+
+# -----------------------------
+# ENCODING (for ML pipeline)
+# -----------------------------
+def encode_categoricals(df):
+    """
+    Encode categorical columns for ML.
+    Returns encoded df and encoders dict.
+    """
+    encoders = {}
+    df_encoded = df.copy()
+    cat_cols = df.select_dtypes(include="object").columns
+
+    for col in cat_cols:
+        le = LabelEncoder()
+        df_encoded[col] = le.fit_transform(df[col].astype(str))
+        encoders[col] = le
+
+    return df_encoded, encoders
+
+
+# -----------------------------
+# DECODING (back to human-readable)
+# -----------------------------
+def decode_categoricals(df_encoded, encoders):
+    """
+    Decode categorical columns back to original values.
+    """
+    df_decoded = df_encoded.copy()
+    
+    for col, encoder in encoders.items():
+        if col in df_decoded.columns:
+            # Round to nearest integer for categorical columns
+            df_decoded[col] = df_decoded[col].round().astype(int)
+            # Clip to valid range
+            df_decoded[col] = df_decoded[col].clip(0, len(encoder.classes_) - 1)
+            # Decode
+            df_decoded[col] = encoder.inverse_transform(df_decoded[col])
+    
+    return df_decoded
 
 
 # -----------------------------
@@ -148,8 +174,9 @@ def apply_mice(df):
 def scale_features(df):
     numeric_cols = df.select_dtypes(include=np.number).columns
     scaler = StandardScaler()
-    df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
-    return df
+    df_scaled = df.copy()
+    df_scaled[numeric_cols] = scaler.fit_transform(df[numeric_cols])
+    return df_scaled
 
 
 # -----------------------------
@@ -169,20 +196,29 @@ def main():
     print("Removing outliers...")
     df = remove_outliers(df)
 
-    print("Encoding categorical variables...")
-    df, encoders = encode_categoricals(df)
+    # Save original data types for later
+    print("Encoding categorical variables for imputation...")
+    df_encoded, encoders = encode_categoricals(df)
 
-    print("Applying MICE imputation...")
-    df = apply_mice(df)
+    print("Applying MICE imputation on encoded data...")
+    df_imputed_encoded = apply_mice_encoded(df_encoded)
 
-    print("Saving cleaned dataset...")
-    df.to_csv(OUTPUT_CLEAN, index=False)
+    print("Decoding back to human-readable format...")
+    df_clean = decode_categoricals(df_imputed_encoded, encoders)
 
-    print("Scaling for ML...")
-    df_ml = scale_features(df.copy())
+    print("Saving human-readable cleaned dataset...")
+    df_clean.to_csv(OUTPUT_CLEAN, index=False)
+    print(f"✓ Saved to: {OUTPUT_CLEAN}")
+
+    print("\nScaling for ML...")
+    df_ml = scale_features(df_imputed_encoded.copy())
     df_ml.to_csv(OUTPUT_ML, index=False)
+    print(f"✓ Saved to: {OUTPUT_ML}")
 
     print("\n✓ Consolidation + MICE preprocessing complete!")
+    print(f"\nSummary:")
+    print(f"  - Human-readable: {OUTPUT_CLEAN}")
+    print(f"  - ML-ready: {OUTPUT_ML}")
 
 
 if __name__ == "__main__":
