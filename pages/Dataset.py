@@ -15,10 +15,352 @@ def load_non_temporal_data():
     df = pd.read_csv(data_path)
     return df
 
+# Load the temporal dataset
+@st.cache_data
+def load_temporal_data():
+    data_path = Path(__file__).parent.parent / "dataset" / "temporal" / "combined_dataset.csv"
+    df = pd.read_csv(data_path)
+    # Convert Age to numeric
+    df['Age'] = pd.to_numeric(df['Age'], errors='coerce')
+    # Convert monthly numeric columns
+    for m in range(13):
+        for sub in ['Monthly Doses Taken', 'Cumulative Doses Taken', 'Monthly Missed Doses']:
+            col = f'M{m}_{sub}'
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col].astype(str).str.replace(r'[^\d.]', '', regex=True), errors='coerce')
+    return df
+
+# Helper to clean series (exclude N/A-like strings)
+def clean_series(s):
+    NA_STRINGS = ['N/A', 'n/a', 'NA', 'na', 'None', 'none', 'N/a', 'nan']
+    s = s.astype(str).str.strip()
+    s = s.replace(NA_STRINGS, np.nan)
+    s = s.replace('nan', np.nan)
+    return s
+
 tab1, tab2 = st.tabs(["Temporal", "Non Temporal"])
 
 with tab1:
-    st.write("This is where the temporal data will be displayed.")
+    st.subheader("Temporal Data Visualization")
+    st.write("TB patient records from 4 health facilities in Baguio City (2016–2025)")
+    
+    try:
+        df_temp = load_temporal_data()
+        
+        # Summary Statistics
+        st.markdown("### 📊 Summary Statistics")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Patients", f"{len(df_temp):,}")
+        with col2:
+            st.metric("Facilities", f"{df_temp['Facility'].nunique()}")
+        with col3:
+            year_range = f"{int(df_temp['Data_Year'].min())} - {int(df_temp['Data_Year'].max())}"
+            st.metric("Year Range", year_range)
+        with col4:
+            avg_age = df_temp['Age'].mean()
+            st.metric("Average Age", f"{avg_age:.1f} years")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            male_pct = (clean_series(df_temp['Sex']) == 'Male').mean() * 100
+            st.metric("Male %", f"{male_pct:.1f}%")
+        with col2:
+            outcome_clean = clean_series(df_temp['Outcome'])
+            cured_pct = outcome_clean.str.lower().str.contains('cured|completed', na=False).mean() * 100
+            st.metric("Treatment Success", f"{cured_pct:.1f}%")
+        with col3:
+            died_pct = outcome_clean.str.lower().str.contains('died', na=False).mean() * 100
+            st.metric("Mortality Rate", f"{died_pct:.1f}%")
+        with col4:
+            bact_confirmed = clean_series(df_temp['Bacteriologic Status']).str.lower().str.contains('bacteriolog', na=False).mean() * 100
+            st.metric("Bacteriologically Confirmed", f"{bact_confirmed:.1f}%")
+        
+        st.divider()
+        
+        # Cases by Year and Facility
+        st.markdown("## 📅 Temporal Analysis")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### Cases by Year")
+            cases_year = df_temp.groupby('Data_Year').size().reset_index(name='Count')
+            fig_year = px.bar(
+                cases_year,
+                x='Data_Year',
+                y='Count',
+                labels={'Data_Year': 'Year', 'Count': 'Number of Cases'},
+                color_discrete_sequence=['steelblue']
+            )
+            fig_year.update_layout(height=350)
+            st.plotly_chart(fig_year, use_container_width=True)
+        
+        with col2:
+            st.markdown("### Cases by Facility")
+            cases_fac = df_temp['Facility'].value_counts().reset_index()
+            cases_fac.columns = ['Facility', 'Count']
+            fig_fac = px.pie(
+                cases_fac,
+                values='Count',
+                names='Facility',
+                color_discrete_sequence=px.colors.qualitative.Set2
+            )
+            fig_fac.update_layout(height=350)
+            st.plotly_chart(fig_fac, use_container_width=True)
+        
+        # Cases per Year by Facility
+        st.markdown("### Cases per Year by Facility")
+        cases_yf = df_temp.groupby(['Data_Year', 'Facility']).size().reset_index(name='Count')
+        fig_yf = px.bar(
+            cases_yf,
+            x='Data_Year',
+            y='Count',
+            color='Facility',
+            barmode='group',
+            labels={'Data_Year': 'Year', 'Count': 'Number of Cases'}
+        )
+        fig_yf.update_layout(height=400)
+        st.plotly_chart(fig_yf, use_container_width=True)
+        
+        st.divider()
+        
+        # Demographic Analysis
+        st.markdown("## 👥 Demographic Analysis")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### Age Distribution")
+            valid_ages = df_temp[(df_temp['Age'] >= 0) & (df_temp['Age'] <= 120)]['Age']
+            fig_age = px.histogram(
+                valid_ages,
+                nbins=20,
+                labels={'value': 'Age', 'count': 'Count'},
+                color_discrete_sequence=['steelblue']
+            )
+            fig_age.add_vline(x=valid_ages.median(), line_dash="dash", line_color="red",
+                             annotation_text=f"Median: {valid_ages.median():.0f}")
+            fig_age.update_layout(height=350, showlegend=False, xaxis_title="Age", yaxis_title="Count")
+            st.plotly_chart(fig_age, use_container_width=True)
+        
+        with col2:
+            st.markdown("### Sex Distribution")
+            sex_clean = clean_series(df_temp['Sex']).dropna()
+            sex_counts = sex_clean.value_counts().reset_index()
+            sex_counts.columns = ['Sex', 'Count']
+            fig_sex = px.pie(
+                sex_counts,
+                values='Count',
+                names='Sex',
+                color_discrete_sequence=['#3498db', '#e74c3c']
+            )
+            fig_sex.update_layout(height=350)
+            st.plotly_chart(fig_sex, use_container_width=True)
+        
+        # Age by Facility
+        st.markdown("### Age Distribution by Facility")
+        fig_age_fac = px.box(
+            df_temp[(df_temp['Age'] >= 0) & (df_temp['Age'] <= 120)],
+            x='Facility',
+            y='Age',
+            color='Facility',
+            color_discrete_sequence=px.colors.qualitative.Set2
+        )
+        fig_age_fac.update_layout(height=400, showlegend=False)
+        st.plotly_chart(fig_age_fac, use_container_width=True)
+        
+        st.divider()
+        
+        # Clinical Characteristics
+        st.markdown("## 🏥 Clinical Characteristics")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### Treatment Outcomes")
+            outcome_clean = clean_series(df_temp['Outcome']).dropna()
+            outcome_counts = outcome_clean.value_counts().reset_index()
+            outcome_counts.columns = ['Outcome', 'Count']
+            fig_outcome = px.bar(
+                outcome_counts.head(10),
+                x='Count',
+                y='Outcome',
+                orientation='h',
+                color_discrete_sequence=['#17becf']
+            )
+            fig_outcome.update_layout(height=400, yaxis={'categoryorder': 'total ascending'})
+            st.plotly_chart(fig_outcome, use_container_width=True)
+        
+        with col2:
+            st.markdown("### Case Registration Group")
+            crg_clean = clean_series(df_temp['Case Registration Group']).dropna()
+            crg_counts = crg_clean.value_counts().reset_index()
+            crg_counts.columns = ['Group', 'Count']
+            fig_crg = px.bar(
+                crg_counts,
+                x='Count',
+                y='Group',
+                orientation='h',
+                color_discrete_sequence=['#e377c2']
+            )
+            fig_crg.update_layout(height=400, yaxis={'categoryorder': 'total ascending'})
+            st.plotly_chart(fig_crg, use_container_width=True)
+        
+        # Outcome by Facility
+        st.markdown("### Treatment Outcomes by Facility")
+        df_out_fac = df_temp.copy()
+        df_out_fac['Outcome_clean'] = clean_series(df_temp['Outcome'])
+        valid_out = df_out_fac.dropna(subset=['Outcome_clean'])
+        out_fac = valid_out.groupby(['Facility', 'Outcome_clean']).size().reset_index(name='Count')
+        # Filter to top 5 outcomes
+        top_outcomes = valid_out['Outcome_clean'].value_counts().head(5).index.tolist()
+        out_fac_filtered = out_fac[out_fac['Outcome_clean'].isin(top_outcomes)]
+        fig_out_fac = px.bar(
+            out_fac_filtered,
+            x='Facility',
+            y='Count',
+            color='Outcome_clean',
+            barmode='group',
+            labels={'Outcome_clean': 'Outcome'}
+        )
+        fig_out_fac.update_layout(height=400)
+        st.plotly_chart(fig_out_fac, use_container_width=True)
+        
+        st.divider()
+        
+        # Treatment Adherence Analysis
+        st.markdown("## 💊 Treatment Adherence Analysis")
+        
+        # Monthly Doses Taken
+        dose_cols = [f'M{m}_Monthly Doses Taken' for m in range(13) if f'M{m}_Monthly Doses Taken' in df_temp.columns]
+        if dose_cols:
+            mean_doses = []
+            months = []
+            for col in dose_cols:
+                val = pd.to_numeric(df_temp[col], errors='coerce').mean()
+                if not pd.isna(val):
+                    mean_doses.append(val)
+                    months.append(col.replace('_Monthly Doses Taken', ''))
+            
+            if mean_doses:
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("### Average Monthly Doses Taken")
+                    dose_df = pd.DataFrame({'Month': months, 'Mean Doses': mean_doses})
+                    fig_doses = px.bar(
+                        dose_df,
+                        x='Month',
+                        y='Mean Doses',
+                        color_discrete_sequence=['coral']
+                    )
+                    fig_doses.update_layout(height=350)
+                    st.plotly_chart(fig_doses, use_container_width=True)
+                
+                with col2:
+                    st.markdown("### Cumulative Doses Over Treatment")
+                    cumul_cols = [f'M{m}_Cumulative Doses Taken' for m in range(13) if f'M{m}_Cumulative Doses Taken' in df_temp.columns]
+                    mean_cumul = []
+                    months_c = []
+                    for col in cumul_cols:
+                        val = pd.to_numeric(df_temp[col], errors='coerce').mean()
+                        if not pd.isna(val):
+                            mean_cumul.append(val)
+                            months_c.append(col.replace('_Cumulative Doses Taken', ''))
+                    
+                    if mean_cumul:
+                        cumul_df = pd.DataFrame({'Month': months_c, 'Mean Cumulative': mean_cumul})
+                        fig_cumul = px.line(
+                            cumul_df,
+                            x='Month',
+                            y='Mean Cumulative',
+                            markers=True,
+                            color_discrete_sequence=['steelblue']
+                        )
+                        fig_cumul.update_layout(height=350)
+                        st.plotly_chart(fig_cumul, use_container_width=True)
+        
+        st.divider()
+        
+        # Co-morbidities & Drug Resistance
+        st.markdown("## 🩺 Co-morbidities & Drug Resistance")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### Top Co-morbidities")
+            if 'Co-morbidities' in df_temp.columns:
+                como = clean_series(df_temp['Co-morbidities']).dropna()
+                como_counts = como.value_counts().head(10).reset_index()
+                como_counts.columns = ['Co-morbidity', 'Count']
+                fig_como = px.bar(
+                    como_counts,
+                    x='Count',
+                    y='Co-morbidity',
+                    orientation='h',
+                    color_discrete_sequence=['mediumpurple']
+                )
+                fig_como.update_layout(height=400, yaxis={'categoryorder': 'total ascending'})
+                st.plotly_chart(fig_como, use_container_width=True)
+        
+        with col2:
+            st.markdown("### Drug Resistance Status")
+            if 'Drug Resistance Bacteriological Status' in df_temp.columns:
+                dr = clean_series(df_temp['Drug Resistance Bacteriological Status']).dropna()
+                dr_counts = dr.value_counts().reset_index()
+                dr_counts.columns = ['Status', 'Count']
+                fig_dr = px.bar(
+                    dr_counts,
+                    x='Count',
+                    y='Status',
+                    orientation='h',
+                    color_discrete_sequence=['darkorange']
+                )
+                fig_dr.update_layout(height=400, yaxis={'categoryorder': 'total ascending'})
+                st.plotly_chart(fig_dr, use_container_width=True)
+        
+        st.divider()
+        
+        # Data Preview
+        st.markdown("## 📄 Data Preview")
+        
+        # Filters
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            year_filter_t = st.multiselect("Filter by Year", 
+                                           options=sorted(df_temp['Data_Year'].dropna().unique().astype(int)), 
+                                           default=[], key='temporal_year')
+        with col2:
+            facility_filter = st.multiselect("Filter by Facility", 
+                                             options=df_temp['Facility'].unique().tolist(), 
+                                             default=[], key='temporal_facility')
+        with col3:
+            outcome_options = clean_series(df_temp['Outcome']).dropna().unique().tolist()
+            outcome_filter_t = st.multiselect("Filter by Outcome", 
+                                              options=outcome_options, 
+                                              default=[], key='temporal_outcome')
+        
+        # Apply filters
+        filtered_temp = df_temp.copy()
+        if year_filter_t:
+            filtered_temp = filtered_temp[filtered_temp['Data_Year'].isin(year_filter_t)]
+        if facility_filter:
+            filtered_temp = filtered_temp[filtered_temp['Facility'].isin(facility_filter)]
+        if outcome_filter_t:
+            filtered_temp = filtered_temp[clean_series(filtered_temp['Outcome']).isin(outcome_filter_t)]
+        
+        st.write(f"Showing {len(filtered_temp):,} records")
+        
+        # Select columns to display (exclude monthly columns for cleaner view)
+        display_cols = [c for c in filtered_temp.columns if not c.startswith('M') or c in ['M0_Weight', 'M0_Height']]
+        st.dataframe(filtered_temp[display_cols], use_container_width=True, height=400)
+        
+    except FileNotFoundError:
+        st.error("Temporal dataset not found. Please ensure 'combined_dataset.csv' exists in dataset/temporal/ folder.")
+    except Exception as e:
+        st.error(f"Error loading temporal data: {str(e)}")
 
 with tab2:
     st.subheader("Non-Temporal Data Visualization")
