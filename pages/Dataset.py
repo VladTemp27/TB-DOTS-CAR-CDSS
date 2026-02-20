@@ -28,21 +28,36 @@ with tab2:
         df = load_non_temporal_data()
         
         # Mapping dictionaries for categorical values
-        sex_map = {0.0: "Female", 1.0: "Male"}
+        sex_map = {"M": "Male", "F": "Female"}
         outcome_map = {
-            0: "Cured", 1: "Treatment Completed", 2: "Died", 3: "Treatment Failed",
-            4: "Lost to Follow-up", 5: "Not Evaluated", 6: "Still on Treatment",
-            7: "Transferred Out", 8: "Unknown", 9: "Clinically Diagnosed", 10: "Bacteriologically Confirmed"
+            "CURED": "Cured", 
+            "TREATMENT COMPLETED": "Treatment Completed", 
+            "DIED": "Died", 
+            "TREATMENT FAILED": "Treatment Failed",
+            "LOST TO FF-UP": "Lost to Follow-up", 
+            "NOT EVALUATED": "Not Evaluated", 
+            "STILL ON TREATMENT": "Still on Treatment",
+            "TRANSFERRED OUT": "Transferred Out"
         }
-        anatomical_site_map = {0.0: "Extra-pulmonary", 1.0: "Pulmonary"}
-        bacteriologic_map = {0: "Clinically Diagnosed", 1: "Bacteriologically Confirmed"}
+        anatomical_site_map = {"EP": "Extra-pulmonary", "P": "Pulmonary"}
+        bacteriologic_map = {
+            "Clinically-diagnosed TB": "Clinically Diagnosed", 
+            "Bacteriologically-confirmed TB": "Bacteriologically Confirmed"
+        }
         registration_map = {
-            0.0: "New", 1.0: "Relapse", 2.0: "Treatment After Failure",
-            3.0: "Treatment After LTFU", 4.0: "Other Previously Treated", 5.0: "Unknown Previous TB Treatment"
+            "NEW": "New", 
+            "RELAPSE": "Relapse", 
+            "TREATMENT AFTER FAILURE": "Treatment After Failure",
+            "TREATMENT AFTER LTFU": "Treatment After LTFU", 
+            "OTHER PREVIOUSLY TREATED": "Other Previously Treated", 
+            "UNKNOWN PREVIOUS TB TREATMENT": "Unknown Previous TB Treatment"
         }
         source_map = {
-            0.0: "Unknown", 1.0: "Self-Referral", 2.0: "Contact Investigation",
-            3.0: "Health Facility Referral", 4.0: "Community Outreach"
+            "COMMUNITY": "Community",
+            "CONTACT INVESTIGATION": "Contact Investigation",
+            "OTHER PUBLIC FACILITY": "Other Public Facility",
+            "PRIVATE FACILITY": "Private Facility",
+            "PUBLIC HEALTH CENTER": "Public Health Center"
         }
         
         # Summary Statistics
@@ -58,41 +73,41 @@ with tab2:
             avg_age = df[(df['Age'] >= 0) & (df['Age'] <= 120)]['Age'].mean()
             st.metric("Average Age", f"{avg_age:.1f} years")
         with col4:
-            male_pct = (df['Sex'] == 1.0).mean() * 100
+            male_pct = (df['Sex'] == 'M').mean() * 100
             st.metric("Male %", f"{male_pct:.1f}%")
         
         # Row 2: Clinical statistics
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            pulmonary_pct = (df['Anatomical Site'] == 1.0).mean() * 100
+            pulmonary_pct = (df['Anatomical Site'] == 'P').mean() * 100
             st.metric("Pulmonary TB", f"{pulmonary_pct:.1f}%")
         with col2:
-            bact_confirmed = (df['Bacteriologic Status'] == 1).mean() * 100
+            bact_confirmed = (df['Bacteriologic Status'] == 'Bacteriologically-confirmed TB').mean() * 100
             st.metric("Bacteriologically Confirmed", f"{bact_confirmed:.1f}%")
         with col3:
-            # Cured or Treatment Completed (0 or 1)
-            success_outcomes = df['Outcome/Status'].isin([0, 1]).mean() * 100
+            # Cured or Treatment Completed
+            success_outcomes = df['Outcome/Status'].isin(['CURED', 'TREATMENT COMPLETED']).mean() * 100
             st.metric("Treatment Success Rate", f"{success_outcomes:.1f}%")
         with col4:
-            # Died (2)
-            mortality = (df['Outcome/Status'] == 2).mean() * 100
+            # Died
+            mortality = (df['Outcome/Status'] == 'DIED').mean() * 100
             st.metric("Mortality Rate", f"{mortality:.1f}%")
         
         # Row 3: Additional insights
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            new_cases = (df['Registration Group'] == 0.0).mean() * 100
+            new_cases = (df['Registration Group'] == 'NEW').mean() * 100
             st.metric("New Cases", f"{new_cases:.1f}%")
         with col2:
             valid_ages = df[(df['Age'] >= 0) & (df['Age'] <= 120)]['Age']
             median_age = valid_ages.median()
             st.metric("Median Age", f"{median_age:.0f} years")
         with col3:
-            female_pct = (df['Sex'] == 0.0).mean() * 100
+            female_pct = (df['Sex'] == 'F').mean() * 100
             st.metric("Female %", f"{female_pct:.1f}%")
         with col4:
-            # Lost to follow-up (4)
-            ltfu = (df['Outcome/Status'] == 4).mean() * 100
+            # Lost to follow-up
+            ltfu = (df['Outcome/Status'] == 'LOST TO FF-UP').mean() * 100
             st.metric("Lost to Follow-up", f"{ltfu:.1f}%")
         
         st.divider()
@@ -277,13 +292,25 @@ with tab2:
         # Filter top outcomes for cleaner visualization
         top_outcomes = outcome_counts.head(5).index.tolist()
         outcome_year_filtered = outcome_year[outcome_year['Outcome_Label'].isin(top_outcomes)]
+        
+        # Add total cases per year
+        total_by_year = df.groupby('Year').size().reset_index(name='Count')
+        total_by_year['Outcome_Label'] = 'Total Cases'
+        
+        # Combine outcome trends with total cases
+        outcome_year_with_total = pd.concat([outcome_year_filtered, total_by_year], ignore_index=True)
+        
         fig_outcome_trend = px.line(
-            outcome_year_filtered,
+            outcome_year_with_total,
             x='Year',
             y='Count',
             color='Outcome_Label',
             markers=True,
             labels={'Count': 'Number of Cases', 'Outcome_Label': 'Outcome'}
+        )
+        # Make Total Cases line stand out (dashed, thicker)
+        fig_outcome_trend.for_each_trace(
+            lambda trace: trace.update(line=dict(dash='dash', width=3)) if trace.name == 'Total Cases' else ()
         )
         fig_outcome_trend.update_layout(height=400)
         st.plotly_chart(fig_outcome_trend, use_container_width=True)
@@ -307,7 +334,7 @@ with tab2:
         if year_filter:
             filtered_df = filtered_df[filtered_df['Year'].isin(year_filter)]
         if sex_filter:
-            sex_values = [0.0 if s == 'Female' else 1.0 for s in sex_filter]
+            sex_values = ['F' if s == 'Female' else 'M' for s in sex_filter]
             filtered_df = filtered_df[filtered_df['Sex'].isin(sex_values)]
         if outcome_filter:
             outcome_values = [k for k, v in outcome_map.items() if v in outcome_filter]
