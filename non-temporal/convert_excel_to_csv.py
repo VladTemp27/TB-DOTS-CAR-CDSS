@@ -20,7 +20,7 @@ def convert_excel_to_csv(excel_file):
     base_name = os.path.basename(os.path.splitext(excel_file)[0])
     
     # Define output directory
-    output_dir = "dataset/non-temporal/yearly_raw"
+    output_dir = os.path.join("..", "dataset", "non-temporal", "yearly_raw")
     
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
@@ -74,7 +74,7 @@ def convert_excel_to_csv(excel_file):
     print(f"\nConversion complete! Created {len(xls.sheet_names)} CSV file(s).")
 
 if __name__ == "__main__":
-    excel_file = "dataset/non-temporal/raw/2015-2025-study-without-names.xlsx"
+    excel_file = os.path.join("..", "dataset", "non-temporal", "raw", "2015-2025-study-without-names.xlsx")
     
     if os.path.exists(excel_file):
         convert_excel_to_csv(excel_file)
