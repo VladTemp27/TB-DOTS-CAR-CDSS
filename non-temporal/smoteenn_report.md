@@ -208,6 +208,21 @@ Models ranked by ROC-AUC on the 1,360-row test split (20% of 6,797 total records
 ![Best Model Confusion Matrix](smoteenn_outputs/images/confusion_matrix_best_smoteenn.png)
 *Figure 5: Detailed confusion matrix (counts and row-normalised %) for the best model (Random Forest +SMOTEENN)*
 
+![Precision-Recall Curve & Threshold Analysis](smoteenn_outputs/images/pr_curve_threshold_best_smoteenn.png)
+*Figure 5a: Precision-Recall curve and threshold tuning analysis for the best model — shows how adjusting the classification threshold trades off Failure Recall vs Precision*
+
+![ROC Curve Best Highlighted](smoteenn_outputs/images/roc_curve_best_highlighted_smoteenn.png)
+*Figure 5b: ROC curve with best model (Random Forest +SMOTEENN) highlighted against all other models*
+
+![Best Model Feature Importance](smoteenn_outputs/images/feature_importance_best_smoteenn.png)
+*Figure 5c: Detailed feature importance for the best model — all 15 features ranked by Gini importance with percentage contributions*
+
+![Test vs Validation & Prediction Distribution](smoteenn_outputs/images/test_vs_val_and_distribution_best_smoteenn.png)
+*Figure 5d: Test vs Validation metric comparison (generalisation check) and predicted probability distributions by true class*
+
+![Per-Class Metrics & Resampling Effect](smoteenn_outputs/images/per_class_and_resampling_best_smoteenn.png)
+*Figure 5e: Per-class precision/recall/F1 breakdown and SMOTE+ENN before/after class distribution*
+
 ---
 
 ### 2.3 Validation Set Evaluation (10% Held-Out)
