@@ -1,29 +1,39 @@
 ======================================================================
-TB-DOTS CAR CDSS — Output File Descriptions
+TB-DOTS CAR CDSS - Output File Descriptions
 ======================================================================
 
 This folder contains all outputs produced by the
-preprocessing pipeline (preprocessing_pipeline.py).
+preprocessing pipeline (preprocessing.py).
 Below is a description of each file and its intended use.
 
+The pipeline is split into two phases:
+  PHASE A (Cleaning)   -> cleaned_human_readable.csv
+  PHASE B (Model Prep) -> all other files
+
 ----------------------------------------------------------------------
-HUMAN-READABLE FILES
+PHASE A OUTPUT: HUMAN-READABLE CLEANED DATA
 ----------------------------------------------------------------------
 
-cleaned_combined_dataset.csv
+cleaned_human_readable.csv
   The fully cleaned version of the original combined_dataset.csv.
-  One row per patient, wide format (M0–M12 columns preserved).
+  One row per patient, wide format (M0-M12 columns preserved).
   Contains human-readable categorical labels (e.g., 'Male',
   'Treatment Completed', 'Regimen 1') and numeric values in
   natural units (kg, cm, mmHg, %, etc.).
   Missing values have been imputed (MICE for numerics, mode
   for categoricals, forward-fill for temporal columns).
-  NOT encoded or scaled — suitable for manual review, EDA,
-  descriptive statistics, and research documentation.
+  NOT encoded, scaled, or outlier-capped - suitable for
+  manual review, EDA, descriptive statistics, and research
+  documentation.
+
+----------------------------------------------------------------------
+PHASE B OUTPUTS: MODEL-READY DATA
+----------------------------------------------------------------------
 
 static_features.csv
   Baseline (non-temporal) patient features after full
-  preprocessing: imputed, one-hot encoded, and scaled.
+  preprocessing: imputed, one-hot encoded, scaled, and
+  outlier-capped.
   Categorical variables are split into binary indicator
   columns (e.g., sex_Male, sex_Female). Numeric values
   are standardized (zero mean, unit variance).
@@ -31,10 +41,10 @@ static_features.csv
 
 temporal_features.csv
   Monthly monitoring data in long format: one row per
-  patient per month (patient_id × month). Contains
+  patient per month (patient_id x month). Contains
   treatment adherence, doses, weight, height, smear, and
-  Xpert results — all imputed and scaled.
-  Columns: patient_id, month (0–12), plus temporal features.
+  Xpert results - all imputed, scaled, and outlier-capped.
+  Columns: patient_id, month (0-12), plus temporal features.
 
 preprocessing_summary.txt
   A brief text summary of the pipeline execution, including
@@ -42,7 +52,7 @@ preprocessing_summary.txt
   names used in static and temporal components.
 
 OUTPUT_README.txt
-  This file — describes every output file in the folder.
+  This file - describes every output file in the folder.
 
 ----------------------------------------------------------------------
 MODEL-READY FILES (NumPy arrays)
@@ -58,16 +68,16 @@ X_temporal.npy
   Usage: X = np.load('X_temporal.npy')
 
 X_static.npy
-  Shape: (205, 56)
+  Shape: (205, 78)
   2D NumPy array: (n_patients, n_static_features).
   Contains baseline demographics, diagnostics, and clinical
-  indicators — all encoded and scaled.
+  indicators - all encoded, scaled, and outlier-capped.
   Use for: hybrid models (e.g., concatenate with LSTM output),
   or standalone tabular models like XGBoost/Random Forest.
   Usage: X = np.load('X_static.npy')
 
 X_combined_flat.npy
-  Shape: (205, 160)
+  Shape: (205, 182)
   2D NumPy array: static features + flattened temporal features
   concatenated side by side. Each patient is one row.
   Designed for tabular ML models (XGBoost, LightGBM, etc.)
@@ -98,6 +108,9 @@ NOTES
 - All .npy files can be loaded with: np.load('filename.npy')
 - All .csv files can be opened in Excel, Google Sheets, or
   loaded with: pd.read_csv('filename.csv')
-- The cleaned_combined_dataset.csv is best for reviewing
+- The cleaned_human_readable.csv is best for reviewing
   the data manually or generating summary tables.
 - The .npy files are best for feeding directly into ML models.
+- Model-ready outputs are derived strictly from the cleaned
+  data. For train/test splitting, insert the split between
+  Phase A and Phase B to prevent data leakage in scaling.

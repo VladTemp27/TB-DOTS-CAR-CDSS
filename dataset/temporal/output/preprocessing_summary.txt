@@ -2,21 +2,37 @@ TB-DOTS CAR CDSS - Preprocessing Pipeline Summary
 ==================================================
 
 Patients:              205
-Time steps:            13 (M0–M12)
+Time steps:            13 (M0-M12)
 Temporal features:     8
-Static features:       56
+Static features:       78
 X_temporal shape:      (205, 13, 8)
-X_static shape:        (205, 56)
-X_combined_flat shape: (205, 160)
+X_static shape:        (205, 78)
+X_combined_flat shape: (205, 182)
+
+Pipeline Design:
+  Phase A (Cleaning): Stages 1-8
+    -> cleaned_human_readable.csv
+  Phase B (Model Prep): Stages 9-13
+    -> static_features.csv, temporal_features.csv,
+      X_temporal.npy, X_static.npy, X_combined_flat.npy
 
 Static feature names:
+  - date_of_birth
   - age
   - xpert_mtb_rif
   - smear_microscopy
+  - date_of_diagnosis
+  - date_of_notification
   - heart_rate
   - respiratory_rate
   - temperature
   - o2_sat
+  - date_of_outcome
+  - treatment_start_date
+  - intensive_phase_start_date
+  - intensive_phase_end_date
+  - continuation_phase_start_date
+  - continuation_phase_end_date
   - data_year
   - weight_kg
   - height_cm
@@ -28,21 +44,10 @@ Static feature names:
   - civil_status_Single
   - civil_status_Widowed
   - nationality_Filipino
-  - chest_x_ray_at_case_notification_Normal
-  - chest_x_ray_at_case_notification_Other
-  - chest_x_ray_at_case_notification_Suggestive of PTB
   - diagnosis_TB Disease
   - diagnosis_TB Infection
   - bacteriologic_status_Bacteriologically Confirmed
   - bacteriologic_status_Clinically Diagnosed
-  - case_registration_group_New
-  - case_registration_group_Relapse
-  - case_registration_group_Treatment After Failure
-  - case_registration_group_Treatment After Lost to Follow-Up
-  - drug_resistance_bacteriological_status_Drug Susceptible
-  - drug_resistance_bacteriological_status_MDR-TB
-  - prior_history_of_tb_No
-  - prior_history_of_tb_Yes
   - treatment_regimen_Regimen 1
   - treatment_regimen_Regimen 1a
   - treatment_regimen_Regimen 2
@@ -51,21 +56,45 @@ Static feature names:
   - outcome_Lost to Follow-Up
   - outcome_Not Evaluated
   - outcome_Treatment Completed
+  - case_registration_group_New
+  - case_registration_group_Relapse
+  - case_registration_group_Treatment After Failure
+  - case_registration_group_Treatment After Lost to Follow-Up
+  - drug_resistance_bacteriological_status_Drug Susceptible
+  - drug_resistance_bacteriological_status_MDR-TB
+  - chest_x_ray_at_case_notification_Normal
+  - chest_x_ray_at_case_notification_Other
+  - chest_x_ray_at_case_notification_Suggestive of PTB
+  - co_morbidities_Arthritis
+  - co_morbidities_Asthma, Hypertension
+  - co_morbidities_COPD
   - co_morbidities_Cancer
-  - co_morbidities_Cardiovascular
-  - co_morbidities_Diabetes
+  - co_morbidities_Cardiovascular Disease, Benign Prostatic Hyperplasia
+  - co_morbidities_Chronic Kidney Disease
+  - co_morbidities_Chronic Kidney Disease, Hypertension
+  - co_morbidities_Coronary Artery Disease, Anemia
+  - co_morbidities_Diabetes Mellitus
+  - co_morbidities_Diabetes Mellitus, Chronic Kidney Disease
+  - co_morbidities_Diabetes Mellitus, Hypertension
+  - co_morbidities_HIV
+  - co_morbidities_Hydrocephalus
   - co_morbidities_Hypertension
-  - co_morbidities_Kidney Disease
-  - co_morbidities_None
-  - co_morbidities_Other
+  - co_morbidities_Hypertension, Asthma
+  - co_morbidities_Hypertension, COPD, Diabetes Mellitus
+  - co_morbidities_Hypertension, Cellulitis
+  - co_morbidities_Hypertension, Coronary Artery Disease
+  - co_morbidities_Hypertension, Coronary Artery Disease, Anterolateral Wall Ischemia
+  - co_morbidities_Hypothyroidism
+  - co_morbidities_No Known Comorbidity
+  - co_morbidities_Prediabetic
+  - co_morbidities_Skin Allergy
+  - prior_history_of_tb_No
+  - prior_history_of_tb_Yes
   - regimen_type_at_start_of_treatment_Regimen 1
   - regimen_type_at_start_of_treatment_Regimen 1a
   - regimen_type_at_start_of_treatment_Regimen 2
   - dat_supported_No
-  - facility_Campo Filipino
-  - facility_Engineer's Hill
-  - facility_Pacdal
-  - facility_Scout Barrio
+  - dat_supported_Unknown
 
 Temporal feature names (per timestep):
   - cumulative_doses_taken
