@@ -16,23 +16,17 @@
 \usepackage{setspace}
 \doublespacing
 
-% ----- Headers (APA: running head) -----
+% ----- Headers (APA 7th Student Paper: page number only, no running head) -----
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
 \renewcommand{\headrulewidth}{0pt}
-\fancyhead[L]{\footnotesize TREATMENT PREDICTION USING ML FOR TB-DOTS}
 \fancyhead[R]{\thepage}
 
-% First page style
-\fancypagestyle{titlepage}{%
-  \fancyhf{}
-  \renewcommand{\headrulewidth}{0pt}
-  \fancyhead[L]{\footnotesize TREATMENT PREDICTION USING ML FOR TB-DOTS}
-  \fancyhead[R]{\thepage}
-}
-
 % ----- References (APA-like with natbib) -----
+% NOTE: For strict APA 7th, install apacite and uncomment:
+%   \usepackage[natbibapa]{apacite}
+%   \bibliographystyle{apacite}
 \usepackage[round]{natbib}
 \bibliographystyle{apalike}
 
@@ -45,11 +39,12 @@
   urlcolor=blue
 }
 
-% ----- Figures -----
+% ----- Figures & Tables -----
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric,arrows.meta,positioning}
+\usepackage{booktabs}
 \usepackage{caption}
-\captionsetup{labelsep=newline, justification=centering, font=doublespacing, labelfont=bf}
+\captionsetup{labelsep=newline, justification=raggedright, singlelinecheck=false, font=doublespacing, labelfont=bf, textfont=it}
 
 % ----- Section Formatting (APA 7th Heading Levels) -----
 \usepackage{etoolbox}
@@ -74,6 +69,9 @@
   {\bfseries\itshape\normalsize}}
 \makeatother
 
+% ----- Suppress section numbering (APA uses formatting, not numbers) -----
+\setcounter{secnumdepth}{0}
+
 % ----- Paragraph formatting (APA: 0.5-inch indent, no extra space between paragraphs) -----
 \setlength{\parindent}{0.5in}
 \setlength{\parskip}{0pt}
@@ -85,8 +83,7 @@
 % =============================================================================
 \begin{document}
 
-% ======================== TITLE PAGE ========================
-\thispagestyle{titlepage}
+% ======================== TITLE PAGE (APA 7th Student Paper) ========================
 \begin{center}
 \vspace*{3\baselineskip}
 
@@ -101,15 +98,17 @@ Sean Drei A. Octavo, and Gebreyl Isaac P. Rabang
 
 \vspace{0.5\baselineskip}
 
-Saint Louis University
+Department of Computing and Information Studies, Saint Louis University
 
-\vspace{2\baselineskip}
-
-\textbf{Author Note}
+% ----- Author Note (commented out for now) -----
+% \vspace{0.5\baselineskip}
+% TODO: Replace with your actual course number and name
+% COURSE NUMBER: Course Name
+% Josephine S. Dela Cruz, DIT
+% \vspace{0.5\baselineskip}
+% April 24, 2026
 
 \end{center}
-
-\noindent\hspace{0.5in}Correspondence concerning this article should be addressed to Josephine S. Dela Cruz, DIT, Saint Louis University, Baguio City, Philippines. Email: \href{mailto:jdelacruz@slu.edu.ph}{jdelacruz@slu.edu.ph}
 
 \newpage
 
@@ -118,7 +117,9 @@ Saint Louis University
 \textbf{Abstract}
 \end{center}
 
+\begin{flushleft}
 \noindent Pulmonary Tuberculosis (PTB) remains a critical public health challenge in the Cordillera Administrative Region (CAR), Philippines, where complex patient profiles and programmatic gaps contribute to persistent treatment failure. This study develops machine learning models to predict treatment success or failure among PTB patients in DOH-CAR TB-DOTS facilities covering the period 2015--2025. A standardized preprocessing pipeline performs schema harmonization, patient pseudonymization, and missing data imputation via Multivariate Imputation by Chained Equations (MICE). Supervised models---Logistic Regression, Support Vector Machines (SVM), and Extreme Gradient Boosting (XGBoost)---are trained alongside Recurrent Neural Network (RNN) and Long Short-Term Memory (LSTM) temporal architectures to capture longitudinal treatment dynamics across the 6- to 12-month treatment course. Shapley Additive Explanations (SHAP) ensure model interpretability by quantifying the contribution of individual patient features to each prediction. The validated models are embedded in a Clinical Decision Support System (CDSS) that provides dynamic risk estimates and factor-level explanations to support early clinical intervention for patients at risk of treatment failure.
+\end{flushleft}
 
 \vspace{0.5\baselineskip}
 \noindent\hspace{0.5in}\textit{Keywords:} tuberculosis, machine learning, treatment outcome prediction, clinical decision support system, explainable AI
@@ -194,6 +195,8 @@ The resulting models are designed to help healthcare providers identify patients
 This study uses a dataset of records of pulmonary tuberculosis (PTB) patients from the Cordillera Administrative Region (CAR), Philippines, covering 2015--2025 and consolidated by the Department of Health--CAR (DOH-CAR). After ethical approval, records are pseudonymized and processed using a standardized preprocessing pipeline, including schema harmonization, error correction, feature scaling, and missing value imputation via Multivariate Imputation by Chained Equations (MICE). Exploratory and cluster analyses are conducted to characterize the cohort and derive subgroup-level features. Supervised models, Logistic Regression, Support Vector Machines (SVM), and Extreme Gradient Boosting (XGBoost), are trained to predict treatment outcomes defined by National Tuberculosis Program criteria. To capture longitudinal treatment dynamics, temporal models using Recurrent Neural Networks (RNN) and Long Short-Term Memory (LSTM) are evaluated alongside static models, with ensemble strategies applied for improved robustness. Model performance is assessed using standard classification metrics, and Shapley Additive Explanations (SHAP) are employed to ensure interpretability. The final models are integrated into a clinical decision support framework to provide dynamic risk estimates throughout the treatment course. An overview can be found in Figure~\ref{fig:data_management}.
 
 \begin{figure}[htbp]
+\caption{Data Management and Analysis Process}
+\label{fig:data_management}
 \centering
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[
@@ -222,8 +225,6 @@ This study uses a dataset of records of pulmonary tuberculosis (PTB) patients fr
   \draw[arrow] (shap) -- (cdss);
 \end{tikzpicture}%
 }
-\caption{Data Management and Analysis Process}
-\label{fig:data_management}
 \end{figure}
 
 \subsection{Data Acquisition and Preprocessing}
@@ -268,18 +269,17 @@ The final dataset exhibited significant class imbalance, with 86.2\% of cases cl
 \subsection{Validation Set Performance and Generalization}
 
 \begin{table}[htbp]
-\centering
 \caption{Test Set Model Performance}
 \label{tab:test_performance}
 \begin{tabular}{lccc}
-\hline
+\toprule
 Model & AUC (Area Under the Curve) & Recall (Failure) & F1 (Failure) \\
-\hline
+\midrule
 Random Forest & 0.7154 & 57.98\% & 0.3539 \\
 Gradient Boosting & 0.7121 & 44.68\% & 0.3262 \\
 LightGBM & 0.7119 & 48.40\% & 0.3467 \\
 XGBoost & 0.7095 & 47.87\% & 0.3416 \\
-\hline
+\bottomrule
 \end{tabular}
 \end{table}
 
@@ -290,14 +290,13 @@ On the 10\% held-out validation set, Random Forest maintained superior performan
 \subsection{Temporal Models Performance}
 
 \begin{table}[htbp]
-\centering
 \caption{Test Set Performance Metrics of Temporal Models for TB Treatment Outcome Prediction}
 \label{tab:temporal_performance}
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{lcccccc}
-\hline
+\toprule
 Metric & Bi-LSTM Baseline & Bi-LSTM Augmented & XGBoost Baseline & XGBoost SMOTE-ENN & LightGBM SMOTE-ENN & Random Forest SMOTE-ENN \\
-\hline
+\midrule
 Accuracy & 0.9048 & 0.9048 & 0.9048 & 0.9048 & 0.9048 & 0.7143 \\
 Precision & 0.9048 & 0.9048 & 0.9048 & 0.9048 & 0.9048 & 0.8824 \\
 Recall & 1.0000 & 1.0000 & 1.0000 & 1.0000 & 1.0000 & 0.7895 \\
@@ -306,19 +305,19 @@ Specificity & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
 ROC-AUC & 0.4737 & 0.3684 & 0.5789 & 0.1053 & 0.2105 & 0.5263 \\
 PR-AUC & 0.8847 & 0.9099 & 0.9501 & 0.8356 & 0.8500 & 0.9419 \\
 Threshold & 0.15 & 0.86 & 0.10 & 0.34 & 0.43 & 0.70 \\
-\hline
+\bottomrule
 \end{tabular}%
 }
 \end{table}
 
 Table \ref{tab:temporal_performance} presents the performance metrics of all temporal models evaluated on the held-out test set. Both Bi-LSTM variants and XGBoost Baseline achieved the highest overall accuracy (0.9048) and F1 score (0.9500), reflecting their ability to correctly predict the dominant Success class. Precision values were similarly high (0.9048), indicating few false positives for the majority class. However, recall for the minority Failure class reached 1.0 for these models, while specificity remained 0.0, demonstrating that no actual Failure cases were correctly identified in the small test set. Tree-based models augmented with SMOTE-ENN, particularly Random Forest, showed a more balanced performance. Random Forest achieved slightly lower overall accuracy (0.7143) but higher recall for the Failure class (0.7895) and competitive PR-AUC (0.9419), indicating better identification of high-risk patients. ROC-AUC scores further illustrate differences in probability calibration, with XGBoost Baseline achieving the highest ROC-AUC (0.5789), while the Bi-LSTM Augmented variant performed lower (0.3684), likely due to overfitting on limited Failure samples. Overall, these results suggest that while Bi-LSTM and XGBoost excel at predicting the majority outcome, Random Forest with SMOTE-ENN offers the most effective detection of treatment failure, making it more suitable for clinical decision support applications.
 
-% ======================== CONCLUSIONS AND RECOMMENDATIONS ========================
-\section{Conclusions and Recommendations}
+% ======================== DISCUSSION ========================
+\section{Discussion}
 
-This study investigated the use of machine learning models to predict treatment outcomes—Success or Failure—of pulmonary tuberculosis patients under the DOH-CAR TB-DOTS program, using monthly patient monitoring data alongside baseline clinical features. Both temporal models, specifically the Bi-LSTM Baseline and Augmented variants, and tree-based models, including XGBoost, LightGBM, and Random Forest with SMOTE-ENN, were evaluated on a stratified 70/20/10 patient-level split, incorporating progressive temporal samples from treatment months M0 through M12. The test set performance revealed that while Bi-LSTM and XGBoost Baseline models achieved high overall accuracy (0.9048) and F1 scores (0.9500), their ability to detect treatment failures was limited, as indicated by zero specificity for the minority Failure class. In contrast, Random Forest with SMOTE-ENN demonstrated more balanced performance, achieving a recall of 0.7895 for treatment failure and a high PR-AUC (0.9419), indicating greater reliability in identifying patients at risk of adverse outcomes. These results highlight that tree-based models augmented with SMOTE-ENN are particularly effective at handling severe class imbalance, while temporal models provide strong predictive accuracy for the majority outcome.
+This study investigated the use of machine learning models to predict treatment outcomes---Success or Failure---of pulmonary tuberculosis patients under the DOH-CAR TB-DOTS program, using monthly patient monitoring data alongside baseline clinical features. Both temporal models, specifically the Bi-LSTM Baseline and Augmented variants, and tree-based models, including XGBoost, LightGBM, and Random Forest with SMOTE-ENN, were evaluated on a stratified 70/20/10 patient-level split, incorporating progressive temporal samples from treatment months M0 through M12. The test set performance revealed that while Bi-LSTM and XGBoost Baseline models achieved high overall accuracy (0.9048) and F1 scores (0.9500), their ability to detect treatment failures was limited, as indicated by zero specificity for the minority Failure class. In contrast, Random Forest with SMOTE-ENN demonstrated more balanced performance, achieving a recall of 0.7895 for treatment failure and a high PR-AUC (0.9419), indicating greater reliability in identifying patients at risk of adverse outcomes. These results highlight that tree-based models augmented with SMOTE-ENN are particularly effective at handling severe class imbalance, while temporal models provide strong predictive accuracy for the majority outcome.
 
-The study contributes in several ways. By integrating temporal monitoring data with static baseline features, it demonstrates that patient-level longitudinal information improves predictive performance over static data alone. The application of SMOTE-ENN and advanced data augmentation techniques for Bi-LSTM effectively addresses the extreme class imbalance inherent in TB treatment outcomes, enhancing the model’s capacity to detect high-risk patients. Furthermore, the findings suggest that predictive models, particularly Random Forest with SMOTE-ENN, have practical value for clinical decision support systems, enabling clinicians to identify patients at risk of treatment failure early and prioritize interventions accordingly.
+The study contributes in several ways. By integrating temporal monitoring data with static baseline features, it demonstrates that patient-level longitudinal information improves predictive performance over static data alone. The application of SMOTE-ENN and advanced data augmentation techniques for Bi-LSTM effectively addresses the extreme class imbalance inherent in TB treatment outcomes, enhancing the model\textquotesingle s capacity to detect high-risk patients. Furthermore, the findings suggest that predictive models, particularly Random Forest with SMOTE-ENN, have practical value for clinical decision support systems, enabling clinicians to identify patients at risk of treatment failure early and prioritize interventions accordingly.
 
 Based on these findings, it is recommended that healthcare facilities and policymakers consider integrating machine learning models like Random Forest with SMOTE-ENN into existing TB monitoring programs to improve treatment outcomes and optimize resource allocation. Future research should focus on larger, multi-region datasets to enhance generalization, explore hybrid modeling approaches combining deep learning and tree-based methods, and investigate additional features such as social determinants of health and geographic risk factors. Additionally, enhancing model interpretability, particularly of Bi-LSTM attention outputs, could improve clinician trust and adoption.
 
