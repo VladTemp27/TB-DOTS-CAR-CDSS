@@ -1,0 +1,38 @@
+## LaTeX
+*.aux
+*.lo*
+*.toc
+*.out
+*.log
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.pdf
+*.bbl
+*.blg
+*.thm
+*.pre
+*.run.xml
+*.bcf
+*-blx.bib
+*.snm
+*.nav
+
+## OS files
+.DS_Store
+Thumbs.db
+
+## IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+## Python (since there are scripts in the repo)
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
