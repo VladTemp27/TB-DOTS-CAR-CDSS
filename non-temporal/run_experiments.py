@@ -1,0 +1,65 @@
+import logging
+logging.getLogger().setLevel(logging.CRITICAL)
+
+import pandas as pd
+from experiment_pipeline import TBExperimentPipeline
+from sklearn.model_selection import train_test_split
+
+def main():
+    pipeline = TBExperimentPipeline()
+    from pathlib import Path
+    base_dir = Path(__file__).resolve().parent.parent
+    dataset_path = base_dir / "dataset" / "non-temporal" / "2015-2025-ml-ready.csv"
+    
+    print("Loading data...")
+    df = pipeline.load_data(dataset_path)
+    
+    # We will run two main versions: Baseline (Original Features) and Improved (Extended Features)
+    versions = [
+        ('Baseline', 'baseline', [None]),
+        ('Resampling_Comparison', 'improved', ['SMOTE', 'SMOTE - ENN', 'SMOTE - Tomek'])
+    ]
+    
+    all_results = []
+    
+    for v_name, feat_ver, samplers in versions:
+        print(f"\n--- Running {v_name} Experiments ---")
+        features = pipeline.get_features(feat_ver)
+        X = df[features]
+        y = df['Target']
+        
+        # 70/20/10 split as per the notebooks
+        X_temp, X_val, y_temp, y_val = train_test_split(X, y, test_size=0.10, random_state=42, stratify=y)
+        X_train, X_test, y_train, y_test = train_test_split(X_temp, y_temp, test_size=2/9, random_state=42, stratify=y_temp)
+        
+        preprocessor = pipeline.get_preprocessor(features)
+        
+        for sampler in samplers:
+            print(f"Sampling Strategy: {sampler or 'None'}")
+            models = pipeline.get_models(y_train)
+            res = pipeline.run_experiment(f"{v_name}_{sampler}", sampler, models, X_train, y_train, X_test, y_test, preprocessor)
+            all_results.append(res)
+            
+            # Export individual experiment table
+            pipeline.export_to_latex(
+                res[['Model', 'ROC-AUC', 'Recall (Fail)', 'F1 (Fail)', 'Accuracy']], 
+                f"results_{feat_ver}_{str(sampler).lower()}",
+                f"Performance Results for {feat_ver.capitalize()} with {sampler or 'Baseline'}",
+                f"tab:{feat_ver}_{str(sampler).lower()}"
+            )
+
+    # Create a Master Comparison Table (Best model from each)
+    master_df = pd.concat(all_results)
+    best_summary = master_df.sort_values('ROC-AUC', ascending=False).groupby(['Sampler', 'Model']).head(1)
+    
+    pipeline.export_to_latex(
+        best_summary[['Sampler', 'Model', 'ROC-AUC', 'Recall (Fail)', 'F1 (Fail)']].head(10),
+        "top_models_comparison",
+        "Top 10 Performing Model Configurations Across All Experiments",
+        "tab:top_models"
+    )
+    
+    print("\nAll experiments completed and LaTeX tables exported.")
+
+if __name__ == "__main__":
+    main()

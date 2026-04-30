@@ -254,6 +254,8 @@ The core predictive component involves training and validating supervised learni
 
 Models are trained on the preprocessed dataset with ``Treatment Outcome'' as the target variable, defined according to National Tuberculosis Program (NTP) criteria. Performance is evaluated using confusion matrices to assess accuracy, sensitivity, and specificity \citep{ref19}. This rigorous validation ensures the models can reliably identify high-risk patients among incoming cases, facilitating early intervention.
 
+To ensure the reproducibility of these results and minimize technical inconsistencies across different resampling strategies, the experiments were conducted using a centralized machine learning pipeline. This unified architecture standardizes the training, cross-validation, and evaluation phases for all models. Furthermore, the pipeline automatically exports performance metrics into native \LaTeX\ formats, ensuring that the documented results are directly derived from the experimental outputs without manual transcription errors.
+
 \subsection{Development of a Clinical Decision Support Tool}
 
 The validated models are embedded into a Clinical Decision Support System (CDSS) designed for healthcare providers. This system visualizes patient risk levels and provides a summary of predictive outputs. Key features include a predictive dashboard that displays the probability of treatment failure and success, risk factor visualization that highlights the specific variables (e.g., adherence gaps, lab results) contributing to the risk score, and dynamic updates where the system accepts new follow-up data (e.g., monthly weight, smear results), triggering updated risk predictions to support real-time clinical management throughout the treatment duration.
@@ -269,20 +271,7 @@ The final dataset exhibited significant class imbalance, with 86.2\% of cases cl
 
 \subsection{Validation Set Performance and Generalization}
 
-\begin{table}[htbp]
-\caption{Test Set Model Performance}
-\label{tab:test_performance}
-\begin{tabular}{lccc}
-\toprule
-Model & AUC (Area Under the Curve) & Recall (Failure) & F1 (Failure) \\
-\midrule
-Random Forest & 0.7154 & 57.98\% & 0.3539 \\
-Gradient Boosting & 0.7121 & 44.68\% & 0.3262 \\
-LightGBM & 0.7119 & 48.40\% & 0.3467 \\
-XGBoost & 0.7095 & 47.87\% & 0.3416 \\
-\bottomrule
-\end{tabular}
-\end{table}
+\input{tables/top_models_comparison.tex}
 
 Among all evaluated models, Random Forest achieved the highest overall performance on the test set, with an AUC of 0.7154 and an F1-score of 0.3539 for the failure class. It also demonstrated balanced recall (57.98\%) without excessive false positives. Gradient Boosting, LightGBM, and XGBoost achieved comparable AUC values ($\sim$0.71), though with slightly lower recall for treatment failure. Logistic Regression demonstrated the highest recall (77.13\%); however, its precision was notably low (19.6\%), resulting in over-alerting and reduced overall accuracy ($\sim$51\%). These findings suggest that while Logistic Regression aggressively identifies high-risk patients, it lacks specificity, potentially burdening healthcare systems with excessive false alarms.
 
