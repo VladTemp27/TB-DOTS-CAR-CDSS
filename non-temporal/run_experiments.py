@@ -54,11 +54,32 @@ def main():
     best_model_row = master_df.sort_values('ROC-AUC', ascending=False).iloc[0]
     best_pipeline = best_model_row['_pipeline']
     
-    import joblib
-    export_path = base_dir / "non-temporal" / "best_model.joblib"
-    joblib.dump(best_pipeline, export_path)
-    print(f"\nExported best model ({best_model_row['Model']} with {best_model_row['Sampler']}) for client-side inference to {export_path}")
-    
+    # Export to ONNX for native web browser inference (onnxruntime-web)
+    try:
+        from skl2onnx import to_onnx
+        from sklearn.pipeline import Pipeline
+        import numpy as np
+        
+        # Strip the imblearn sampler if present to make it compatible with skl2onnx
+        steps = [(name, step) for name, step in best_pipeline.steps if name != 'sampler']
+        clean_pipe = Pipeline(steps)
+        
+        # Build a dummy sample to infer input schema
+        features = best_pipeline.feature_names_in_
+        X_dummy = pd.DataFrame(np.zeros((1, len(features))), columns=features)
+        
+        onnx_model = to_onnx(clean_pipe, X_dummy[:1], target_opset=12)
+        
+        model_dir = base_dir / "models"
+        model_dir.mkdir(parents=True, exist_ok=True)
+        onnx_path = model_dir / "tb_outcome_prediction.onnx"
+        
+        with open(onnx_path, "wb") as f:
+            f.write(onnx_model.SerializeToString())
+        print(f"Exported best model to ONNX format at {onnx_path}")
+    except Exception as e:
+        print(f"Warning: Failed to export to ONNX format ({e})")
+        
     # Remove _pipeline for clean LaTeX export
     master_df = master_df.drop(columns=['_pipeline'])
     
