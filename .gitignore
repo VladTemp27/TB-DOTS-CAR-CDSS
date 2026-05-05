@@ -4880,3 +4880,9 @@ web-app/node_modules/yallist/LICENSE
 web-app/node_modules/yallist/package.json
 web-app/node_modules/yallist/README.md
 web-app/node_modules/yallist/yallist.js
+web-app/dist/index.html
+web-app/dist/assets/index-Dg1PKpu9.js
+web-app/dist/assets/index-Gir0X-Sh.css
+web-app/dist/assets/ort-wasm-simd-threaded.jsep-B5xtfCw5.wasm
+web-app/dist/model/tb_outcome_prediction.onnx
+web-app/dist/model/tb_outcome_prediction.ort
