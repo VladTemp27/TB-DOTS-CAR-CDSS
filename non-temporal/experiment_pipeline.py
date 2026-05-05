@@ -68,6 +68,13 @@ class TBExperimentPipeline:
             df['_Date_of_Diagnosis'] = pd.to_datetime(df['Date of Diagnosis'], errors='coerce')
             df['Diagnosis_to_Treatment_days'] = (df['_Date_Started_Tx'] - df['_Date_of_Diagnosis']).dt.days.clip(lower=0)
         
+        # Fill NAs
+        for col in df.columns:
+            if df[col].dtype in ['float64', 'int64']:
+                df[col] = df[col].fillna(df[col].median())
+            else:
+                df[col] = df[col].fillna(0)
+                
         return df
 
     def get_features(self, version='baseline'):
@@ -90,12 +97,9 @@ class TBExperimentPipeline:
         
         return ColumnTransformer(transformers=[
             ('num', Pipeline(steps=[
-                ('imputer', SimpleImputer(strategy='median')),
                 ('scaler', StandardScaler())
             ]), [f for f in numeric_cols if f in features]),
-            ('cat', Pipeline(steps=[
-                ('imputer', SimpleImputer(strategy='constant', fill_value=0)),
-            ]), [f for f in categorical_cols if f in features]),
+            ('cat', 'passthrough', [f for f in categorical_cols if f in features]),
         ])
 
     def get_models(self, y_train, use_weights=True):

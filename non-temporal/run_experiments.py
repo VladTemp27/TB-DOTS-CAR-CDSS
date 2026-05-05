@@ -68,7 +68,8 @@ def main():
         features = best_pipeline.feature_names_in_
         X_dummy = pd.DataFrame(np.zeros((1, len(features))), columns=features)
         
-        onnx_model = to_onnx(clean_pipe, X_dummy[:1], target_opset=12)
+        onnx_model = to_onnx(clean_pipe, X_dummy[:1], target_opset=12,
+                             options={id(clean_pipe.steps[-1][1]): {'zipmap': False}})
         
         model_dir = base_dir / "models"
         model_dir.mkdir(parents=True, exist_ok=True)
