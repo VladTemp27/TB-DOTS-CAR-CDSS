@@ -145,7 +145,8 @@ class TBExperimentPipeline:
                 'Precision (Succ)': report['1']['precision'],
                 'Recall (Succ)': report['1']['recall'],
                 'F1 (Succ)': report['1']['f1-score'],
-                'Train Time (s)': round(train_time, 2)
+                'Train Time (s)': round(train_time, 2),
+                '_pipeline': pipe
             })
             
         return pd.DataFrame(results)

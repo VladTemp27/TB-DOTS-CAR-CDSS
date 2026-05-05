@@ -50,6 +50,18 @@ def main():
 
     # Create a Master Comparison Table (Best model from each)
     master_df = pd.concat(all_results)
+    
+    best_model_row = master_df.sort_values('ROC-AUC', ascending=False).iloc[0]
+    best_pipeline = best_model_row['_pipeline']
+    
+    import joblib
+    export_path = base_dir / "non-temporal" / "best_model.joblib"
+    joblib.dump(best_pipeline, export_path)
+    print(f"\nExported best model ({best_model_row['Model']} with {best_model_row['Sampler']}) for client-side inference to {export_path}")
+    
+    # Remove _pipeline for clean LaTeX export
+    master_df = master_df.drop(columns=['_pipeline'])
+    
     best_summary = master_df.sort_values('ROC-AUC', ascending=False).groupby(['Sampler', 'Model']).head(1)
     
     pipeline.export_to_latex(
