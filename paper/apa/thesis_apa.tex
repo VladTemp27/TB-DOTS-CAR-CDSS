@@ -1,6 +1,6 @@
 % =============================================================================
 % APA 7th Edition Formatted Paper
-% Uses: article class + natbib + apalike + manual APA formatting
+% Uses: apa7 conventions via apacite + natbibapa
 % =============================================================================
 \documentclass[12pt]{article}
 
@@ -11,6 +11,10 @@
 % ----- Typography (APA: Times New Roman or similar serif) -----
 \usepackage{newtxtext,newtxmath}
 \usepackage[T1]{fontenc}
+% Reset typewriter font to avoid missing t1xtt error when apacite renders URLs
+\renewcommand{\ttdefault}{cmtt}
+% url package: allow line breaks in bibliography URLs (must come before apacite)
+\usepackage[hyphens]{url}
 
 % ----- Spacing (APA: double-spaced throughout) -----
 \usepackage{setspace}
@@ -23,14 +27,12 @@
 \renewcommand{\headrulewidth}{0pt}
 \fancyhead[R]{\thepage}
 
-% ----- References (APA-like with natbib) -----
-% NOTE: For strict APA 7th, install apacite and uncomment:
-%   \usepackage[natbibapa]{apacite}
-%   \bibliographystyle{apacite}
-\usepackage[round]{natbib}
-\bibliographystyle{apalike}
+% ----- References: apacite must be loaded BEFORE hyperref -----
+\usepackage[natbibapa]{apacite}
+\bibliographystyle{apacite}
+\shortcites{ref3,ref5,ref8,ref9,ref11,ref12,ref13,ref14,ref15,ref16,ref17,ref21,ref22,ref23,ref24,ref27,ref30}
 
-% ----- Hyperlinks -----
+% ----- Hyperlinks (loaded after apacite to avoid citation link conflicts) -----
 \usepackage{hyperref}
 \hypersetup{
   colorlinks=true,
@@ -40,10 +42,12 @@
 }
 
 % ----- Figures & Tables -----
+\usepackage{graphicx}
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric,arrows.meta,positioning}
 \usepackage{booktabs}
 \usepackage{caption}
+% APA: table/figure captions are bold label, newline, then italic title
 \captionsetup{labelsep=newline, justification=raggedright, singlelinecheck=false, font=doublespacing, labelfont=bf, textfont=it}
 
 % ----- Section Formatting (APA 7th Heading Levels) -----
@@ -113,16 +117,18 @@ Department of Computing and Information Studies, Saint Louis University
 \newpage
 
 % ======================== ABSTRACT ========================
+% APA 7th: "Abstract" centered, bold; abstract text is NOT indented (no \parindent)
 \begin{center}
 \textbf{Abstract}
 \end{center}
 
-\begin{flushleft}
-\noindent Pulmonary Tuberculosis (PTB) remains a critical public health challenge in the Cordillera Administrative Region (CAR), Philippines, where complex patient profiles and programmatic gaps contribute to persistent treatment failure. This study develops machine learning models to predict treatment success or failure among PTB patients in DOH-CAR TB-DOTS facilities covering the period 2015--2025. A standardized preprocessing pipeline performs schema harmonization, patient pseudonymization, and missing data imputation via Multivariate Imputation by Chained Equations (MICE). Supervised models---Logistic Regression, Support Vector Machines (SVM), and Extreme Gradient Boosting (XGBoost)---are trained alongside Recurrent Neural Network (RNN) and Long Short-Term Memory (LSTM) temporal architectures to capture longitudinal treatment dynamics across the 6- to 12-month treatment course. Shapley Additive Explanations (SHAP) ensure model interpretability by quantifying the contribution of individual patient features to each prediction. The validated models are embedded in a Clinical Decision Support System (CDSS) that provides dynamic risk estimates and factor-level explanations to support early clinical intervention for patients at risk of treatment failure.
-\end{flushleft}
+% APA 7th: Abstract is a single unindented paragraph
+{\setlength{\parindent}{0pt}
+Pulmonary Tuberculosis (PTB) remains a critical public health challenge in the Cordillera Administrative Region (CAR), Philippines, where complex patient profiles and programmatic gaps contribute to persistent treatment failure. This study develops machine learning models to predict treatment success or failure among PTB patients in DOH-CAR TB-DOTS facilities covering the period 2015--2025. A standardized preprocessing pipeline performs schema harmonization, patient pseudonymization, and missing data imputation via Multivariate Imputation by Chained Equations (MICE). Supervised models---Logistic Regression, Support Vector Machines (SVM), and Extreme Gradient Boosting (XGBoost)---are trained alongside Recurrent Neural Network (RNN) and Long Short-Term Memory (LSTM) temporal architectures to capture longitudinal treatment dynamics across the 6- to 12-month treatment course. Shapley Additive Explanations (SHAP) ensure model interpretability by quantifying the contribution of individual patient features to each prediction. The validated models are embedded in a Clinical Decision Support System (CDSS) that provides dynamic risk estimates and factor-level explanations to support early clinical intervention for patients at risk of treatment failure.
 
-\vspace{0.5\baselineskip}
-\noindent\hspace{0.5in}\textit{Keywords:} tuberculosis, machine learning, treatment outcome prediction, clinical decision support system, explainable AI
+% APA 7th: Keywords line is NOT indented; label is italic
+\textit{Keywords:} tuberculosis, machine learning, treatment outcome prediction, clinical decision support system, explainable AI
+}
 
 \newpage
 
@@ -317,7 +323,11 @@ Based on these findings, it is recommended that healthcare facilities and policy
 The authors would like to express their sincere gratitude to Saint Louis University for providing the academic environment and resources that made this research possible. We extend our appreciation to the School of Accountancy, Management, Computing, and Information Studies (SAMCIS), specifically the Department of Computing and Information Studies, for their continuous support and guidance throughout the study. Our deepest thanks go to Dr. Randy Domantay, whose leadership and encouragement have been invaluable. We are especially grateful to our research adviser, Dr. Josephine S. Dela Cruz, for their expert guidance, insightful feedback, and unwavering support at every stage of the research. Lastly, we acknowledge the collaboration and contributions of our partner researchers from the SONAHBS Department of Pharmacy, whose expertise and assistance significantly enriched this study.
 
 % ======================== REFERENCES ========================
+% APA 7th: References heading is centered, bold, on its own page
 \newpage
+% apacite automatically formats the References heading;
+% if it appears incorrectly, uncomment the next line:
+% \section*{References}
 \bibliography{references}
 
 \end{document}
