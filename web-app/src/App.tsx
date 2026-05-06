@@ -8,11 +8,12 @@ import { PatientProfile } from './pages/PatientProfile'
 import { MonthlyCheckin } from './pages/MonthlyCheckin'
 import { RiskUpdate } from './pages/RiskUpdate'
 import { FeatureContribution } from './pages/FeatureContribution'
+import { DesktopLayout } from './components/DesktopLayout'
 
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="max-w-[430px] mx-auto min-h-screen bg-gray-50">
+      <DesktopLayout>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/patient/new" element={<PatientIntakeStep1 />} />
@@ -24,7 +25,7 @@ export default function App() {
           <Route path="/patient/:id/risk-update" element={<RiskUpdate />} />
           <Route path="/patient/:id/features" element={<FeatureContribution />} />
         </Routes>
-      </div>
+      </DesktopLayout>
     </BrowserRouter>
   )
 }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { StepProgress } from '../components/StepProgress'
 import { getChoices } from '../lib/inference'
+import { PageFooter } from '../components/PageFooter'
 
 // Persisted across steps in sessionStorage
 const DRAFT_KEY = 'tb_intake_draft'
@@ -41,7 +42,7 @@ export function PatientIntakeStep1() {
       <AppHeader />
       <StepProgress steps={4} current={1} />
 
-      <main className="flex-1 px-4 pb-24 space-y-4">
+      <main className="flex-1 px-4 pb-6 space-y-4">
         <div className="bg-primary-light border border-primary/20 rounded-xl p-4">
           <h2 className="font-semibold text-primary text-base">Patient Demographics</h2>
           <p className="text-sm text-primary/70 mt-0.5">Please provide the patient's basic information</p>
@@ -133,7 +134,7 @@ export function PatientIntakeStep1() {
         </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-4">
+      <PageFooter>
         <button
           onClick={handleContinue}
           disabled={!valid}
@@ -141,7 +142,7 @@ export function PatientIntakeStep1() {
         >
           Continue to Lab Results →
         </button>
-      </div>
+      </PageFooter>
     </div>
   )
 }

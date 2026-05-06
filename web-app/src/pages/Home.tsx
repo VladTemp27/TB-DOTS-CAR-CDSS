@@ -15,7 +15,7 @@ export function Home() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <AppHeader />
 
-      <main className="flex-1 px-4 pt-4 pb-24">
+      <main className="flex-1 px-4 pt-4 pb-6 relative">
         <h2 className="text-lg font-bold text-gray-900 mb-1">Patient Overview</h2>
 
         {patients.length > 0 && (
@@ -63,10 +63,10 @@ export function Home() {
         )}
       </main>
 
-      <div className="fixed bottom-6 right-6">
+      <div className="sticky bottom-6 flex justify-end pr-2 pb-2 pointer-events-none">
         <button
           onClick={() => navigate('/patient/new')}
-          className="w-14 h-14 bg-primary rounded-full shadow-lg flex items-center justify-center text-white text-2xl font-light active:bg-primary-dark"
+          className="pointer-events-auto w-14 h-14 bg-primary rounded-full shadow-lg flex items-center justify-center text-white text-2xl font-light active:bg-primary-dark"
         >
           +
         </button>

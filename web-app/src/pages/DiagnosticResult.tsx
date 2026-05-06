@@ -2,6 +2,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { StepProgress } from '../components/StepProgress'
 import { RiskBadge } from '../components/RiskBadge'
+import { PageFooter } from '../components/PageFooter'
 import { getPatient } from '../lib/storage'
 import type { ContributionResult } from '../lib/inference'
 
@@ -20,7 +21,7 @@ export function DiagnosticResult() {
       <AppHeader />
       <StepProgress steps={4} current={3} />
 
-      <main className="flex-1 px-4 pb-24 space-y-4 pt-2">
+      <main className="flex-1 px-4 pb-6 space-y-4 pt-2">
         <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
           <p className="text-xs font-semibold text-gray-500 mb-2">Patient Summary</p>
           <p className="text-sm text-gray-800">
@@ -75,14 +76,14 @@ export function DiagnosticResult() {
         </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-4">
+      <PageFooter>
         <button
           onClick={() => navigate(`/patient/${id}/treatment`)}
           className="w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm active:bg-primary-dark"
         >
           Select Treatment Regimen →
         </button>
-      </div>
+      </PageFooter>
     </div>
   )
 }

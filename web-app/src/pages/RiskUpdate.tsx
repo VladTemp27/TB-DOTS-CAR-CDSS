@@ -3,6 +3,7 @@ import { AppHeader } from '../components/AppHeader'
 import { RiskBadge, riskColor } from '../components/RiskBadge'
 import { getPatient } from '../lib/storage'
 import type { ContributionResult } from '../lib/inference'
+import { PageFooter } from '../components/PageFooter'
 
 export function RiskUpdate() {
   const navigate = useNavigate()
@@ -24,7 +25,7 @@ export function RiskUpdate() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <AppHeader />
 
-      <main className="flex-1 px-4 pb-24 pt-4 space-y-4">
+      <main className="flex-1 px-4 pb-6 pt-4 space-y-4">
         <div className="flex justify-between items-start">
           <div>
             <p className="font-bold text-gray-900">{patient?.name}</p>
@@ -66,16 +67,18 @@ export function RiskUpdate() {
         )}
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-4 flex gap-3">
-        <button onClick={() => navigate(-1)}
-          className="flex-1 border border-gray-200 text-gray-700 py-3.5 rounded-xl font-semibold text-sm">
-          ← Back
-        </button>
-        <button onClick={() => navigate(`/patient/${id}`)}
-          className="flex-[2] bg-primary text-white py-3.5 rounded-xl font-semibold text-sm">
-          View Patient Profile
-        </button>
-      </div>
+      <PageFooter>
+        <div className="flex gap-3">
+          <button onClick={() => navigate(-1)}
+            className="flex-1 border border-gray-200 text-gray-700 py-3.5 rounded-xl font-semibold text-sm">
+            ← Back
+          </button>
+          <button onClick={() => navigate(`/patient/${id}`)}
+            className="flex-[2] bg-primary text-white py-3.5 rounded-xl font-semibold text-sm">
+            View Patient Profile
+          </button>
+        </div>
+      </PageFooter>
     </div>
   )
 }

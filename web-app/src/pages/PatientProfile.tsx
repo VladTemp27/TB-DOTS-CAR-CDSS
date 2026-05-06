@@ -2,6 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { RiskBadge, riskColor } from '../components/RiskBadge'
 import { getPatient } from '../lib/storage'
+import { PageFooter } from '../components/PageFooter'
 
 export function PatientProfile() {
   const navigate = useNavigate()
@@ -30,7 +31,7 @@ export function PatientProfile() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <AppHeader backLabel="Back to All Patients" onBack={() => navigate('/')} />
 
-      <main className="flex-1 px-4 pb-24 pt-4 space-y-4">
+      <main className="flex-1 px-4 pb-6 pt-4 space-y-4">
         <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
           <p className="font-bold text-gray-900 text-lg">{patient.name}</p>
           <p className="text-sm text-gray-500">
@@ -115,14 +116,14 @@ export function PatientProfile() {
         )}
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-4">
+      <PageFooter>
         <button
           onClick={() => navigate(`/patient/${id}/checkin`)}
           className="w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm active:bg-primary-dark"
         >
           Log Monthly Update →
         </button>
-      </div>
+      </PageFooter>
     </div>
   )
 }

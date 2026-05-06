@@ -3,6 +3,7 @@ import { AppHeader } from '../components/AppHeader'
 import { RiskBadge } from '../components/RiskBadge'
 import { FeatureBar } from '../components/FeatureBar'
 import { getPatient } from '../lib/storage'
+import { PageFooter } from '../components/PageFooter'
 
 export function FeatureContribution() {
   const navigate = useNavigate()
@@ -26,7 +27,7 @@ export function FeatureContribution() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <AppHeader backLabel="Back to Patient Profile" onBack={() => navigate(`/patient/${id}`)} />
 
-      <main className="flex-1 px-4 pb-24 pt-4 space-y-4">
+      <main className="flex-1 px-4 pb-6 pt-4 space-y-4">
         <div>
           <h2 className="font-bold text-gray-900 text-lg">Risk Factor Analysis</h2>
           <p className="text-sm text-gray-500">What's driving {patient.name}'s failure risk</p>
@@ -73,12 +74,12 @@ export function FeatureContribution() {
         </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-4">
+      <PageFooter>
         <button onClick={() => navigate(`/patient/${id}`)}
           className="w-full border border-gray-200 text-gray-700 py-3.5 rounded-xl font-semibold text-sm">
           ← Back
         </button>
-      </div>
+      </PageFooter>
     </div>
   )
 }

@@ -5,6 +5,7 @@ import { StepProgress } from '../components/StepProgress'
 import { getChoices, predictWithContributions } from '../lib/inference'
 import { savePatient, generateId } from '../lib/storage'
 import type { PatientFeatures } from '../lib/inference'
+import { PageFooter } from '../components/PageFooter'
 
 const DRAFT_KEY = 'tb_intake_draft'
 
@@ -97,7 +98,7 @@ export function PatientIntakeStep2() {
       <AppHeader />
       <StepProgress steps={4} current={2} />
 
-      <main className="flex-1 px-4 pb-24 space-y-4">
+      <main className="flex-1 px-4 pb-6 space-y-4">
         <div>
           <h2 className="font-semibold text-gray-900 text-base">Lab Results & Diagnosis</h2>
           <p className="text-sm text-gray-500">Enter laboratory and clinical results</p>
@@ -186,19 +187,21 @@ export function PatientIntakeStep2() {
         </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-4 flex gap-3">
-        <button onClick={() => navigate(-1)}
-          className="flex-1 border border-gray-200 text-gray-700 py-3.5 rounded-xl font-semibold text-sm active:bg-gray-50">
-          ← Back
-        </button>
-        <button
-          onClick={handleGenerate}
-          disabled={!valid || loading}
-          className="flex-[2] bg-primary text-white py-3.5 rounded-xl font-semibold text-sm disabled:opacity-40 active:bg-primary-dark"
-        >
-          {loading ? 'Running model…' : 'Generate Diagnosis →'}
-        </button>
-      </div>
+      <PageFooter>
+        <div className="flex gap-3">
+          <button onClick={() => navigate(-1)}
+            className="flex-1 border border-gray-200 text-gray-700 py-3.5 rounded-xl font-semibold text-sm active:bg-gray-50">
+            ← Back
+          </button>
+          <button
+            onClick={handleGenerate}
+            disabled={!valid || loading}
+            className="flex-[2] bg-primary text-white py-3.5 rounded-xl font-semibold text-sm disabled:opacity-40 active:bg-primary-dark"
+          >
+            {loading ? 'Running model…' : 'Generate Diagnosis →'}
+          </button>
+        </div>
+      </PageFooter>
     </div>
   )
 }

@@ -8,6 +8,6 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #f9fafb;
+  background: #f3f4f6; /* gray-100 — matches desktop sidebar bg */
   -webkit-font-smoothing: antialiased;
 }
