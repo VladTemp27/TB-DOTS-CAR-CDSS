@@ -1,9 +1,19 @@
 import logging
-logging.getLogger().setLevel(logging.CRITICAL)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)-8s] %(name)s — %(message)s',
+    datefmt='%H:%M:%S',
+)
+logging.getLogger('lightgbm').setLevel(logging.ERROR)
+logging.getLogger('xgboost').setLevel(logging.ERROR)
+
+logger = logging.getLogger(__name__)
 
 import pandas as pd
 from experiment_pipeline import TBExperimentPipeline
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score, accuracy_score
 
 def main():
     pipeline = TBExperimentPipeline()
@@ -11,7 +21,7 @@ def main():
     base_dir = Path(__file__).resolve().parent.parent
     dataset_path = base_dir / "dataset" / "non-temporal" / "2015-2025-ml-ready.csv"
     
-    print("Loading data...")
+    logger.info("Loading data...")
     df = pipeline.load_data(dataset_path)
     
     # We will run two main versions: Baseline (Original Features) and Improved (Extended Features)
@@ -21,23 +31,27 @@ def main():
     ]
     
     all_results = []
-    
+    val_sets = {}
+
     for v_name, feat_ver, samplers in versions:
-        print(f"\n--- Running {v_name} Experiments ---")
+        logger.info("=== Starting experiment: %s ===", v_name)
         features = pipeline.get_features(feat_ver)
         X = df[features]
         y = df['Target']
-        
+
         # 70/20/10 split as per the notebooks
         X_temp, X_val, y_temp, y_val = train_test_split(X, y, test_size=0.10, random_state=42, stratify=y)
         X_train, X_test, y_train, y_test = train_test_split(X_temp, y_temp, test_size=2/9, random_state=42, stratify=y_temp)
-        
+        val_sets[v_name] = (X_val, y_val)
+        logger.info("Split — train=%d  test=%d  val=%d", len(X_train), len(X_test), len(X_val))
+
         preprocessor = pipeline.get_preprocessor(features)
-        
+
         for sampler in samplers:
-            print(f"Sampling Strategy: {sampler or 'None'}")
+            logger.info("Sampling strategy: %s", sampler or 'None')
             models = pipeline.get_models(y_train)
             res = pipeline.run_experiment(f"{v_name}_{sampler}", sampler, models, X_train, y_train, X_test, y_test, preprocessor)
+            res['Version'] = v_name
             all_results.append(res)
             
             # Export individual experiment table
@@ -53,7 +67,19 @@ def main():
     
     best_model_row = master_df.sort_values('ROC-AUC', ascending=False).iloc[0]
     best_pipeline = best_model_row['_pipeline']
-    
+    best_version = best_model_row['Version']
+
+    # Final holdout evaluation on the withheld 10% validation set
+    X_val_final, y_val_final = val_sets[best_version]
+    y_val_pred = best_pipeline.predict(X_val_final)
+    y_val_proba = best_pipeline.predict_proba(X_val_final)[:, 1]
+    logger.info(
+        "Holdout eval — %s (%s): AUC=%.4f  Acc=%.4f",
+        best_model_row['Model'], best_model_row['Sampler'],
+        roc_auc_score(y_val_final, y_val_proba),
+        accuracy_score(y_val_final, y_val_pred),
+    )
+
     # Export to ONNX for native web browser inference (onnxruntime-web)
     try:
         from skl2onnx import to_onnx
@@ -77,12 +103,12 @@ def main():
         
         with open(onnx_path, "wb") as f:
             f.write(onnx_model.SerializeToString())
-        print(f"Exported best model to ONNX format at {onnx_path}")
+        logger.info("Exported best model to ONNX → %s", onnx_path)
     except Exception as e:
-        print(f"Warning: Failed to export to ONNX format ({e})")
+        logger.warning("ONNX export failed: %s", e)
         
-    # Remove _pipeline for clean LaTeX export
-    master_df = master_df.drop(columns=['_pipeline'])
+    # Remove non-serializable/internal columns before LaTeX export
+    master_df = master_df.drop(columns=['_pipeline', 'Version'])
     
     best_summary = master_df.sort_values('ROC-AUC', ascending=False).groupby(['Sampler', 'Model']).head(1)
     
@@ -93,7 +119,7 @@ def main():
         "tab:top_models"
     )
     
-    print("\nAll experiments completed and LaTeX tables exported.")
+    logger.info("All experiments completed. LaTeX tables written to paper/apa/tables/")
 
 if __name__ == "__main__":
     main()

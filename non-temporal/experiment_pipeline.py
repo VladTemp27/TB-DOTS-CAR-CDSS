@@ -1,5 +1,6 @@
 import logging
-logging.getLogger().setLevel(logging.CRITICAL)
+
+logger = logging.getLogger(__name__)
 
 import pandas as pd
 import numpy as np
@@ -45,14 +46,21 @@ class TBExperimentPipeline:
         self.table_dir.mkdir(parents=True, exist_ok=True)
 
     def load_data(self, file_path):
+        logger.info("Loading dataset: %s", file_path)
         df_raw = pd.read_csv(file_path)
-        
+        logger.info("Raw dataset: %d rows, %d columns", len(df_raw), len(df_raw.columns))
+
         # Decode Outcome/Status
         OUTCOME_LABELS_ALPHA = [
             'CURED', 'DIAGNOSED', 'DIED', 'EXCLUDED', 'FAILED', 'LOST TO FF-UP',
             'NOT ENROLLED', 'NOT EVALUATED', 'ON TREATMENT', 'Screened', 'TREATMENT COMPLETED'
         ]
         outcome_encoded_sorted = sorted(df_raw['Outcome/Status'].dropna().unique())
+        assert len(outcome_encoded_sorted) == len(OUTCOME_LABELS_ALPHA), (
+            f"Encoded outcome count ({len(outcome_encoded_sorted)}) does not match "
+            f"expected label count ({len(OUTCOME_LABELS_ALPHA)}). "
+            f"Update OUTCOME_LABELS_ALPHA if the dataset has changed."
+        )
         OUTCOME_DECODE = dict(zip(outcome_encoded_sorted, OUTCOME_LABELS_ALPHA))
         df_raw['Outcome_Label'] = df_raw['Outcome/Status'].map(OUTCOME_DECODE)
 
@@ -61,20 +69,28 @@ class TBExperimentPipeline:
 
         df = df_raw[df_raw['Outcome_Label'].isin(SUCCESS_OUTCOMES | FAILURE_OUTCOMES)].copy()
         df['Target'] = df['Outcome_Label'].apply(lambda x: 1 if x in SUCCESS_OUTCOMES else 0)
-        
-        # Derived features (if possible)
-        if 'Date Started Tx' in df.columns and 'Date of Diagnosis' in df.columns:
-            df['_Date_Started_Tx'] = pd.to_datetime(df['Date Started Tx'], errors='coerce')
-            df['_Date_of_Diagnosis'] = pd.to_datetime(df['Date of Diagnosis'], errors='coerce')
-            df['Diagnosis_to_Treatment_days'] = (df['_Date_Started_Tx'] - df['_Date_of_Diagnosis']).dt.days.clip(lower=0)
-        
+
+        n_success = (df['Target'] == 1).sum()
+        n_failure = (df['Target'] == 0).sum()
+        n_excluded = len(df_raw) - len(df)
+        logger.info(
+            "After outcome filtering: %d samples retained, %d excluded "
+            "(success=%d, failure=%d, imbalance ratio=%.2f:1)",
+            len(df), n_excluded, n_success, n_failure, n_success / max(n_failure, 1)
+        )
+        if n_excluded > 0:
+            excluded_labels = df_raw.loc[
+                ~df_raw['Outcome_Label'].isin(SUCCESS_OUTCOMES | FAILURE_OUTCOMES), 'Outcome_Label'
+            ].value_counts().to_dict()
+            logger.debug("Excluded outcome categories: %s", excluded_labels)
+
         # Fill NAs
         for col in df.columns:
             if df[col].dtype in ['float64', 'int64']:
                 df[col] = df[col].fillna(df[col].median())
             else:
                 df[col] = df[col].fillna(0)
-                
+
         return df
 
     def get_features(self, version='baseline'):
@@ -123,29 +139,37 @@ class TBExperimentPipeline:
         elif sampler_name == 'SMOTE - Tomek': sampler = SMOTETomek(random_state=self.random_state)
 
         for m_name, model in model_dict.items():
-            print(f"[{name}] Training {m_name}...")
+            logger.info("[%s] Training %-22s sampler=%-12s  train=%d  test=%d",
+                        name, m_name, sampler_name or 'None', len(X_train), len(X_test))
             t0 = time.time()
             if sampler:
                 pipe = ImbPipeline(steps=[('preprocessor', preprocessor), ('sampler', sampler), ('classifier', model)])
             else:
                 pipe = Pipeline(steps=[('preprocessor', preprocessor), ('classifier', model)])
-            
+
             pipe.fit(X_train, y_train)
             train_time = time.time() - t0
-            
+
             y_pred = pipe.predict(X_test)
             y_proba = pipe.predict_proba(X_test)[:, 1]
-            
+
             report = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
-            
+            auc = roc_auc_score(y_test, y_proba)
+            acc = accuracy_score(y_test, y_pred)
+            f1_fail = report['0']['f1-score']
+            recall_fail = report['0']['recall']
+
+            logger.info("[%s] %-22s  AUC=%.4f  Acc=%.4f  F1(fail)=%.4f  Recall(fail)=%.4f  %.2fs",
+                        name, m_name, auc, acc, f1_fail, recall_fail, train_time)
+
             results.append({
                 'Model': m_name,
                 'Sampler': sampler_name or 'None',
-                'Accuracy': accuracy_score(y_test, y_pred),
-                'ROC-AUC': roc_auc_score(y_test, y_proba),
+                'Accuracy': acc,
+                'ROC-AUC': auc,
                 'Precision (Fail)': report['0']['precision'],
-                'Recall (Fail)': report['0']['recall'],
-                'F1 (Fail)': report['0']['f1-score'],
+                'Recall (Fail)': recall_fail,
+                'F1 (Fail)': f1_fail,
                 'Precision (Succ)': report['1']['precision'],
                 'Recall (Succ)': report['1']['recall'],
                 'F1 (Succ)': report['1']['f1-score'],
@@ -179,7 +203,7 @@ class TBExperimentPipeline:
         output_path = self.table_dir / f"{filename}.tex"
         with open(output_path, 'w') as f:
             f.write(latex_str)
-        print(f"Exported LaTeX table to {output_path}")
+        logger.info("Exported LaTeX table → %s", output_path)
 
 if __name__ == "__main__":
     # Example usage / Test
