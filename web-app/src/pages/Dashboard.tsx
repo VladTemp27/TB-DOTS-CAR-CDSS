@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { getAllPatients } from '../lib/storage'
 import { riskLabel, riskColor } from '../components/RiskBadge'
 import { AppHeader } from '../components/AppHeader'
@@ -16,7 +15,7 @@ function latestProb(p: Patient): number {
 // ─── component ───────────────────────────────────────────────────────────────
 
 export function Dashboard() {
-  const patients = useMemo(() => getAllPatients(), [])
+  const patients = getAllPatients()
   const total = patients.length
 
   // ── summary card values ──────────────────────────────────────────────────
@@ -26,7 +25,7 @@ export function Dashboard() {
   const avgRisk  = total > 0
     ? patients.reduce((sum, p) => sum + latestProb(p), 0) / total
     : null
-  const dueCheckin   = patients.filter(p => p.monthlyRecords.length < DOTS_COURSE_MONTHS).length
+  const dueCheckin   = patients.filter(p => p.treatmentRegimen !== undefined && p.monthlyRecords.length < DOTS_COURSE_MONTHS).length
   const onTreatment  = patients.filter(p => p.treatmentRegimen !== undefined).length
 
   // ── adherence ────────────────────────────────────────────────────────────
@@ -49,6 +48,7 @@ export function Dashboard() {
   // ── demographics ─────────────────────────────────────────────────────────
   const maleCount   = patients.filter(p => p.features.sex === 'M').length
   const femaleCount = patients.filter(p => p.features.sex === 'F').length
+  const sexTotal    = maleCount + femaleCount || 1
 
   const ageBuckets = [
     { label: '0–17',  count: patients.filter(p => p.features.age <= 17).length },
@@ -269,21 +269,16 @@ export function Dashboard() {
                 {/* Sex */}
                 <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Sex</p>
-                  {(() => {
-                    const sexTotal = maleCount + femaleCount || 1
-                    return (
-                      <div className="flex h-3 rounded-full overflow-hidden mb-3">
-                        <div
-                          className="bg-blue-400"
-                          style={{ width: `${Math.round((maleCount / sexTotal) * 100)}%` }}
-                        />
-                        <div
-                          className="bg-pink-400"
-                          style={{ width: `${Math.round((femaleCount / sexTotal) * 100)}%` }}
-                        />
-                      </div>
-                    )
-                  })()}
+                  <div className="flex h-3 rounded-full overflow-hidden mb-3">
+                    <div
+                      className="bg-blue-400"
+                      style={{ width: `${Math.round((maleCount / sexTotal) * 100)}%` }}
+                    />
+                    <div
+                      className="bg-pink-400"
+                      style={{ width: `${Math.round((femaleCount / sexTotal) * 100)}%` }}
+                    />
+                  </div>
                   <div className="flex justify-between text-xs text-gray-600">
                     <span className="flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />
@@ -353,7 +348,7 @@ export function Dashboard() {
 
                   {excludedFromTrends > 0 && (
                     <p className="text-xs text-gray-400">
-                      {excludedFromTrends} patient{excludedFromTrends !== 1 ? 's' : ''} excluded (only 1 prediction).
+                      {excludedFromTrends} patient{excludedFromTrends !== 1 ? 's' : ''} excluded (fewer than 2 predictions).
                     </p>
                   )}
                 </>
