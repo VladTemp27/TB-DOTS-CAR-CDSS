@@ -5,7 +5,9 @@ import { StepProgress } from '../components/StepProgress'
 import { getPatient, savePatient } from '../lib/storage'
 import { PageFooter } from '../components/PageFooter'
 
-const REGIMENS = [
+type RegimenId = 'hrze' | 'mdr' | 'xdr'
+
+const REGIMENS: Array<{ id: RegimenId; name: string; drugs: string; duration: string; successRate: string }> = [
   {
     id: 'hrze',
     name: 'Drug-Susceptible TB (HRZE)',
@@ -34,14 +36,14 @@ export function TreatmentSelection() {
   const { id } = useParams<{ id: string }>()
   const patient = id ? getPatient(id) : null
 
-  const [selected, setSelected] = useState(patient?.treatmentRegimen ?? '')
+  const [selected, setSelected] = useState<RegimenId | ''>(patient?.treatmentRegimen ?? '')
   const [startDate, setStartDate] = useState(patient?.treatmentStartDate ?? '')
 
   function handleProceed() {
     if (!id || !selected) return
     const p = getPatient(id)
     if (p) {
-      p.treatmentRegimen = selected
+      p.treatmentRegimen = selected || undefined
       p.treatmentStartDate = startDate
       savePatient(p)
     }

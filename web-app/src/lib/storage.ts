@@ -21,7 +21,7 @@ export interface Patient {
   name: string
   medicalId: string
   features: PatientFeatures
-  treatmentRegimen?: string
+  treatmentRegimen?: 'hrze' | 'mdr' | 'xdr'
   treatmentStartDate?: string
   createdAt: number
   predictions: PredictionRecord[]

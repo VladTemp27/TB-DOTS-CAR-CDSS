@@ -100,6 +100,10 @@ yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
 
+## ─── Superpowers / AI tooling ────────────────────────────────────────────────
+.superpowers/
+docs/superpowers/
+
 ## ─── Misc ─────────────────────────────────────────────────────────────────────
 *.bak
 *.tmp

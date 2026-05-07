@@ -8,6 +8,7 @@ import { PatientProfile } from './pages/PatientProfile'
 import { MonthlyCheckin } from './pages/MonthlyCheckin'
 import { RiskUpdate } from './pages/RiskUpdate'
 import { FeatureContribution } from './pages/FeatureContribution'
+import { Dashboard } from './pages/Dashboard'
 import { DesktopLayout } from './components/DesktopLayout'
 
 export default function App() {
@@ -16,6 +17,7 @@ export default function App() {
       <DesktopLayout>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/patient/new" element={<PatientIntakeStep1 />} />
           <Route path="/patient/new/lab" element={<PatientIntakeStep2 />} />
           <Route path="/patient/:id" element={<PatientProfile />} />
