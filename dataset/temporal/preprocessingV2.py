@@ -64,7 +64,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # ============================================================================
 
 # Paths
-INPUT_PATH = os.path.join("dataset", "temporal", "combined_dataset.csv")
+INPUT_PATH = os.path.join("dataset", "temporal", "combined_complete_dataset.csv")
 OUTPUT_DIR = os.path.join("dataset", "temporal", "output")
 
 # Monthly time-step range
@@ -92,15 +92,20 @@ ID_COLUMNS_TO_DROP = [
 
 # Columns that are entirely null and carry no information
 ALWAYS_DROP_COLUMNS = [
-    "tuberculosis_culture",     # 204/205 missing
-    "tuberculin_skin_test",     # 201/205 missing
-    "other_lab_test",           # 204/205 missing
-    "others",                   # 203/205 missing
+    "tuberculosis_culture",     # near-entirely missing
+    "tuberculin_skin_test",     # near-entirely missing
+    "other_lab_test",           # near-entirely missing (1/599 non-null)
+    "others",                   # near-entirely missing
+    "other",                    # new in complete dataset: 'Other:' -> 'other'; mostly N/A (29/599 non-null)
     "dat_supported_dup",        # duplicate of dat_supported
     "risk_factors_for_drug_resistance_tuberculosis",  # all null
 ]
 
 # Categorical columns for one-hot encoding (used in Phase B only)
+# NOTE: The complete dataset has both 'Nationality?' (standardized -> 'nationality')
+# and a new 'Nationality' column (standardized -> 'nationality'). After standardization
+# these will collide; the duplicate is handled in Stage 1 schema validation.
+# Only 'nationality' (from 'Nationality?') is kept in the model as it has more coverage.
 CATEGORICAL_COLUMNS = [
     "sex",
     "civil_status",
@@ -174,11 +179,17 @@ def standardize_column_name(col: str) -> str:
         'Date of Birth'           -> 'date_of_birth'
         'OTHERS:'                 -> 'others'
         'DAT- supported'          -> 'dat_supported_dup'
+        'Nationality'             -> 'nationality_raw'  (new col; avoids collision with 'Nationality?')
+        'Other:'                  -> 'other'            (new col in complete dataset)
     """
     col = col.strip()
     # Handle the duplicate DAT column
     if col == "DAT- supported":
         return "dat_supported_dup"
+    # Handle new 'Nationality' column (bare, without '?') to avoid colliding
+    # with 'Nationality?' which also standardizes to 'nationality'
+    if col == "Nationality":
+        return "nationality_raw"
     # Replace % with pct
     col = col.replace("%", "pct_")
     col = col.replace("?", "")
@@ -692,6 +703,32 @@ def harmonize_categoricals(df: pd.DataFrame) -> pd.DataFrame:
         print(f"  Harmonized 'nationality': "
               f"{df['nationality'].value_counts().to_dict()}")
 
+    # --- Merge nationality_raw into nationality (new complete dataset) ---
+    # The complete dataset adds a bare 'Nationality' column (-> 'nationality_raw')
+    # that partially overlaps with 'Nationality?' (-> 'nationality').
+    # Fill any gaps in 'nationality' from 'nationality_raw', then drop it.
+    if "nationality_raw" in df.columns:
+        def harmonize_nat_raw(val):
+            if pd.isna(val):
+                return np.nan
+            val = str(val).strip().lower()
+            if val in ("n/a", "nan", ""):
+                return np.nan
+            if val == "filipino":
+                return "Filipino"
+            return val.title()
+        nat_raw_harmonized = df["nationality_raw"].apply(harmonize_nat_raw)
+        # Only fill where 'nationality' is still missing
+        if "nationality" in df.columns:
+            mask = df["nationality"].isna() & nat_raw_harmonized.notna()
+            df.loc[mask, "nationality"] = nat_raw_harmonized[mask]
+            filled = mask.sum()
+            if filled > 0:
+                print(f"  Filled {filled} missing 'nationality' values from 'nationality_raw'")
+        # Drop nationality_raw - it's been merged and is otherwise redundant
+        df = df.drop(columns=["nationality_raw"])
+        print(f"  Dropped 'nationality_raw' after merging into 'nationality'")
+
     # --- Diagnosis ---
     if "diagnosis" in df.columns:
         diag_map = {
@@ -972,6 +1009,7 @@ def drop_uninformative_columns(df: pd.DataFrame) -> pd.DataFrame:
     # Flag pre-defined uninformative columns
     flagged = [c for c in ALWAYS_DROP_COLUMNS if c in df.columns]
     print(f"  Flagged {len(flagged)} uninformative columns (retained): {flagged}")
+    # Note: 'nationality_raw' is merged into 'nationality' and dropped in Stage 4
 
     # Flag columns that are entirely null after cleaning
     all_null = df.columns[df.isnull().all()].tolist()
@@ -1133,7 +1171,7 @@ def impute_missing_mice(df_static: pd.DataFrame,
         imputer_static = IterativeImputer(
             max_iter=20,
             random_state=42,
-            sample_posterior=False,
+            sample_posterior=True,
         )
         df_static[num_cols] = imputer_static.fit_transform(df_static[num_cols])
         missing_after = df_static[num_cols].isnull().sum().sum()
@@ -1191,7 +1229,7 @@ def impute_missing_mice(df_static: pd.DataFrame,
         imputer_temporal = IterativeImputer(
             max_iter=20,
             random_state=42,
-            sample_posterior=False,
+            sample_posterior=True,
         )
         # Include month as a feature for the imputer (provides temporal context)
         impute_cols = ["month"] + temporal_num_cols
@@ -1460,6 +1498,7 @@ def encode_features(df_static: pd.DataFrame, df_temporal: pd.DataFrame):
         + list(ALWAYS_DROP_COLUMNS)             # uninformative / near-empty
         + ["weight", "height", "blood_pressure",  # raw text (parsed to numerics)
            "facility",                           # derived from source_file
+           "nationality_raw",                    # duplicate of nationality (new complete dataset)
            "regimen_type_at_end_of_treatment",   # end-of-treatment (leakage risk)
            "regimen_type_at_6th_month_of_treatment",  # mid-treatment (leakage risk)
            ]
@@ -1554,7 +1593,12 @@ def encode_features(df_static: pd.DataFrame, df_temporal: pd.DataFrame):
 # STAGE 10: SCALING  [MODEL PREPARATION]
 # ============================================================================
 
-def scale_features(df_static: pd.DataFrame, df_temporal: pd.DataFrame):
+def scale_features(
+    df_static_train: pd.DataFrame,
+    df_static_test: pd.DataFrame,
+    df_temporal_train: pd.DataFrame,
+    df_temporal_test: pd.DataFrame
+):
     """
     Stage 10 [MODEL PREPARATION]: Normalize numerical features using
     StandardScaler (zero mean, unit variance).
@@ -1567,46 +1611,92 @@ def scale_features(df_static: pd.DataFrame, df_temporal: pd.DataFrame):
     and preserves outlier information for subsequent capping.
 
     NOTE: Scaling is applied AFTER cleaning and imputation (Phase A)
-    and AFTER encoding (Stage 9). For future train/test splitting,
-    fit the scaler on training data only and transform test data
-    separately to prevent data leakage.
+    and AFTER encoding (Stage 9).
+
+    IMPORTANT:
+    Scalers are FIT ONLY on training data to prevent data leakage.
+    Test data is transformed separately using statistics learned from
+    training data only.
 
     Returns:
-        df_static, df_temporal (scaled)
-        scaler_static, scaler_temporal: fitted scalers for inverse transform
+        df_static_train, df_static_test
+        df_temporal_train, df_temporal_test
+        scaler_static, scaler_temporal:
+            fitted scalers for inverse transform
     """
+
     print("=" * 70)
     print("STAGE 10: Feature Scaling (StandardScaler)  [MODEL PREPARATION]")
     print("=" * 70)
 
+    # ------------------------------------------------------------------
+    # Static numerical columns
+    # ------------------------------------------------------------------
+
     # --- Static numerical columns ---
     static_num_cols = [c for c in NUMERICAL_COLUMNS_SCALE
-                       if c in df_static.columns]
+                       if c in df_static_train.columns]
 
     scaler_static = StandardScaler()
+
     if static_num_cols:
-        df_static[static_num_cols] = scaler_static.fit_transform(
-            df_static[static_num_cols]
+
+        # FIT ONLY ON TRAINING DATA
+        df_static_train[static_num_cols] = scaler_static.fit_transform(
+            df_static_train[static_num_cols]
         )
+
+        # TRANSFORM TEST DATA USING TRAINING STATISTICS
+        df_static_test[static_num_cols] = scaler_static.transform(
+            df_static_test[static_num_cols]
+        )
+
         print(f"  Scaled {len(static_num_cols)} static numeric columns: "
               f"{static_num_cols}")
 
+    # ------------------------------------------------------------------
+    # Temporal numerical columns
+    # ------------------------------------------------------------------
+
     # --- Temporal numerical columns ---
-    temporal_num_cols = [c for c in df_temporal.columns
+    temporal_num_cols = [c for c in df_temporal_train.columns
                          if c not in ("patient_id", "month")
-                         and pd.api.types.is_numeric_dtype(df_temporal[c])
-                         and df_temporal[c].nunique() > 2]  # skip binary
+                         and pd.api.types.is_numeric_dtype(
+                             df_temporal_train[c]
+                         )
+                         and df_temporal_train[c].nunique() > 2]
 
     scaler_temporal = StandardScaler()
+
     if temporal_num_cols:
-        df_temporal[temporal_num_cols] = scaler_temporal.fit_transform(
-            df_temporal[temporal_num_cols]
+
+        # FIT ONLY ON TRAINING DATA
+        df_temporal_train[temporal_num_cols] = (
+            scaler_temporal.fit_transform(
+                df_temporal_train[temporal_num_cols]
+            )
         )
+
+        # TRANSFORM TEST DATA USING TRAINING STATISTICS
+        df_temporal_test[temporal_num_cols] = (
+            scaler_temporal.transform(
+                df_temporal_test[temporal_num_cols]
+            )
+        )
+
         print(f"  Scaled {len(temporal_num_cols)} temporal numeric columns: "
               f"{temporal_num_cols}")
 
     print()
-    return df_static, df_temporal, scaler_static, scaler_temporal
+
+    return (
+        df_static_train,
+        df_static_test,
+        df_temporal_train,
+        df_temporal_test,
+        scaler_static,
+        scaler_temporal
+    )
 
 
 # ============================================================================
@@ -1998,7 +2088,7 @@ def export_model_ready_outputs(df_static: pd.DataFrame,
         f.write("PHASE A OUTPUT: HUMAN-READABLE CLEANED DATA\n")
         f.write("-" * 70 + "\n\n")
         f.write("cleaned_human_readable.csv\n")
-        f.write("  The fully cleaned version of the original combined_dataset.csv.\n")
+        f.write("  The fully cleaned version of the original combined_complete_dataset.csv.\n")
         f.write("  One row per patient, wide format (M0-M12 columns preserved).\n")
         f.write("  Contains human-readable categorical labels (e.g., 'Male',\n")
         f.write("  'Treatment Completed', 'Regimen 1') and numeric values in\n")
