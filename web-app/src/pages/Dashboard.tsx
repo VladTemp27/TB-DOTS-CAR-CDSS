@@ -1,7 +1,11 @@
+import { useMemo } from 'react'
 import { getAllPatients } from '../lib/storage'
 import { riskLabel, riskColor } from '../components/RiskBadge'
 import { AppHeader } from '../components/AppHeader'
 import type { Patient } from '../lib/storage'
+
+/** Standard DOTS short-course duration in months; patients with fewer records are flagged as due. */
+const DOTS_COURSE_MONTHS = 6
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -12,7 +16,7 @@ function latestProb(p: Patient): number {
 // ─── component ───────────────────────────────────────────────────────────────
 
 export function Dashboard() {
-  const patients = getAllPatients()
+  const patients = useMemo(() => getAllPatients(), [])
   const total = patients.length
 
   // ── summary card values ──────────────────────────────────────────────────
@@ -22,7 +26,7 @@ export function Dashboard() {
   const avgRisk  = total > 0
     ? patients.reduce((sum, p) => sum + latestProb(p), 0) / total
     : null
-  const dueCheckin   = patients.filter(p => p.monthlyRecords.length < 6).length
+  const dueCheckin   = patients.filter(p => p.monthlyRecords.length < DOTS_COURSE_MONTHS).length
   const onTreatment  = patients.filter(p => p.treatmentRegimen !== undefined).length
 
   // ── adherence ────────────────────────────────────────────────────────────
@@ -56,8 +60,8 @@ export function Dashboard() {
   const maxAge = Math.max(...ageBuckets.map(b => b.count), 1)
 
   // ── risk trends ───────────────────────────────────────────────────────────
-  const withTwoPreds = patients.filter(p => p.predictions.length >= 2)
-  const singlePred   = patients.length - withTwoPreds.length
+  const withTwoPreds     = patients.filter(p => p.predictions.length >= 2)
+  const excludedFromTrends = patients.length - withTwoPreds.length
   const improving  = withTwoPreds.filter(p => {
     const delta = (p.predictions.at(-1)!.failureProbability) - (p.predictions.at(-2)!.failureProbability)
     return delta < -0.05
@@ -144,7 +148,7 @@ export function Dashboard() {
             <section className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Risk Distribution</p>
 
-              {/* stacked bar */}
+              {/* stacked bar — highRisk + medRisk + lowRisk === total because riskLabel is exhaustive over all 3 tiers */}
               <div className="flex h-4 rounded-full overflow-hidden mb-3">
                 <div
                   className="bg-red-400 flex items-center justify-center"
@@ -265,16 +269,21 @@ export function Dashboard() {
                 {/* Sex */}
                 <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Sex</p>
-                  <div className="flex h-3 rounded-full overflow-hidden mb-3">
-                    <div
-                      className="bg-blue-400"
-                      style={{ width: `${total > 0 ? Math.round((maleCount / total) * 100) : 50}%` }}
-                    />
-                    <div
-                      className="bg-pink-400"
-                      style={{ width: `${total > 0 ? Math.round((femaleCount / total) * 100) : 50}%` }}
-                    />
-                  </div>
+                  {(() => {
+                    const sexTotal = maleCount + femaleCount || 1
+                    return (
+                      <div className="flex h-3 rounded-full overflow-hidden mb-3">
+                        <div
+                          className="bg-blue-400"
+                          style={{ width: `${Math.round((maleCount / sexTotal) * 100)}%` }}
+                        />
+                        <div
+                          className="bg-pink-400"
+                          style={{ width: `${Math.round((femaleCount / sexTotal) * 100)}%` }}
+                        />
+                      </div>
+                    )
+                  })()}
                   <div className="flex justify-between text-xs text-gray-600">
                     <span className="flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />
@@ -342,9 +351,9 @@ export function Dashboard() {
                     <div className="bg-red-400"   style={{ width: `${(worsening / trendTotal) * 100}%` }} />
                   </div>
 
-                  {singlePred > 0 && (
+                  {excludedFromTrends > 0 && (
                     <p className="text-xs text-gray-400">
-                      {singlePred} patient{singlePred !== 1 ? 's' : ''} excluded (only 1 prediction).
+                      {excludedFromTrends} patient{excludedFromTrends !== 1 ? 's' : ''} excluded (only 1 prediction).
                     </p>
                   )}
                 </>

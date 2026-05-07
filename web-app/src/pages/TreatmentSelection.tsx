@@ -41,7 +41,7 @@ export function TreatmentSelection() {
     if (!id || !selected) return
     const p = getPatient(id)
     if (p) {
-      p.treatmentRegimen = selected
+      p.treatmentRegimen = selected as 'hrze' | 'mdr' | 'xdr'
       p.treatmentStartDate = startDate
       savePatient(p)
     }
