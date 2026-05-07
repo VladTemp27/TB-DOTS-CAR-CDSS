@@ -6,6 +6,7 @@ interface Props {
 
 const NAV_ITEMS = [
   { path: '/', label: 'Patient Overview', icon: '🫁' },
+  { path: '/dashboard', label: 'Dashboard', icon: '📊' },
   { path: '/patient/new', label: 'New Patient', icon: '➕' },
 ]
 
