@@ -61,7 +61,6 @@ class TBAnalysisPipeline:
             "Percent": (counts.values / total * 100).round(2),
         })
 
-    # FIX: Added a width parameter to allow wider figures for congested tables
     def save_table_svg(self, df: pd.DataFrame, name: str, width: float = 8.0) -> Path:
         fig, ax = plt.subplots(figsize=(width, max(1.6, 0.32 * len(df) + 1)))
         ax.axis("off")
@@ -76,7 +75,6 @@ class TBAnalysisPipeline:
         table.scale(1, 1.2)
         return self._save_fig(fig, name)
 
-    # FIX: Applied the string/list cast to prevent Matplotlib float/NaN crashes
     def save_bar_svg(self, df: pd.DataFrame, x: str, y: str, name: str, title: str) -> Path:
         fig, ax = plt.subplots(figsize=(8, 5))
         ax.bar(df[x].fillna("").astype(str).tolist(), df[y].tolist(), color="steelblue", edgecolor="black")
@@ -106,7 +104,6 @@ class TBAnalysisPipeline:
         fig.tight_layout()
         return self._save_fig(fig, name)
 
-    # FIX: Added use_legend parameter for congested pie charts
     def save_pie_svg(self, df: pd.DataFrame, labels: str, values: str, name: str, title: str, use_legend: bool = False) -> Path:
         fig, ax = plt.subplots(figsize=(8, 6) if use_legend else (6, 6))
         if use_legend:
@@ -206,7 +203,6 @@ class TBAnalysisPipeline:
         outputs: dict[str, Path] = {}
 
         missing_summary = self.compute_missing_summary(df)
-        # FIX Issue 3: Wider table
         outputs["missing_data_summary"] = self.save_table_svg(missing_summary, "missing_data_summary", width=11.0)
 
         key_columns = [
@@ -220,7 +216,6 @@ class TBAnalysisPipeline:
         ]
         missing_by_year = self.compute_missing_by_year(df, key_columns)
         if not missing_by_year.empty:
-            # FIX Issue 2: Wider table
             outputs["missing_data_by_year"] = self.save_table_svg(
                 missing_by_year.reset_index(),
                 "missing_data_by_year",
@@ -330,7 +325,6 @@ class TBAnalysisPipeline:
 
         if "Registration Group" in df.columns:
             reg_counts = self.compute_value_counts(df, "Registration Group", top_n=10)
-            # FIX Issue 5: Converted to horizontal bar chart
             outputs["registration_group"] = self.save_barh_svg(
                 reg_counts,
                 "Registration Group",
@@ -358,7 +352,6 @@ class TBAnalysisPipeline:
                 "treatment_outcomes",
                 "Treatment Outcomes",
             )
-            # FIX Issue 7: Added use_legend=True for a cleaner pie chart
             outputs["treatment_outcomes_pie"] = self.save_pie_svg(
                 outcome_counts,
                 "Outcome/Status",
@@ -376,7 +369,6 @@ class TBAnalysisPipeline:
             )
             if "Year" in df.columns:
                 outcome_by_year = pd.crosstab(df["Year"], outcome_category, normalize="index") * 100
-                # FIX Issue 4: Wider table
                 outputs["outcome_trends_by_year"] = self.save_table_svg(
                     outcome_by_year.reset_index(),
                     "outcome_trends_by_year",
@@ -409,7 +401,6 @@ class TBAnalysisPipeline:
 
         if interval_stats:
             interval_df = pd.DataFrame(interval_stats)
-            # FIX Issue 6: Wider table
             outputs["time_interval_summary"] = self.save_table_svg(
                 interval_df,
                 "time_interval_summary",
