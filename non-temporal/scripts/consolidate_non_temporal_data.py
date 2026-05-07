@@ -18,9 +18,9 @@ from sklearn.impute import IterativeImputer
 # -----------------------------
 # CONFIG
 # -----------------------------
-INPUT_DIR = r"dataset\non-temporal\yearly_raw"
-OUTPUT_CLEAN = r"dataset\non-temporal\2015-2025-consolidated-clean.csv"
-OUTPUT_ML = r"dataset\non-temporal\2015-2025-ml-ready.csv"
+INPUT_DIR = os.path.join("..", "..", "dataset", "non-temporal", "yearly_raw")
+OUTPUT_CLEAN = os.path.join("..", "..", "dataset", "non-temporal", "2015-2025-consolidated-clean.csv")
+OUTPUT_ML = os.path.join("..", "..", "dataset", "non-temporal", "2015-2025-ml-ready.csv")
 
 
 # -----------------------------
