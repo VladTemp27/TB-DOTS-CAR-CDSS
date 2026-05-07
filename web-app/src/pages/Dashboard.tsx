@@ -140,6 +140,53 @@ export function Dashboard() {
               </div>
             </section>
 
+            {/* ── [2] Risk Distribution ─────────────────────────────── */}
+            <section className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Risk Distribution</p>
+
+              {/* stacked bar */}
+              <div className="flex h-4 rounded-full overflow-hidden mb-3">
+                <div
+                  className="bg-red-400 flex items-center justify-center"
+                  style={{ width: `${(highRisk / total) * 100}%` }}
+                >
+                  {highRisk / total > 0.15 && (
+                    <span className="text-white text-xs font-bold">{highRisk}</span>
+                  )}
+                </div>
+                <div
+                  className="bg-orange-400 flex items-center justify-center"
+                  style={{ width: `${(medRisk / total) * 100}%` }}
+                >
+                  {medRisk / total > 0.15 && (
+                    <span className="text-white text-xs font-bold">{medRisk}</span>
+                  )}
+                </div>
+                <div
+                  className="bg-green-400 flex items-center justify-center"
+                  style={{ width: `${(lowRisk / total) * 100}%` }}
+                >
+                  {lowRisk / total > 0.15 && (
+                    <span className="text-white text-xs font-bold">{lowRisk}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* legend */}
+              <div className="flex gap-4 flex-wrap">
+                {[
+                  { label: 'HIGH', count: highRisk, color: 'bg-red-400' },
+                  { label: 'MED',  count: medRisk,  color: 'bg-orange-400' },
+                  { label: 'LOW',  count: lowRisk,  color: 'bg-green-400' },
+                ].map(({ label, count, color }) => (
+                  <span key={label} className="flex items-center gap-1.5 text-xs text-gray-600">
+                    <span className={`w-2 h-2 rounded-full ${color}`} />
+                    {label} — {count}
+                  </span>
+                ))}
+              </div>
+            </section>
+
             {/* sections will be added in subsequent tasks */}
           </>
         )}
