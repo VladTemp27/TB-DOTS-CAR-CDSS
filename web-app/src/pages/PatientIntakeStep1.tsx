@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { StepProgress } from '../components/StepProgress'
-import { getChoices } from '../lib/inference'
+import { getChoices, getCitiesForProvince } from '../lib/inference'
 import { PageFooter } from '../components/PageFooter'
 
 // Persisted across steps in sessionStorage
@@ -26,7 +26,7 @@ export function PatientIntakeStep1() {
 
   const sexChoices = getChoices('Sex')
   const provinceChoices = getChoices('Province')
-  const cityChoices = getChoices('City_Municipality')
+  const cityChoices = getCitiesForProvince(province)
   const regGroupChoices = getChoices('Registration_Group')
 
   const valid = name && age && sex && province && registrationGroup
@@ -112,10 +112,10 @@ export function PatientIntakeStep1() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Province *</label>
             <select
               value={province}
-              onChange={e => setProvince(e.target.value)}
+              onChange={e => { setProvince(e.target.value); setCity('') }}
               className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary bg-white"
             >
-              <option value="">Select province</option>
+              <option value="">Select Province</option>
               {provinceChoices.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
@@ -125,9 +125,10 @@ export function PatientIntakeStep1() {
             <select
               value={city}
               onChange={e => setCity(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary bg-white"
+              disabled={!province}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
             >
-              <option value="">Select city/municipality</option>
+              <option value="">{province ? 'Select city/municipality' : 'Select a Province first'}</option>
               {cityChoices.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
