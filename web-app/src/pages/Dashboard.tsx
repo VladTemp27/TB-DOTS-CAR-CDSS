@@ -187,6 +187,49 @@ export function Dashboard() {
               </div>
             </section>
 
+            {/* ── [3] Adherence Overview ────────────────────────────── */}
+            <section className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Adherence Overview</p>
+
+              {/* short explanation */}
+              <p className="text-xs text-gray-500 leading-relaxed mb-4">
+                Tracks whether patients took their medication as prescribed during monthly check-ins.{' '}
+                <span className="text-green-600 font-semibold">Full</span> = all doses taken,{' '}
+                <span className="text-orange-500 font-semibold">Partial</span> = some missed,{' '}
+                <span className="text-red-500 font-semibold">Poor</span> = frequently missed.
+              </p>
+
+              {totalRecords === 0 ? (
+                <p className="text-xs text-gray-400 italic">No monthly check-in records yet.</p>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-2.5">
+                    {[
+                      { label: 'Full',    count: fullAdh,    color: 'bg-green-400' },
+                      { label: 'Partial', count: partialAdh, color: 'bg-orange-400' },
+                      { label: 'Poor',    count: poorAdh,    color: 'bg-red-400' },
+                    ].map(({ label, count, color }) => (
+                      <div key={label} className="flex items-center gap-3">
+                        <span className="text-xs text-gray-700 w-12">{label}</span>
+                        <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${color}`}
+                            style={{ width: `${Math.round((count / totalRecords) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-semibold text-gray-600 w-8 text-right">
+                          {Math.round((count / totalRecords) * 100)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-3">
+                    Across {totalRecords} total monthly check-in record{totalRecords !== 1 ? 's' : ''}
+                  </p>
+                </>
+              )}
+            </section>
+
             {/* sections will be added in subsequent tasks */}
           </>
         )}
