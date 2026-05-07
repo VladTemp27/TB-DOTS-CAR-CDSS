@@ -275,8 +275,8 @@ def remove_identifiers(df: pd.DataFrame) -> pd.DataFrame:
 
     # Reassign 'no' to a clean sequential index (1-based)
     if "no" in df.columns:
-        df["no"] = range(1, len(df) + 1)
-        print(f"  Reassigned 'no' column to sequential index 1..{len(df)}")
+        df["no"] = range(0, len(df))
+        print(f"  Reassigned 'no' column to sequential index 0..{len(df) - 1}")
 
     flagged = [c for c in ID_COLUMNS_TO_DROP if c in df.columns]
     print(f"  Flagged {len(flagged)} identifier columns (retained): {flagged}")
