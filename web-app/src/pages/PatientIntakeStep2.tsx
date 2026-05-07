@@ -133,15 +133,6 @@ export function PatientIntakeStep2() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Source of Patient *</label>
-            <select value={sourceOfPatient} onChange={e => setSourceOfPatient(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary bg-white">
-              <option value="">Select</option>
-              {sourceChoices.map(v => <option key={v} value={v}>{v}</option>)}
-            </select>
-          </div>
-
-          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Case Type *</label>
             <select value={type} onChange={e => setType(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary bg-white">
