@@ -43,7 +43,7 @@ Design rationale:
         and Phase B without re-running the cleaning pipeline.
 
 Author: TB-DOTS CAR CDSS Research Team
-Date:   2025
+Date:   2025 (revised 2026)
 """
 
 import os
@@ -260,14 +260,23 @@ def remove_identifiers(df: pd.DataFrame) -> pd.DataFrame:
     but are excluded from model features in Phase B.
 
     Flagged columns:
-        - No. (patient row number)
+        - No. (patient row number) -> reassigned to sequential 1..N
         - Source_File (data provenance)
         - Name of Diagnosing Facility (facility ID)
         - Name of Treatment Unit (facility ID)
+
+    The 'no' column is reassigned to a clean sequential integer index
+    (1, 2, 3, ...) so downstream exports have a stable, unambiguous row
+    number regardless of the heterogeneous original identifiers.
     """
     print("=" * 70)
     print("STAGE 2: Flag Identifiers (Patient Privacy)")
     print("=" * 70)
+
+    # Reassign 'no' to a clean sequential index (1-based)
+    if "no" in df.columns:
+        df["no"] = range(1, len(df) + 1)
+        print(f"  Reassigned 'no' column to sequential index 1..{len(df)}")
 
     flagged = [c for c in ID_COLUMNS_TO_DROP if c in df.columns]
     print(f"  Flagged {len(flagged)} identifier columns (retained): {flagged}")
@@ -321,14 +330,39 @@ def parse_blood_pressure(val):
 
 
 def parse_o2_sat(val) -> float:
-    """Extract numeric O2 saturation from strings like '96%', '98%'."""
+    """
+    Extract numeric O2 saturation in percentage points (70-100 scale).
+
+    Raw data mixes two formats:
+        - Decimal fraction: 0.95  -> 95.0%
+        - Percentage:       95.0  -> 95.0%
+        - With suffix:      '98%' -> 98.0%
+        - Garbage / N/A    -> NaN
+
+    Values that cannot be mapped to the 70-100 clinical range after
+    unit resolution are returned as NaN so MICE does not use corrupt
+    seeds.
+    """
     if pd.isna(val):
         return np.nan
-    val = str(val).strip().replace("%", "").strip()
+    raw = str(val).strip()
+    if raw.lower() in ("n/a", "na", "nan", ""):
+        return np.nan
+    # Strip % suffix and any trailing junk characters
+    raw = re.sub(r"[%%\s]+$", "", raw).strip()
     try:
-        return float(val)
+        v = float(raw)
     except ValueError:
         return np.nan
+    # Decimal fraction encoding (e.g. 0.95 means 95%)
+    # Use threshold <= 2.0 to catch values like 1.0 (100%) safely
+    if v <= 2.0:
+        v = v * 100.0
+    # Clamp to plausible clinical range; anything outside is set to NaN
+    # so it is imputed rather than propagating a corrupt value
+    if v < 70.0 or v > 100.0:
+        return np.nan
+    return round(v, 2)
 
 
 def parse_adherence(val) -> float:
@@ -459,9 +493,13 @@ def clean_and_coerce_types(df: pd.DataFrame) -> pd.DataFrame:
 
     # --- Fix future DOBs (century-swap for 2-digit year ambiguity) ---
     # If DOB year > data_year, the century was likely mis-assigned (e.g., 2063 -> 1963).
+    # Also catches the reverse error: DOB year < 1920 where the recorded age implies
+    # the patient was born in the 20th century (e.g. 1898 should be 1998).
     if "date_of_birth" in df.columns:
         dob = df["date_of_birth"]
         data_yr = df["data_year"] if "data_year" in df.columns else pd.Series(2025, index=df.index)
+
+        # Forward fix: DOB is in the future
         future_mask = dob.notna() & (dob.dt.year > data_yr)
         n_fixed = future_mask.sum()
         if n_fixed > 0:
@@ -469,6 +507,23 @@ def clean_and_coerce_types(df: pd.DataFrame) -> pd.DataFrame:
                 lambda d: d.replace(year=d.year - 100)
             )
             print(f"  Fixed {n_fixed} future DOBs by subtracting 100 years")
+
+        # Backward fix: DOB year < 1920 but recorded age suggests a modern birth year.
+        # Computed age from corrected DOB (add 100 years) must be plausible (0-110).
+        dob_refreshed = df["date_of_birth"]
+        ancient_mask = dob_refreshed.notna() & (dob_refreshed.dt.year < 1920)
+        if ancient_mask.sum() > 0:
+            def fix_ancient_dob(row):
+                d = row["date_of_birth"]
+                corrected_year = d.year + 100
+                corrected_age = (pd.Timestamp(str(int(row.get("data_year", 2025))) + "-06-01") -
+                                 d.replace(year=corrected_year)).days / 365.25
+                if 0 <= corrected_age <= 110:
+                    return d.replace(year=corrected_year)
+                return d
+            n_ancient = ancient_mask.sum()
+            df.loc[ancient_mask, "date_of_birth"] = df[ancient_mask].apply(fix_ancient_dob, axis=1)
+            print(f"  Fixed {n_ancient} historically implausible DOBs (pre-1920) by adding 100 years")
 
     # --- Fix future treatment/clinical dates (century-swap) ---
     # Clinical dates should not be more than 2 years after data_year.
@@ -488,6 +543,21 @@ def clean_and_coerce_types(df: pd.DataFrame) -> pd.DataFrame:
                     lambda d: d.replace(year=d.year - 10)
                 )
                 print(f"  Fixed {n_fixed} future dates in '{col}' by subtracting 10 years")
+
+    # --- Enforce date ordering: treatment_start_date >= date_of_diagnosis ---
+    # Treatment cannot logically begin before a diagnosis is made.
+    # Where this is violated, set treatment_start_date = date_of_diagnosis.
+    if "treatment_start_date" in df.columns and "date_of_diagnosis" in df.columns:
+        bad_order = (
+            df["treatment_start_date"].notna()
+            & df["date_of_diagnosis"].notna()
+            & (df["treatment_start_date"] < df["date_of_diagnosis"])
+        )
+        n_bad = bad_order.sum()
+        if n_bad > 0:
+            df.loc[bad_order, "treatment_start_date"] = df.loc[bad_order, "date_of_diagnosis"]
+            print(f"  Fixed {n_bad} rows where treatment_start_date < date_of_diagnosis "
+                  f"(set to date_of_diagnosis)")
 
     # --- Baseline Weight -> numeric kg (original text column standardized) ---
     if "weight" in df.columns:
@@ -596,15 +666,15 @@ def clean_and_coerce_types(df: pd.DataFrame) -> pd.DataFrame:
     print("\n  --- Clinical Sanity Checks ---")
     # Define clinically plausible ranges: (column, min, max, unit)
     clinical_ranges = [
-        ("age",              0,    120,  "years"),
+        ("age",              0,    110,  "years"),
         ("weight_kg",       10,    180,  "kg"),
         ("height_cm",       80,    220,  "cm"),
-        ("bp_systolic",     40,    300,  "mmHg"),
-        ("bp_diastolic",    20,    200,  "mmHg"),
+        ("bp_systolic",     60,    220,  "mmHg"),
+        ("bp_diastolic",    30,    140,  "mmHg"),
         ("heart_rate",      20,    250,  "bpm"),
         ("respiratory_rate", 4,     60,  "breaths/min"),
         ("temperature",     30,     45,  "°C"),
-        ("o2_sat",           0,    100,  "%"),
+        ("o2_sat",          70,    100,  "%"),
     ]
     for col, cmin, cmax, unit in clinical_ranges:
         if col in df.columns and pd.api.types.is_numeric_dtype(df[col]):
@@ -616,6 +686,11 @@ def clean_and_coerce_types(df: pd.DataFrame) -> pd.DataFrame:
                       f"{above} above {cmax} {unit}")
             else:
                 print(f"    {col}: all values in range [{cmin}-{cmax} {unit}]")
+
+    # --- Round age to nearest integer (no decimal ages in clinical records) ---
+    if "age" in df.columns and pd.api.types.is_numeric_dtype(df["age"]):
+        df["age"] = df["age"].round(0).astype("Int64")  # nullable integer
+        print(f"    age: rounded to integer (no decimals)")
 
     # Monthly weight, height, adherence, doses, and test results sanity checks
     for m in MONTH_RANGE:
@@ -763,11 +838,20 @@ def harmonize_categoricals(df: pd.DataFrame) -> pd.DataFrame:
     # --- Treatment Regimen ---
     if "treatment_regimen" in df.columns:
         reg_map = {
-            "1": "Regimen 1", "regimen 1": "Regimen 1",
+            # Numeric string variants
+            "1": "Regimen 1", "1.0": "Regimen 1",
+            "2": "Regimen 2", "2.0": "Regimen 2",
+            # Named variants
+            "regimen 1": "Regimen 1", "regimen i": "Regimen 1",
             "cat 1": "Regimen 1", "i": "Regimen 1",
-            "2": "Regimen 2", "regimen 2": "Regimen 2",
+            "regimen 2": "Regimen 2",
             "1a": "Regimen 1a", "ia": "Regimen 1a",
-            "cannot remember": np.nan,
+            # Standard drug-code shorthand (HRZE = isoniazid/rifampicin/pyrazinamide/ethambutol)
+            "hrze": "Regimen 1", "2hrze*/4hr": "Regimen 1",
+            "2hrze/4hr": "Regimen 1", "2hrze*4hr": "Regimen 1",
+            "2hrze 4hr": "Regimen 1",
+            # Unmappable
+            "-": np.nan, "cannot remember": np.nan,
         }
         df["treatment_regimen"] = (
             df["treatment_regimen"].astype(str).str.strip().str.lower()
@@ -1264,13 +1348,13 @@ def impute_missing_mice(df_static: pd.DataFrame,
     post_mice_ranges = {
         "weight_kg":        (10, 180),
         "height_cm":       (80, 220),
-        "bp_systolic":     (40, 300),
-        "bp_diastolic":    (20, 200),
+        "bp_systolic":     (60, 220),
+        "bp_diastolic":    (30, 140),
         "heart_rate":      (20, 250),
         "respiratory_rate": (4, 60),
         "temperature":     (30, 45),
-        "o2_sat":           (0, 100),
-        "age":              (0, 120),
+        "o2_sat":           (70, 100),
+        "age":              (0, 110),
     }
     for col, (cmin, cmax) in post_mice_ranges.items():
         if col in df_static.columns and pd.api.types.is_numeric_dtype(df_static[col]):
@@ -1301,6 +1385,31 @@ def impute_missing_mice(df_static: pd.DataFrame,
                 bound_str = f"[{cmin}, {cmax}]" if cmax is not None else f"[{cmin}, inf)"
                 print(f"    Temporal '{feat}': clipped {before_clip} values "
                       f"to {bound_str}")
+
+    # Re-apply integer rounding to age after MICE (imputer may introduce decimals)
+    if "age" in df_static.columns and pd.api.types.is_numeric_dtype(df_static["age"]):
+        df_static["age"] = df_static["age"].round(0).astype("Int64")
+        print("    Static 'age': re-rounded to integer after MICE")
+
+    # --- Enforce monotonically non-decreasing cumulative doses ---
+    # MICE imputes monthly columns independently and has no knowledge that
+    # cumulative_doses_taken must be >= its previous month's value.
+    # Repair by taking the running maximum per patient (forward direction only).
+    cum_col = "cumulative_doses_taken"
+    if cum_col in df_temporal.columns:
+        df_temporal = df_temporal.sort_values(["patient_id", "month"])
+        before_violations = 0
+        for pid, grp in df_temporal.groupby("patient_id"):
+            vals = grp[cum_col].values
+            for i in range(1, len(vals)):
+                if vals[i] < vals[i - 1]:
+                    before_violations += 1
+        df_temporal[cum_col] = (
+            df_temporal.groupby("patient_id")[cum_col]
+            .cummax()
+        )
+        print(f"    Temporal 'cumulative_doses_taken': repaired {before_violations} "
+              f"monotonicity violations (running max per patient)")
 
     print()
     return df_static, df_temporal
@@ -1367,10 +1476,10 @@ def export_cleaned_human_readable_dataset(df_static: pd.DataFrame,
 
     # --- Keep patient_id for traceability ---
 
-    # --- Format date columns as readable strings ---
+    # --- Format date columns as MM/DD/YYYY for human-readable output ---
     for col in df_clean.columns:
         if pd.api.types.is_datetime64_any_dtype(df_clean[col]):
-            df_clean[col] = df_clean[col].dt.strftime("%Y-%m-%d")
+            df_clean[col] = df_clean[col].dt.strftime("%m/%d/%Y")
 
     # --- Round numeric columns for readability ---
     numeric_cols = df_clean.select_dtypes(include=["number"]).columns

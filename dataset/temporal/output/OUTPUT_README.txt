@@ -15,7 +15,7 @@ PHASE A OUTPUT: HUMAN-READABLE CLEANED DATA
 ----------------------------------------------------------------------
 
 cleaned_human_readable.csv
-  The fully cleaned version of the original combined_dataset.csv.
+  The fully cleaned version of the original combined_complete_dataset.csv.
   One row per patient, wide format (M0-M12 columns preserved).
   Contains human-readable categorical labels (e.g., 'Male',
   'Treatment Completed', 'Regimen 1') and numeric values in
@@ -59,7 +59,7 @@ MODEL-READY FILES (NumPy arrays)
 ----------------------------------------------------------------------
 
 X_temporal.npy
-  Shape: (205, 13, 8)
+  Shape: (599, 13, 8)
   3D NumPy array: (n_patients, n_timesteps, n_features).
   Each patient has 13 time steps (M0 through M12), each with
   8 features (doses, adherence, weight, height,
@@ -68,7 +68,7 @@ X_temporal.npy
   Usage: X = np.load('X_temporal.npy')
 
 X_static.npy
-  Shape: (205, 78)
+  Shape: (599, 111)
   2D NumPy array: (n_patients, n_static_features).
   Contains baseline demographics, diagnostics, and clinical
   indicators - all encoded, scaled, and outlier-capped.
@@ -77,7 +77,7 @@ X_static.npy
   Usage: X = np.load('X_static.npy')
 
 X_combined_flat.npy
-  Shape: (205, 182)
+  Shape: (599, 215)
   2D NumPy array: static features + flattened temporal features
   concatenated side by side. Each patient is one row.
   Designed for tabular ML models (XGBoost, LightGBM, etc.)
@@ -85,7 +85,7 @@ X_combined_flat.npy
   Usage: X = np.load('X_combined_flat.npy')
 
 patient_ids.npy
-  Shape: (205,)
+  Shape: (599,)
   1D array of integer patient IDs (0-indexed row numbers).
   Maps each row in X_temporal / X_static / X_combined_flat
   back to the corresponding patient.
