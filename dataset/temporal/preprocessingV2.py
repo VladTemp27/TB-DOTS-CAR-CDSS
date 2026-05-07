@@ -1703,10 +1703,8 @@ def encode_features(df_static: pd.DataFrame, df_temporal: pd.DataFrame):
 # ============================================================================
 
 def scale_features(
-    df_static_train: pd.DataFrame,
-    df_static_test: pd.DataFrame,
-    df_temporal_train: pd.DataFrame,
-    df_temporal_test: pd.DataFrame
+    df_static: pd.DataFrame,
+    df_temporal: pd.DataFrame,
 ):
     """
     Stage 10 [MODEL PREPARATION]: Normalize numerical features using
@@ -1722,90 +1720,54 @@ def scale_features(
     NOTE: Scaling is applied AFTER cleaning and imputation (Phase A)
     and AFTER encoding (Stage 9).
 
-    IMPORTANT:
-    Scalers are FIT ONLY on training data to prevent data leakage.
-    Test data is transformed separately using statistics learned from
-    training data only.
+    This function fits and transforms the full dataset in one pass.
+    When a proper train/test split is introduced (recommended before
+    model training), call this function on the training split only,
+    then use scaler_static.transform() and scaler_temporal.transform()
+    to scale the held-out test split — never refit on test data.
 
     Returns:
-        df_static_train, df_static_test
-        df_temporal_train, df_temporal_test
-        scaler_static, scaler_temporal:
-            fitted scalers for inverse transform
+        df_static:        scaled in-place
+        df_temporal:      scaled in-place
+        scaler_static:    fitted StandardScaler for static features
+        scaler_temporal:  fitted StandardScaler for temporal features
     """
 
     print("=" * 70)
     print("STAGE 10: Feature Scaling (StandardScaler)  [MODEL PREPARATION]")
     print("=" * 70)
 
-    # ------------------------------------------------------------------
-    # Static numerical columns
-    # ------------------------------------------------------------------
-
     # --- Static numerical columns ---
     static_num_cols = [c for c in NUMERICAL_COLUMNS_SCALE
-                       if c in df_static_train.columns]
+                       if c in df_static.columns]
 
     scaler_static = StandardScaler()
 
     if static_num_cols:
-
-        # FIT ONLY ON TRAINING DATA
-        df_static_train[static_num_cols] = scaler_static.fit_transform(
-            df_static_train[static_num_cols]
+        df_static[static_num_cols] = scaler_static.fit_transform(
+            df_static[static_num_cols]
         )
-
-        # TRANSFORM TEST DATA USING TRAINING STATISTICS
-        df_static_test[static_num_cols] = scaler_static.transform(
-            df_static_test[static_num_cols]
-        )
-
         print(f"  Scaled {len(static_num_cols)} static numeric columns: "
               f"{static_num_cols}")
 
-    # ------------------------------------------------------------------
-    # Temporal numerical columns
-    # ------------------------------------------------------------------
-
     # --- Temporal numerical columns ---
-    temporal_num_cols = [c for c in df_temporal_train.columns
+    temporal_num_cols = [c for c in df_temporal.columns
                          if c not in ("patient_id", "month")
-                         and pd.api.types.is_numeric_dtype(
-                             df_temporal_train[c]
-                         )
-                         and df_temporal_train[c].nunique() > 2]
+                         and pd.api.types.is_numeric_dtype(df_temporal[c])
+                         and df_temporal[c].nunique() > 2]
 
     scaler_temporal = StandardScaler()
 
     if temporal_num_cols:
-
-        # FIT ONLY ON TRAINING DATA
-        df_temporal_train[temporal_num_cols] = (
-            scaler_temporal.fit_transform(
-                df_temporal_train[temporal_num_cols]
-            )
+        df_temporal[temporal_num_cols] = scaler_temporal.fit_transform(
+            df_temporal[temporal_num_cols]
         )
-
-        # TRANSFORM TEST DATA USING TRAINING STATISTICS
-        df_temporal_test[temporal_num_cols] = (
-            scaler_temporal.transform(
-                df_temporal_test[temporal_num_cols]
-            )
-        )
-
         print(f"  Scaled {len(temporal_num_cols)} temporal numeric columns: "
               f"{temporal_num_cols}")
 
     print()
 
-    return (
-        df_static_train,
-        df_static_test,
-        df_temporal_train,
-        df_temporal_test,
-        scaler_static,
-        scaler_temporal
-    )
+    return df_static, df_temporal, scaler_static, scaler_temporal
 
 
 # ============================================================================
@@ -2325,11 +2287,13 @@ def prepare_model_ready_dataset(df_static: pd.DataFrame,
     )
 
     # Stage 10: Feature scaling (StandardScaler: zero mean, unit variance)
-    # NOTE: For train/test splitting, fit scaler on training data only
-    df_static, _, df_temporal, _, scaler_static, scaler_temporal = scale_features(
-        df_static, df_static.copy(),
-        df_temporal, df_temporal.copy()
-)
+    # NOTE: This fits on the full dataset. When train/test splitting is
+    # introduced, call scale_features() on the training split only, then
+    # use scaler_static.transform() / scaler_temporal.transform() on the
+    # test split to avoid leaking test statistics into the scaler.
+    df_static, df_temporal, scaler_static, scaler_temporal = scale_features(
+        df_static, df_temporal
+    )
 
     # Stage 11: Outlier detection & capping (on scaled data)
     df_static, df_temporal, outlier_report = detect_and_cap_outliers(
