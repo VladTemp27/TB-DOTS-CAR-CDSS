@@ -1,0 +1,42 @@
+name: UI Configuration
+description: Theme, layout, styling, or behavior changes to existing UI
+title: "[UI] "
+labels: ["ui"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What UI change needs to be made?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: affected_areas
+    attributes:
+      label: Affected UI Areas
+      options:
+        - label: Visual Styling (colors, typography, spacing)
+        - label: Layout & Structure (page layout, sidebar, grid)
+        - label: Component Behavior (toggles, defaults, display logic)
+        - label: Form Configuration (fields, validation, labels)
+        - label: Responsive / Breakpoints
+        - label: Accessibility
+
+  - type: textarea
+    id: current_state
+    attributes:
+      label: Current State
+      description: What does the UI currently look like or do?
+
+  - type: textarea
+    id: expected_output
+    attributes:
+      label: Expected Output
+      description: What should it look like or do after the change? (mockup, description, or reference)
+
+  - type: textarea
+    id: references
+    attributes:
+      label: Screenshots / References
+      description: Attach screenshots, Figma links, or design references if available
