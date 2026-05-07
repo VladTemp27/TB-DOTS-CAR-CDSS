@@ -1,0 +1,86 @@
+==========================================================================================
+XLSX STRUCTURE ANALYSIS REPORT
+==========================================================================================
+
+SUMMARY
+------------------------------------------------------------------------------------------
+File: RAW DATA.xlsx
+Total Sheets: 35
+Total Barangays: 15
+Total Years: 10 (2016-2025)
+Total Patients (all sheets): 26022
+Unique Columns: 156
+
+CONVERSION RECOMMENDATION
+------------------------------------------------------------------------------------------
+Strategy: Export each sheet as a separate CSV file
+Output naming: {barangay}_{year}.csv
+Column handling:
+  - Columns 1–38: Static patient/clinical data (keep as-is)
+  - Columns 39+: Monthly monitoring data (keep wide format for now)
+  - Sparse columns: Mark for exclusion in downstream processing
+
+COLUMN STRUCTURE (sample from first sheet)
+------------------------------------------------------------------------------------------
+Sheet: Pacdal - 2024 (DONE)
+  Static columns (1–38): 38
+    Sample: No., Name of Diagnosing Facility, Date of Birth...
+  Monthly columns: 73
+    Month 0: Unnamed: 39, Unnamed: 40, Unnamed: 41, Unnamed: 42, Unnamed: 43, Unnamed: 44, Unnamed: 45
+    Month 1: Unnamed: 47, Unnamed: 48, Unnamed: 49, Unnamed: 50, Unnamed: 51, Unnamed: 52, Unnamed: 53
+  Sparse columns (>90% null): 0
+
+ALL SHEETS SUMMARY
+------------------------------------------------------------------------------------------
+Sheet Name                               Barangay                  Year   Rows   Cols  
+------------------------------------------------------------------------------------------
+Pacdal - 2024 (DONE)                     Pacdal                    2024   998    111   
+ PACDAL 2022 (DONE)                      PACDAL  (DONE             2022   998    122   
+Pacdal - 2021 (DONE)                     Pacdal                    2021   999    111   
+Pacdal - 2020 (DONE)                     Pacdal                    2020   999    111   
+Pacdal - 2018 (DONE)                     Pacdal                    2018   999    113   
+Pacdal - 2017 (DONE)                     Pacdal                    2017   999    111   
+Pacdal-2016(done)                        Pacdal                    2016   999    113   
+Eng Hill - 2023 (done)                   Eng Hill                  2023   998    104   
+Eng Hill - 2025 (done)                   Eng Hill                  2025   995    104   
+Scout Barrio - 2021 (Done)               Scout Barrio              2021   36     112   
+Scout Barrio - 2022 (Done)               Scout Barrio              2022   14     136   
+Loakan - 2025 (Done)                     Loakan                    2025   25     136   
+Quirino Hill - 2019                      Quirino Hill              2019   17     136   
+Quirino Hill - 2021                      Quirino Hill              2021   19     136   
+Quirino Hill - 2020                      Quirino Hill              2020   22     136   
+Quirino Hill - 2022                      Quirino Hill              2022   19     136   
+Quirino Hill - 2023                      Quirino Hill              2023   19     136   
+Quirino Hill - 2024                      Quirino Hill              2024   19     136   
+Campo Filipino - 2025 (Done exc          Campo Filipino            2025   998    111   
+Campo Filipino - 2024 (Done)             Campo Filipino            2024   992    135   
+Asin A - 2025                            Asin A                    2025   992    135   
+Asin A - 2024                            Asin A                    2024   992    135   
+Asin - 2023                              Asin                      2023   992    135   
+City Camp 2023 (Done)                    City Camp  (Done          2023   992    135   
+Atab - 2023                              Atab                      2023   992    135   
+Atab - 2022                              Atab                      2022   992    135   
+PINSAO 2021 (DONE)                       PINSAO  (DONE             2021   992    137   
+PINSAO 2022 (DONE)                       PINSAO  (DONE             2022   984    137   
+Atab - 2024                              Atab                      2024   994    135   
+PINSAO 2023 (DONE)                       PINSAO  (DONE             2023   992    137   
+PINSAO 2024 (DONE)                       PINSAO  (DONE             2024   992    137   
+MINES VIEW 2024                          MINES VIEW                2024   992    137   
+Atok Trail 2025                          Atok Trail                2025   992    135   
+AtokTrail 2024                           AtokTrail                 2024   991    137   
+AtokTrail 2023                           AtokTrail                 2023   977    137   
+
+DATA QUALITY NOTES
+------------------------------------------------------------------------------------------
+⚠ Inconsistent column counts across sheets:
+    111 columns: 5 sheets
+    122 columns: 1 sheets
+    113 columns: 2 sheets
+    104 columns: 2 sheets
+    112 columns: 1 sheets
+    136 columns: 8 sheets
+    135 columns: 9 sheets
+    137 columns: 7 sheets
+✓ Row distribution: 14–999 patients per sheet
+
+==========================================================================================
