@@ -2217,9 +2217,10 @@ def prepare_model_ready_dataset(df_static: pd.DataFrame,
 
     # Stage 10: Feature scaling (StandardScaler: zero mean, unit variance)
     # NOTE: For train/test splitting, fit scaler on training data only
-    df_static, df_temporal, scaler_static, scaler_temporal = scale_features(
-        df_static, df_temporal
-    )
+    df_static, _, df_temporal, _, scaler_static, scaler_temporal = scale_features(
+        df_static, df_static.copy(),
+        df_temporal, df_temporal.copy()
+)
 
     # Stage 11: Outlier detection & capping (on scaled data)
     df_static, df_temporal, outlier_report = detect_and_cap_outliers(
