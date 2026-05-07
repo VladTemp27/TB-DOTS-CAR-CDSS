@@ -92,6 +92,54 @@ export function Dashboard() {
           </div>
         ) : (
           <>
+            {/* ── [1] Summary Cards ─────────────────────────────────── */}
+            <section>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Summary</p>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+
+                <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm text-center">
+                  <p className="text-2xl font-bold text-primary">{total}</p>
+                  <p className="text-xs text-gray-400 mt-1">Total Patients</p>
+                </div>
+
+                <div className="bg-red-50 rounded-xl border border-red-200 p-4 shadow-sm text-center">
+                  <p className="text-2xl font-bold text-red-600">{highRisk}</p>
+                  <p className="text-xs text-gray-400 mt-1">High Risk</p>
+                </div>
+
+                <div className="bg-yellow-50 rounded-xl border border-yellow-200 p-4 shadow-sm text-center">
+                  <p className="text-2xl font-bold text-yellow-600">{dueCheckin}</p>
+                  <p className="text-xs text-gray-400 mt-1">Due Check-in</p>
+                </div>
+
+                <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm text-center">
+                  {avgRisk !== null ? (
+                    <p className={`text-2xl font-bold ${riskColor(avgRisk).text}`}>
+                      {Math.round(avgRisk * 100)}%
+                    </p>
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-300">—</p>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1">Avg Risk</p>
+                </div>
+
+                <div className="bg-green-50 rounded-xl border border-green-100 p-4 shadow-sm text-center">
+                  {fullAdhPct !== null ? (
+                    <p className="text-2xl font-bold text-green-600">{fullAdhPct}%</p>
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-300">—</p>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1">Full Adherence</p>
+                </div>
+
+                <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm text-center">
+                  <p className="text-2xl font-bold text-primary">{onTreatment}</p>
+                  <p className="text-xs text-gray-400 mt-1">On Treatment</p>
+                </div>
+
+              </div>
+            </section>
+
             {/* sections will be added in subsequent tasks */}
           </>
         )}
