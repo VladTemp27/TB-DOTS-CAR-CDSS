@@ -1,0 +1,300 @@
+{
+  "generated_at": "2026-05-08T04:11:14.463456",
+  "pipeline": "TB-DOTS CAR CDSS \u2014 Missing Data Handling",
+  "dataset_info": {
+    "n_rows": 599,
+    "n_static_cols": 34,
+    "n_temporal_cols": 10,
+    "n_static_nulls": 9455,
+    "n_temporal_nulls": 49283
+  },
+  "mcar_test": {
+    "chi2": 552.9238,
+    "p_value": 0.0,
+    "df": 301,
+    "is_mcar": false,
+    "n_patterns": 44,
+    "note": "p=0.0000 \u2014 reject MCAR; data is at least MAR. Avoid listwise deletion."
+  },
+  "pathway_summary": {
+    "ALPHA_DROP": 9,
+    "BETA_LISTWISE": 0,
+    "GAMMA_INDICATOR": 28,
+    "DELTA_MICE": 1
+  },
+  "column_decisions": {
+    "date_of_birth": {
+      "missing_rate_pct": 4.34,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (4.3%)."
+    },
+    "age": {
+      "missing_rate_pct": 3.01,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (3.0%)."
+    },
+    "sex": {
+      "missing_rate_pct": 5.68,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (5.7%)."
+    },
+    "civil_status": {
+      "missing_rate_pct": 28.21,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (28.2%)."
+    },
+    "nationality": {
+      "missing_rate_pct": 27.88,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (27.9%)."
+    },
+    "chest_x_ray_at_case_notification": {
+      "missing_rate_pct": 35.56,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (35.6%)."
+    },
+    "xpert_mtb_rif": {
+      "missing_rate_pct": 98.73,
+      "mechanism": "MNAR",
+      "temporal_pattern": "MNAR_dropout",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: temporal dropout pattern detected (MNAR)."
+    },
+    "smear_microscopy": {
+      "missing_rate_pct": 83.81,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "ALPHA_DROP",
+      "pathway_rationale": "Dropped: 83.8% missing (exceeds hard threshold)."
+    },
+    "date_of_diagnosis": {
+      "missing_rate_pct": 20.37,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (20.4%)."
+    },
+    "date_of_notification": {
+      "missing_rate_pct": 27.88,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (27.9%)."
+    },
+    "diagnosis": {
+      "missing_rate_pct": 16.69,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (16.7%)."
+    },
+    "bacteriologic_status": {
+      "missing_rate_pct": 15.36,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (15.4%)."
+    },
+    "case_registration_group": {
+      "missing_rate_pct": 21.04,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (21.0%)."
+    },
+    "drug_resistance_bacteriological_status": {
+      "missing_rate_pct": 49.58,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (49.6%)."
+    },
+    "heart_rate": {
+      "missing_rate_pct": 76.46,
+      "mechanism": "MAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MAR, moderate-to-high missingness (76.5%)."
+    },
+    "respiratory_rate": {
+      "missing_rate_pct": 87.81,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "ALPHA_DROP",
+      "pathway_rationale": "Dropped: 87.8% missing (exceeds hard threshold)."
+    },
+    "temperature": {
+      "missing_rate_pct": 84.81,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "ALPHA_DROP",
+      "pathway_rationale": "Dropped: 84.8% missing (exceeds hard threshold)."
+    },
+    "o2_sat": {
+      "missing_rate_pct": 79.63,
+      "mechanism": "MAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MAR, moderate-to-high missingness (79.6%)."
+    },
+    "prior_history_of_tb": {
+      "missing_rate_pct": 91.65,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "ALPHA_DROP",
+      "pathway_rationale": "Dropped: 91.7% missing (exceeds hard threshold)."
+    },
+    "treatment_regimen": {
+      "missing_rate_pct": 93.49,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "ALPHA_DROP",
+      "pathway_rationale": "Dropped: 93.5% missing (exceeds hard threshold)."
+    },
+    "outcome": {
+      "missing_rate_pct": 28.05,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (28.0%)."
+    },
+    "date_of_outcome": {
+      "missing_rate_pct": 40.73,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (40.7%)."
+    },
+    "co_morbidities": {
+      "missing_rate_pct": 42.24,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (42.2%)."
+    },
+    "treatment_start_date": {
+      "missing_rate_pct": 9.68,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (9.7%)."
+    },
+    "regimen_type_at_start_of_treatment": {
+      "missing_rate_pct": 87.15,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "ALPHA_DROP",
+      "pathway_rationale": "Dropped: 87.1% missing (exceeds hard threshold)."
+    },
+    "dat_supported": {
+      "missing_rate_pct": 91.65,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "ALPHA_DROP",
+      "pathway_rationale": "Dropped: 91.7% missing (exceeds hard threshold)."
+    },
+    "other": {
+      "missing_rate_pct": 95.16,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "ALPHA_DROP",
+      "pathway_rationale": "Dropped: 95.2% missing (exceeds hard threshold)."
+    },
+    "weight_kg": {
+      "missing_rate_pct": 79.47,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (79.5%)."
+    },
+    "height_cm": {
+      "missing_rate_pct": 82.14,
+      "mechanism": "MNAR",
+      "temporal_pattern": "N/A",
+      "pathway": "ALPHA_DROP",
+      "pathway_rationale": "Dropped: 82.1% missing (exceeds hard threshold)."
+    },
+    "bp_systolic": {
+      "missing_rate_pct": 69.28,
+      "mechanism": "MAR",
+      "temporal_pattern": "N/A",
+      "pathway": "DELTA_MICE",
+      "pathway_rationale": "MICE (missForest): 69.3% missing, mechanism=MAR \u2014 missingness is explainable by observed variables; stochastic imputation preserves variance."
+    },
+    "bp_diastolic": {
+      "missing_rate_pct": 69.28,
+      "mechanism": "MAR",
+      "temporal_pattern": "N/A",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MAR, moderate-to-high missingness (69.3%)."
+    },
+    "cumulative_doses_taken": {
+      "missing_rate_pct": 59.98,
+      "mechanism": "MNAR",
+      "temporal_pattern": "MNAR_dropout",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: temporal dropout pattern detected (MNAR)."
+    },
+    "height": {
+      "missing_rate_pct": 92.06,
+      "mechanism": "MNAR",
+      "temporal_pattern": "MNAR_dropout",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: temporal dropout pattern detected (MNAR)."
+    },
+    "monthly_doses_taken": {
+      "missing_rate_pct": 51.78,
+      "mechanism": "MNAR",
+      "temporal_pattern": "MNAR_dropout",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: temporal dropout pattern detected (MNAR)."
+    },
+    "monthly_missed_doses": {
+      "missing_rate_pct": 66.53,
+      "mechanism": "MNAR",
+      "temporal_pattern": "MNAR_dropout",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: temporal dropout pattern detected (MNAR)."
+    },
+    "pct_adherence": {
+      "missing_rate_pct": 73.67,
+      "mechanism": "MNAR",
+      "temporal_pattern": "MNAR_dropout",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: temporal dropout pattern detected (MNAR)."
+    },
+    "smear_tb_lamp": {
+      "missing_rate_pct": 99.29,
+      "mechanism": "MNAR",
+      "temporal_pattern": "MNAR_dropout",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: temporal dropout pattern detected (MNAR)."
+    },
+    "weight": {
+      "missing_rate_pct": 90.83,
+      "mechanism": "MNAR",
+      "temporal_pattern": "MNAR_dropout",
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: temporal dropout pattern detected (MNAR)."
+    }
+  },
+  "post_imputation": {
+    "n_rows": 599,
+    "n_static_cols": 46,
+    "n_temporal_cols": 18,
+    "remaining_static_nulls": 0,
+    "remaining_temporal_nulls": 0
+  }
+}
