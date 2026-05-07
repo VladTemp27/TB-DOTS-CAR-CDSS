@@ -230,6 +230,33 @@ export function Dashboard() {
               )}
             </section>
 
+            {/* ── [4] Treatment Regimens ────────────────────────────── */}
+            <section className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Treatment Regimens</p>
+
+              <div className="flex flex-col gap-2.5">
+                {[
+                  { label: 'HRZE',       count: regimenGroups.hrze,       primary: true },
+                  { label: 'MDR-TB',     count: regimenGroups.mdr,        primary: true },
+                  { label: 'XDR-TB',     count: regimenGroups.xdr,        primary: true },
+                  { label: 'Unassigned', count: regimenGroups.unassigned, primary: false },
+                ].map(({ label, count, primary }) => (
+                  <div key={label} className="flex items-center gap-3">
+                    <span className={`text-xs w-20 ${primary ? 'text-gray-700' : 'text-gray-400'}`}>{label}</span>
+                    <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${primary ? 'bg-primary' : 'bg-gray-300'}`}
+                        style={{ width: `${Math.round((count / maxRegimen) * 100)}%` }}
+                      />
+                    </div>
+                    <span className={`text-xs font-semibold w-4 text-right ${primary ? 'text-gray-600' : 'text-gray-400'}`}>
+                      {count}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
             {/* sections will be added in subsequent tasks */}
           </>
         )}
