@@ -309,7 +309,47 @@ export function Dashboard() {
               </div>
             </section>
 
-            {/* sections will be added in subsequent tasks */}
+            {/* ── [6] Risk Trends ──────────────────────────────────── */}
+            <section className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Risk Trends</p>
+
+              {withTwoPreds.length === 0 ? (
+                <p className="text-xs text-gray-400 italic">
+                  Not enough data yet. Risk trends appear after a patient's second prediction.
+                </p>
+              ) : (
+                <>
+                  {/* mini-cards */}
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    <div className="bg-green-50 border border-green-100 rounded-xl p-3 text-center">
+                      <p className="text-lg font-bold text-green-600">↓ {improving}</p>
+                      <p className="text-xs text-gray-500 mt-1">Improving</p>
+                    </div>
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-center">
+                      <p className="text-lg font-bold text-gray-500">— {stable}</p>
+                      <p className="text-xs text-gray-500 mt-1">Stable</p>
+                    </div>
+                    <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-center">
+                      <p className="text-lg font-bold text-red-600">↑ {worsening}</p>
+                      <p className="text-xs text-gray-500 mt-1">Worsening</p>
+                    </div>
+                  </div>
+
+                  {/* segmented bar */}
+                  <div className="flex h-3 rounded-full overflow-hidden mb-2">
+                    <div className="bg-green-400" style={{ width: `${(improving / trendTotal) * 100}%` }} />
+                    <div className="bg-gray-300"  style={{ width: `${(stable    / trendTotal) * 100}%` }} />
+                    <div className="bg-red-400"   style={{ width: `${(worsening / trendTotal) * 100}%` }} />
+                  </div>
+
+                  {singlePred > 0 && (
+                    <p className="text-xs text-gray-400">
+                      {singlePred} patient{singlePred !== 1 ? 's' : ''} excluded (only 1 prediction).
+                    </p>
+                  )}
+                </>
+              )}
+            </section>
           </>
         )}
       </main>
