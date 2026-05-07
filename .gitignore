@@ -80,6 +80,7 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+.worktrees/
 
 ## Python (since there are scripts in the repo)
 __pycache__/
