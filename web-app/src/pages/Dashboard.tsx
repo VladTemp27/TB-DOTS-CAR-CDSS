@@ -257,6 +257,58 @@ export function Dashboard() {
               </div>
             </section>
 
+            {/* ── [5] Demographics ─────────────────────────────────── */}
+            <section>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Demographics</p>
+              <div className="grid grid-cols-2 gap-3">
+
+                {/* Sex */}
+                <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Sex</p>
+                  <div className="flex h-3 rounded-full overflow-hidden mb-3">
+                    <div
+                      className="bg-blue-400"
+                      style={{ width: `${total > 0 ? Math.round((maleCount / total) * 100) : 50}%` }}
+                    />
+                    <div
+                      className="bg-pink-400"
+                      style={{ width: `${total > 0 ? Math.round((femaleCount / total) * 100) : 50}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-600">
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />
+                      M — {maleCount}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-pink-400 inline-block" />
+                      F — {femaleCount}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Age groups */}
+                <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Age Groups</p>
+                  <div className="flex flex-col gap-2">
+                    {ageBuckets.map(({ label, count }) => (
+                      <div key={label} className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 w-8">{label}</span>
+                        <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-primary"
+                            style={{ width: `${Math.round((count / maxAge) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-gray-500 w-3 text-right">{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            </section>
+
             {/* sections will be added in subsequent tasks */}
           </>
         )}
