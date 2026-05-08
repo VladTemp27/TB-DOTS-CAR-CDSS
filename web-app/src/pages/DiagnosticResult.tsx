@@ -5,6 +5,7 @@ import { RiskBadge } from '../components/RiskBadge'
 import { PageFooter } from '../components/PageFooter'
 import { getPatient } from '../lib/storage'
 import type { ContributionResult } from '../lib/inference'
+import { ClinicalInterpretation } from '../components/ClinicalInterpretation'
 
 export function DiagnosticResult() {
   const navigate = useNavigate()
@@ -67,6 +68,8 @@ export function DiagnosticResult() {
             </button>
           )}
         </div>
+
+        <ClinicalInterpretation patient={patient} result={result} />
 
         <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex gap-2">
           <span className="text-blue-500 text-lg">ℹ</span>
