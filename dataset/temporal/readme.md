@@ -112,12 +112,12 @@ Replaces the original `impute_missing_mice()` with a modular pipeline that **dia
 
 **Results on `combined_complete_dataset.csv` (599 patients):**
 
-| Pathway | Columns | Notes |
+| Pathway | Count | Columns |
 |---|---|---|
-| Alpha — dropped | 15 | All >90% missing |
+| Alpha — dropped | 15 | Hard-dropped (>90%): near-empty fields, regimen columns, `respiratory_rate`, `temperature`. Soft-dropped (>50% + low importance): `blood_pressure` raw string (already split into `bp_systolic`/`bp_diastolic`) |
 | Beta — listwise | 0 | N=599 too small; MCAR not confirmed |
-| Gamma — indicator + fill | 28 | All 8 temporal features + 20 static (includes `smear_microscopy` at 83.8%) |
-| Delta — MICE | 1 | `bp_systolic` (69.3%, MAR) |
+| Gamma — indicator + fill | 25 | All 8 temporal features + 17 static. Includes `smear_microscopy` (83.8%), `height_cm` (82.1%), `outcome` (28.1%). Each gets a binary `is_missing_{col}` indicator |
+| Delta — MICE | 4 | All MAR cardiovascular/respiratory vitals: `o2_sat` (79.8%), `heart_rate` (76.5%), `bp_systolic` (69.3%), `bp_diastolic` (69.3%) |
 
 **`smear_microscopy` note:** Clinically important despite 83.8% missingness. Threshold raised to 0.90 so it routes to Gamma — the `is_missing_smear_microscopy` indicator captures the structured absence signal (patients not tested via smear often have a distinct diagnostic pathway).
 

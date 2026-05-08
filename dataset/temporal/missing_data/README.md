@@ -128,23 +128,38 @@ Full list of config keys and their defaults:
 | `alpha_soft_threshold` | `0.50` | Drop column if missing rate exceeds this AND importance is in bottom quartile |
 | `beta_max_missing` | `0.15` | Maximum missing rate for Beta (listwise) to be viable |
 | `beta_min_remaining_n` | `500` | Minimum rows that must remain after listwise deletion |
-| `delta_min_importance_pct` | `50` | Importance percentile threshold for Delta (MICE) eligibility |
+| `delta_min_importance_pct` | `50` | MAR columns must rank above this importance percentile to qualify for MICE. Lower values route more MAR columns to Delta. |
 | `n_total` | auto | Set automatically from `len(df_static)` — do not override unless testing |
 
 ### Rescuing a clinically important sparse column
 
-If a column was routed to Alpha but you know it carries clinical meaning, the recommended approach is to raise `alpha_hard_threshold`:
+If a column was routed to Alpha but carries clinical meaning, raise `alpha_hard_threshold`:
 
 ```python
 # Rescues smear_microscopy (83.8%) and height_cm (82.1%)
-# Columns above 90% (other, treatment_regimen, etc.) are still dropped
+# Columns above 90% are still dropped
 df_static, df_temporal = handle_missing_data(
     df_static, df_temporal,
     config={"alpha_hard_threshold": 0.90}
 )
 ```
 
-This routes rescued columns to Gamma — their actual values are preserved where observed, missing values are filled with the median/mode, and an `is_missing_{col}` indicator captures the structured absence.
+This routes rescued columns to Gamma — actual values preserved where observed, missing filled with median/mode, and an `is_missing_{col}` indicator captures structured absence.
+
+### Routing more MAR columns to MICE
+
+By default, a MAR column must rank above the 50th importance percentile to qualify for Delta. Lower `delta_min_importance_pct` to widen the net:
+
+```python
+# Routes all four MAR cardiovascular vitals to MICE
+# (o2_sat, heart_rate, bp_systolic, bp_diastolic all confirmed MAR)
+df_static, df_temporal = handle_missing_data(
+    df_static, df_temporal,
+    config={"delta_min_importance_pct": 30}
+)
+```
+
+Use this when MAR columns cluster closely in importance and the default 50th-percentile cut would split clinically related measurements (e.g. bp_systolic and bp_diastolic) across different pathways based on a sub-noise importance difference.
 
 ### Specifying output directory
 
@@ -181,18 +196,18 @@ A JSON file written to `output_dir` after every pipeline run. Structure:
   "dataset_info": { "n_rows": 599, "n_static_cols": ..., "n_temporal_cols": ... },
   "mcar_test": { "chi2": ..., "p_value": ..., "is_mcar": false, "note": "..." },
   "pathway_summary": {
-    "ALPHA_DROP": 9,
+    "ALPHA_DROP": 15,
     "BETA_LISTWISE": 0,
-    "GAMMA_INDICATOR": 20,
-    "DELTA_MICE": 1
+    "GAMMA_INDICATOR": 25,
+    "DELTA_MICE": 4
   },
   "column_decisions": {
     "smear_microscopy": {
       "missing_rate_pct": 83.8,
       "mechanism": "MNAR",
       "temporal_pattern": "N/A",
-      "pathway": "ALPHA_DROP",
-      "pathway_rationale": "Dropped: 83.8% missing (exceeds hard threshold)."
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (83.8%)."
     },
     ...
   },
@@ -210,24 +225,85 @@ Every routing decision is recorded with the missing rate, diagnosed mechanism, t
 
 ## Results on `combined_complete_dataset.csv`
 
-Run on 599 patients, M0–M12 monthly observations.
+Run on 599 patients, M0–M12 monthly observations. Config used: `alpha_hard_threshold=0.90`, `delta_min_importance_pct=30`.
 
-### Pathway summary
+### Alpha — Dropped (15 columns)
 
-| Pathway | Count | Notes |
+All MNAR. Hard-dropped (>90%) or soft-dropped (>50% + bottom importance quartile).
+
+| Column | Missing | Drop reason |
 |---|---|---|
-| Alpha — dropped | 9 static columns | All >80% missing: `other`, `treatment_regimen`, `dat_supported`, `prior_history_of_tb`, `respiratory_rate`, `regimen_type_at_start_of_treatment`, `temperature`, `smear_microscopy`, `height_cm` |
-| Beta — listwise | 0 columns | N=599 is too small; Beta was never viable at 15% threshold with 500-row floor |
-| Gamma — indicator + fill | 20 static + 8 temporal columns | Includes all temporal features; 28 `is_missing_*` indicators added to model data |
-| Delta — MICE | 1 static column | `bp_systolic` (69.3%) classified MAR |
+| `risk_factors_for_drug_resistance_tuberculosis` | 100.0% | Hard (>90%) |
+| `tuberculosis_culture` | 99.8% | Hard (>90%) |
+| `other_lab_test` | 99.8% | Hard (>90%) |
+| `others` | 99.7% | Hard (>90%) |
+| `dat_supported_dup` | 96.2% | Hard (>90%) — duplicate column |
+| `other` | 95.2% | Hard (>90%) |
+| `tuberculin_skin_test` | 93.5% | Hard (>90%) |
+| `regimen_type_at_end_of_treatment` | 93.3% | Hard (>90%) |
+| `prior_history_of_tb` | 91.7% | Hard (>90%) |
+| `dat_supported` | 91.7% | Hard (>90%) |
+| `respiratory_rate` | 87.8% | Hard (>90%) |
+| `regimen_type_at_start_of_treatment` | 87.2% | Hard (>90%) |
+| `regimen_type_at_6th_month_of_treatment` | 86.5% | Hard (>90%) |
+| `temperature` | 84.8% | Hard (>90%) |
+| `blood_pressure` | 67.3% | Soft (>50% + low importance) — raw string already parsed into `bp_systolic`/`bp_diastolic` |
 
-### Final output shapes
+### Beta — Listwise (0 columns)
 
-| Array | Shape | Description |
+Not triggered. N=599 is too small and MCAR not confirmed on this dataset.
+
+### Gamma — Indicator + Fill (25 columns)
+
+All MNAR. Each column gets a binary `is_missing_{col}` indicator alongside the filled value.
+
+| Column | Missing | Notes |
 |---|---|---|
-| `X_temporal` | `(599, 13, 16)` | 13 timesteps × 16 features (8 measurements + 8 absence indicators) |
-| `X_static` | `(599, 69)` | Static features after encoding |
-| `X_combined_flat` | `(599, 277)` | Flattened temporal + static |
+| `smear_tb_lamp` | 99.3% | Temporal feature — absence = signal |
+| `xpert_mtb_rif` | 98.7% | Temporal feature — absence = signal |
+| `height` | 92.1% | Temporal feature |
+| `weight` | 90.8% | Temporal feature |
+| `smear_microscopy` | 83.8% | Clinically important; threshold raised to 0.90 to preserve |
+| `height_cm` | 82.1% | Relevant for dosing; importance above bottom quartile |
+| `weight_kg` | 79.5% | Static baseline weight |
+| `pct_adherence` | 73.7% | Temporal feature |
+| `monthly_missed_doses` | 66.5% | Temporal feature |
+| `cumulative_doses_taken` | 60.0% | Temporal feature |
+| `monthly_doses_taken` | 51.8% | Temporal feature |
+| `drug_resistance_bacteriological_status` | 49.6% | |
+| `name_of_treatment_unit` | 48.4% | |
+| `treatment_regimen` | 45.9% | |
+| `co_morbidities` | 42.2% | |
+| `chest_x_ray_at_case_notification` | 35.6% | |
+| `civil_status` | 28.2% | |
+| `outcome` | 28.1% | Target variable — indicator is a useful meta-feature |
+| `name_of_diagnosing_facility` | 25.0% | |
+| `case_registration_group` | 21.0% | |
+| `nationality` | 19.9% | |
+| `diagnosis` | 16.7% | |
+| `bacteriologic_status` | 15.4% | |
+| `sex` | 5.7% | |
+| `age` | 3.0% | |
+
+### Delta — MICE (4 columns)
+
+All MAR — missingness explained by other observed variables (patients who miss a visit miss all vitals together). All four are cardiovascular/respiratory vitals measured on the same clinical encounter.
+
+| Column | Missing | Importance percentile |
+|---|---|---|
+| `o2_sat` | 79.8% | 54.5th |
+| `heart_rate` | 76.5% | 45.5th |
+| `bp_systolic` | 69.3% | 50.0th |
+| `bp_diastolic` | 69.3% | 36.4th |
+
+`bp_systolic` and `bp_diastolic` are the same BP reading — they must be treated identically. `delta_min_importance_pct=30` ensures all four route to MICE rather than being split by a sub-noise importance difference.
+
+### Pipeline outputs
+
+| File | Description |
+|---|---|
+| `output/cleaned_human_readable.csv` | 599 rows × 269 columns, original clinical units |
+| `output/missing_data_report.json` | Per-column audit trail |
 
 **Rows retained: 599 / 599 (zero deleted)**
 
