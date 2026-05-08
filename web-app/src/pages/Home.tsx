@@ -91,8 +91,8 @@ export function Home() {
               {query.trim() ? `${filtered.length} result${filtered.length !== 1 ? 's' : ''}` : 'Sorted by Risk'}
             </p>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-              {filtered.map((p, i) => (
-                <PatientCard key={p.id} patient={p} monthNumber={i + 1} />
+              {filtered.map((p) => (
+                <PatientCard key={p.id} patient={p} monthNumber={p.monthlyRecords.length} />
               ))}
             </div>
           </>
