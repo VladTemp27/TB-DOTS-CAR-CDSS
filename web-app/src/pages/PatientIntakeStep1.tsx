@@ -43,7 +43,7 @@ export function PatientIntakeStep1() {
   return (
     <div className="min-h-screen bg-bg flex flex-col">
       <AppHeader />
-      <StepProgress steps={4} current={1} />
+      <StepProgress steps={5} current={1} />
 
       <div className="flex-1 flex flex-col">
         <div className="flex-1 px-4 lg:px-8 pb-6 pt-4 w-full max-w-3xl mx-auto space-y-4">

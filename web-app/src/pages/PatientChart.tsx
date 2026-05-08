@@ -1,13 +1,20 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Download, Printer } from 'lucide-react'
+import { ArrowLeft, Download, Printer, ChevronDown, ChevronRight } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { RiskBadge, riskColor } from '../components/RiskBadge'
+import { XrayThumbnail } from '../components/XrayThumbnail'
+import { XrayLightbox } from '../components/XrayLightbox'
 import { getPatient } from '../lib/storage'
 
 export function PatientChart() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const patient = id ? getPatient(id) : null
+  // Hooks must come before any early return (Rules of Hooks)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  // null = default (last bucket open); Set = user's explicit choices
+  const [openBuckets, setOpenBuckets] = useState<Set<string> | null>(null)
 
   if (!patient) {
     return (
@@ -19,6 +26,38 @@ export function PatientChart() {
 
   const latestProb = patient.predictions.at(-1)?.failureProbability ?? 0
   const { text } = riskColor(latestProb)
+
+  // Build X-ray buckets with precomputed offsets so flat lightbox index == bucket.offset + i
+  const intakeIds = patient.intakeXrayIds ?? []
+  const monthlyXrayBuckets = patient.monthlyRecords
+    .filter(r => r.xrayIds && r.xrayIds.length > 0)
+    .sort((a, b) => a.month - b.month)
+    .map(r => ({ label: `Month ${r.month}`, ids: r.xrayIds! }))
+  const xrayBuckets = [
+    ...(intakeIds.length > 0 ? [{ label: 'Month 0 — Intake', ids: intakeIds }] : []),
+    ...monthlyXrayBuckets,
+  ].map((bucket, i, arr) => ({
+    ...bucket,
+    offset: arr.slice(0, i).reduce((sum, b) => sum + b.ids.length, 0),
+  }))
+  const allXrayIds = xrayBuckets.flatMap(b => b.ids)
+  const hasAnyXrays = allXrayIds.length > 0
+
+  // null state = default open: last bucket only. After first interaction, uses explicit Set.
+  const isOpen = (label: string) =>
+    openBuckets === null
+      ? label === xrayBuckets[xrayBuckets.length - 1]?.label
+      : openBuckets.has(label)
+
+  function toggleBucket(label: string) {
+    setOpenBuckets(prev => {
+      const seed = prev ?? new Set(xrayBuckets.slice(-1).map(b => b.label))
+      const next = new Set(seed)
+      if (next.has(label)) next.delete(label)
+      else next.add(label)
+      return next
+    })
+  }
 
   const regimen = patient.treatmentRegimen === 'hrze' ? 'HRZE Regimen'
     : patient.treatmentRegimen === 'mdr' ? 'MDR-TB Regimen'
@@ -165,6 +204,59 @@ export function PatientChart() {
             </section>
           )}
 
+          {/* X-ray Timeline Section */}
+          {hasAnyXrays && (
+            <section className="bg-surface border border-border rounded-2xl overflow-hidden print:border-2 print:break-inside-avoid">
+              <h2 className="text-lg font-bold text-ink-base px-4 lg:px-6 pt-4 lg:pt-6 pb-3 font-display print:text-base">
+                Chest X-ray Timeline
+              </h2>
+              <div className="border-t border-border divide-y divide-border">
+                {xrayBuckets.map(bucket => {
+                  const open = isOpen(bucket.label)
+                  return (
+                    <div key={bucket.label} className="print:break-inside-avoid">
+                      {/* Accordion toggle — hidden in print */}
+                      <button
+                        type="button"
+                        onClick={() => toggleBucket(bucket.label)}
+                        aria-expanded={open}
+                        className="w-full flex items-center justify-between px-4 lg:px-6 py-3 hover:bg-gray-50 transition-colors print:hidden"
+                      >
+                        <span className="text-xs font-semibold text-ink-muted uppercase tracking-wide">
+                          {bucket.label}
+                        </span>
+                        <span className="flex items-center gap-2 text-ink-muted">
+                          <span className="text-xs">
+                            {bucket.ids.length} image{bucket.ids.length !== 1 ? 's' : ''}
+                          </span>
+                          {open
+                            ? <ChevronDown size={14} aria-hidden="true" />
+                            : <ChevronRight size={14} aria-hidden="true" />}
+                        </span>
+                      </button>
+                      {/* Print-only label row */}
+                      <p className="hidden print:block px-4 lg:px-6 py-2 text-xs font-semibold text-ink-muted uppercase tracking-wide">
+                        {bucket.label} · {bucket.ids.length} image{bucket.ids.length !== 1 ? 's' : ''}
+                      </p>
+                      {/* Grid: max-h-0 + overflow-hidden collapses without removing from DOM;
+                          print:max-h-none ensures all buckets render in print output */}
+                      <div className={`grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 px-4 lg:px-6 transition-all ${open ? 'pb-4' : 'max-h-0 overflow-hidden'} print:max-h-none print:overflow-visible print:pb-4`}>
+                        {bucket.ids.map((id, i) => (
+                          <XrayThumbnail
+                            key={id}
+                            id={id}
+                            label={`${bucket.label} image ${i + 1}`}
+                            onClick={() => setLightboxIndex(bucket.offset + i)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+
           {/* Demographics Section */}
           <section className="bg-surface border border-border rounded-2xl p-4 lg:p-6 print:border-2 print:break-inside-avoid">
             <h2 className="text-lg font-bold text-ink-base mb-4 font-display print:text-base">Demographics</h2>
@@ -276,6 +368,16 @@ export function PatientChart() {
           </section>
         </div>
       </div>
+
+      {lightboxIndex !== null && allXrayIds.length > 0 && (
+        <XrayLightbox
+          ids={allXrayIds}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onPrev={() => setLightboxIndex(i => Math.max(0, (i ?? 0) - 1))}
+          onNext={() => setLightboxIndex(i => Math.min(allXrayIds.length - 1, (i ?? 0) + 1))}
+        />
+      )}
     </div>
   )
 }

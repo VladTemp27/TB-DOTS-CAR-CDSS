@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Check, AlertTriangle, X } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
+import { XrayUploadField } from '../components/XrayUploadField'
 import { getChoices, predictWithContributions } from '../lib/inference'
-import { getPatient, addMonthlyRecord, addPrediction } from '../lib/storage'
+import { getPatient, addMonthlyRecord, addPrediction, attachMonthlyXrays } from '../lib/storage'
 import { PageFooter } from '../components/PageFooter'
 
 type Adherence = 'full' | 'partial' | 'poor'
@@ -16,6 +17,7 @@ export function MonthlyCheckin() {
   const [weight, setWeight] = useState('')
   const [smearResult, setSmearResult] = useState('')
   const [adherence, setAdherence] = useState<Adherence | ''>('')
+  const [xrayFiles, setXrayFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
 
   const microChoices  = getChoices('Microscopy_Result')
@@ -31,14 +33,19 @@ export function MonthlyCheckin() {
     try {
       const result = await predictWithContributions(updatedFeatures)
 
+      const parsedWeight = parseFloat(weight)
       addMonthlyRecord(id, {
         month: monthNumber,
-        weight: weight ? Number(weight) : undefined,
+        weight: Number.isFinite(parsedWeight) ? parsedWeight : undefined,
         smearResult: smearResult || undefined,
         adherence,
         failureProbability: result.failureProbability,
         timestamp: Date.now(),
       })
+
+      if (xrayFiles.length > 0) {
+        await attachMonthlyXrays(id, monthNumber, xrayFiles)
+      }
 
       addPrediction(id, {
         label: result.label,
@@ -143,6 +150,12 @@ export function MonthlyCheckin() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Chest X-rays — optional */}
+          <div className="bg-surface border border-border rounded-2xl p-4 lg:p-5 space-y-3">
+            <p className="text-sm font-medium text-ink-secondary">Chest X-rays (optional)</p>
+            <XrayUploadField onChange={setXrayFiles} />
           </div>
 
           <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 text-xs text-blue-700">

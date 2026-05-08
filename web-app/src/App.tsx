@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Home } from './pages/Home'
 import { PatientIntakeStep1 } from './pages/PatientIntakeStep1'
 import { PatientIntakeStep2 } from './pages/PatientIntakeStep2'
+import { PatientIntakeXray } from './pages/PatientIntakeXray'
 import { DiagnosticResult } from './pages/DiagnosticResult'
 import { TreatmentSelection } from './pages/TreatmentSelection'
 import { PatientProfile } from './pages/PatientProfile'
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/dashboard" element={<ProtectedRoute><DesktopLayout><Dashboard /></DesktopLayout></ProtectedRoute>} />
         <Route path="/patient/new" element={<ProtectedRoute><DesktopLayout><PatientIntakeStep1 /></DesktopLayout></ProtectedRoute>} />
         <Route path="/patient/new/lab" element={<ProtectedRoute><DesktopLayout><PatientIntakeStep2 /></DesktopLayout></ProtectedRoute>} />
+          <Route path="/patient/new/xray" element={<PatientIntakeXray />} />
         <Route path="/patient/:id" element={<ProtectedRoute><DesktopLayout><PatientProfile /></DesktopLayout></ProtectedRoute>} />
         <Route path="/patient/:id/chart" element={<ProtectedRoute><DesktopLayout><PatientChart /></DesktopLayout></ProtectedRoute>} />
         <Route path="/patient/:id/result" element={<ProtectedRoute><DesktopLayout><DiagnosticResult /></DesktopLayout></ProtectedRoute>} />

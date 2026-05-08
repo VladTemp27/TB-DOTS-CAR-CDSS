@@ -5,7 +5,7 @@ interface Props {
   current: number
 }
 
-const STEP_LABELS = ['Demographics', 'Lab Results', 'Diagnosis', 'Treatment']
+const STEP_LABELS = ['Demographics', 'Lab Results', 'Chest X-rays', 'Diagnosis', 'Treatment']
 
 export function StepProgress({ steps, current }: Props) {
   return (
