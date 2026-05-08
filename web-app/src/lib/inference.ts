@@ -24,8 +24,14 @@ export interface PredictionResult {
   successProbability: number
 }
 
+export interface ContributionItem {
+  feature: string
+  delta: number
+  direction: 'risk' | 'protective'
+}
+
 export interface ContributionResult extends PredictionResult {
-  contributions: { feature: string; delta: number; direction: 'risk' | 'protective' }[]
+  contributions: ContributionItem[]
 }
 
 type Encodings = typeof encodingsData

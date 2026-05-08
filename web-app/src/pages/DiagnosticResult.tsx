@@ -6,6 +6,7 @@ import { RiskBadge } from '../components/RiskBadge'
 import { PageFooter } from '../components/PageFooter'
 import { getPatient } from '../lib/storage'
 import type { ContributionResult } from '../lib/inference'
+import { ClinicalInterpretation } from '../components/ClinicalInterpretation'
 
 export function DiagnosticResult() {
   const navigate = useNavigate()
@@ -93,6 +94,8 @@ export function DiagnosticResult() {
                   </p>
                 )}
               </div>
+
+              <ClinicalInterpretation patient={patient} result={result} />
 
               <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 flex gap-2.5 items-start">
                 <Info size={16} className="text-blue-500 mt-0.5 flex-shrink-0" aria-hidden="true" />

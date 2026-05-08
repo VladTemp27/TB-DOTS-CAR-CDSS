@@ -6,6 +6,8 @@ import { FeatureBar } from '../components/FeatureBar'
 import { getPatient } from '../lib/storage'
 import { featureKeyFor } from '../lib/inference'
 import { PageFooter } from '../components/PageFooter'
+import { ClinicalInterpretation } from '../components/ClinicalInterpretation'
+import type { ContributionResult } from '../lib/inference'
 
 function formatValue(displayName: string, raw: unknown): string | undefined {
   if (raw === undefined || raw === null || raw === '') return undefined
@@ -31,6 +33,15 @@ export function FeatureContribution() {
   const contributions = latest.contributions
   const maxDelta      = Math.max(...contributions.map(c => c.delta), 0.001)
   const featuresUsed  = latest.featuresUsed ?? patient.features
+
+  // Reconstruct a ContributionResult shape from the stored PredictionRecord
+  // (successProbability is derived — storage omits it as redundant)
+  const result: ContributionResult = {
+    label: latest.label,
+    failureProbability: latest.failureProbability,
+    successProbability: 1 - latest.failureProbability,
+    contributions: latest.contributions,
+  }
 
   return (
     <div className="min-h-screen bg-bg flex flex-col">
@@ -79,6 +90,8 @@ export function FeatureContribution() {
             </div>
           </div>
         </div>
+
+        <ClinicalInterpretation patient={patient} result={result} />
 
         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 flex gap-2.5 items-start">
           <Info size={16} className="text-blue-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
