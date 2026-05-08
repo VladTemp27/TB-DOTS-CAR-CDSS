@@ -2,9 +2,10 @@ import asyncio
 import json
 import threading
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncGenerator, Literal
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
@@ -32,26 +33,31 @@ except ImportError:
 
 llm: "Llama | None" = None
 _load_error: str | None = None
-_llm_lock = asyncio.Lock()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global llm, _load_error
+    app.state.llm_lock = asyncio.Lock()  # Created inside running event loop
     if Llama is not None:
-        try:
-            llm = await asyncio.to_thread(
-                Llama,
-                model_path=MODEL_PATH,
-                n_ctx=N_CTX,
-                n_threads=N_THREADS,
-                n_gpu_layers=N_GPU_LAYERS,
-                verbose=False,
-            )
-            print(f"[INFO] MedGemma loaded successfully from {MODEL_PATH}")
-        except Exception as exc:
-            _load_error = str(exc)
-            print(f"[ERROR] Model failed to load: {exc}")
+        model_path = Path(MODEL_PATH)
+        if not model_path.exists():
+            _load_error = f"Model file not found: {model_path}"
+            print(f"[ERROR] {_load_error}")
+        else:
+            try:
+                llm = await asyncio.to_thread(
+                    Llama,
+                    model_path=MODEL_PATH,
+                    n_ctx=N_CTX,
+                    n_threads=N_THREADS,
+                    n_gpu_layers=N_GPU_LAYERS,
+                    verbose=False,
+                )
+                print(f"[INFO] MedGemma loaded successfully from {MODEL_PATH}")
+            except Exception as exc:
+                _load_error = str(exc)
+                print(f"[ERROR] Model failed to load: {exc}")
     yield
 
 
@@ -97,10 +103,11 @@ class InterpretRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-async def _generate(prompt: str) -> AsyncGenerator:
-    async with _llm_lock:
-        loop = asyncio.get_event_loop()
+async def _generate(prompt: str, lock: asyncio.Lock) -> AsyncGenerator:
+    async with lock:
+        loop = asyncio.get_running_loop()
         queue: asyncio.Queue = asyncio.Queue()
+        stop_event = threading.Event()
 
         def run_inference():
             try:
@@ -112,25 +119,31 @@ async def _generate(prompt: str) -> AsyncGenerator:
                     top_p=TOP_P,
                     repeat_penalty=REPEAT_PENALTY,
                 ):
+                    if stop_event.is_set():
+                        break
                     token = chunk.get("choices", [{}])[0].get("text", "")
-                    loop.call_soon_threadsafe(queue.put_nowait, ("token", token))
+                    if token:  # Skip empty tokens
+                        loop.call_soon_threadsafe(queue.put_nowait, ("token", token))
                 loop.call_soon_threadsafe(queue.put_nowait, ("done", None))
             except Exception as e:
                 loop.call_soon_threadsafe(queue.put_nowait, ("error", str(e)))
 
         t = threading.Thread(target=run_inference, daemon=True)
         t.start()
-
-        while True:
-            kind, value = await queue.get()
-            if kind == "token":
-                yield {"data": json.dumps({"token": value})}
-            elif kind == "done":
-                yield {"data": json.dumps({"token": "", "done": True})}
-                break
-            elif kind == "error":
-                yield {"data": json.dumps({"error": value, "done": True})}
-                break
+        try:
+            while True:
+                kind, value = await queue.get()
+                if kind == "token":
+                    yield {"data": json.dumps({"token": value})}
+                elif kind == "done":
+                    yield {"data": json.dumps({"token": "", "done": True})}
+                    break
+                elif kind == "error":
+                    yield {"data": json.dumps({"error": value, "done": True})}
+                    break
+        finally:
+            stop_event.set()
+            await asyncio.to_thread(t.join)  # Wait for thread to finish before releasing lock
 
 
 # ---------------------------------------------------------------------------
@@ -141,14 +154,22 @@ async def _generate(prompt: str) -> AsyncGenerator:
 @app.get("/api/health")
 def health():
     if _load_error:
-        return {"status": "error", "error": _load_error, "model": "medgemma-1.5-4b-it-IQ4_XS", "n_ctx": N_CTX}
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "error",
+                "error": _load_error,
+                "model": "medgemma-1.5-4b-it-IQ4_XS",
+                "n_ctx": N_CTX,
+            },
+        )
     if llm is None:
         return {"status": "loading", "model": "medgemma-1.5-4b-it-IQ4_XS", "n_ctx": N_CTX}
     return {"status": "ready", "model": "medgemma-1.5-4b-it-IQ4_XS", "n_ctx": N_CTX}
 
 
 @app.post("/api/interpret")
-async def interpret(req: InterpretRequest):
+async def interpret(req: InterpretRequest, request: Request):
     if llm is None:
         error_msg = _load_error or "Model not loaded"
 
@@ -156,5 +177,6 @@ async def interpret(req: InterpretRequest):
             yield {"data": json.dumps({"error": error_msg, "done": True})}
 
         return EventSourceResponse(err())
+    lock = request.app.state.llm_lock
     prompt = build_prompt(req)
-    return EventSourceResponse(_generate(prompt))
+    return EventSourceResponse(_generate(prompt, lock))
