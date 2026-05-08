@@ -44,6 +44,7 @@ export function MonthlyCheckin() {
         label: result.label,
         failureProbability: result.failureProbability,
         contributions: result.contributions,
+        featuresUsed: updatedFeatures,
         timestamp: Date.now(),
       })
 

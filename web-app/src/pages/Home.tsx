@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Stethoscope } from 'lucide-react'
+import { Stethoscope, UserPlus } from 'lucide-react'
 import { getAllPatients } from '../lib/storage'
 import { AppHeader } from '../components/AppHeader'
 import { PatientCard } from '../components/PatientCard'
@@ -43,14 +43,25 @@ export function Home() {
           )}
         </div>
 
-        <div className="relative mb-5">
-          <input
-            type="search"
-            placeholder="Search by name or Medical ID (coming soon)"
-            className="w-full min-h-[44px] bg-surface border border-border rounded-xl px-4 py-2.5 text-sm text-ink-base placeholder-ink-muted disabled:opacity-60 disabled:cursor-not-allowed"
-            disabled
-            aria-label="Search patients (not yet available)"
-          />
+        <div className="sticky top-[60px] lg:top-0 z-10 bg-bg pt-1 pb-3 mb-2 -mx-4 px-4 lg:-mx-8 lg:px-8">
+          <div className="flex gap-3 items-center">
+            <div className="relative flex-1">
+              <input
+                type="search"
+                placeholder="Search by name or Medical ID (coming soon)"
+                className="w-full min-h-[44px] bg-surface border border-border rounded-xl px-4 py-2.5 text-sm text-ink-base placeholder-ink-muted disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled
+                aria-label="Search patients (not yet available)"
+              />
+            </div>
+            <button
+              onClick={() => navigate('/patient/new')}
+              className="hidden lg:inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-semibold text-sm whitespace-nowrap min-h-[44px] active:bg-primary-dark hover:bg-primary-mid transition-colors"
+            >
+              <UserPlus size={16} aria-hidden="true" />
+              New Patient
+            </button>
+          </div>
         </div>
 
         {patients.length === 0 ? (
@@ -72,15 +83,6 @@ export function Home() {
           </>
         )}
 
-        {/* Desktop-only "New Patient" button — mobile uses BottomNav */}
-        <div className="hidden lg:block mt-6">
-          <button
-            onClick={() => navigate('/patient/new')}
-            className="bg-primary text-white px-6 py-3 rounded-xl font-semibold text-sm active:bg-primary-dark hover:bg-primary-mid transition-colors"
-          >
-            + New Patient
-          </button>
-        </div>
       </div>
     </div>
   )

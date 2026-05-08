@@ -4,7 +4,14 @@ import { AppHeader } from '../components/AppHeader'
 import { RiskBadge, riskColor } from '../components/RiskBadge'
 import { FeatureBar } from '../components/FeatureBar'
 import { getPatient } from '../lib/storage'
+import { featureKeyFor } from '../lib/inference'
 import { PageFooter } from '../components/PageFooter'
+
+function formatValue(displayName: string, raw: unknown): string | undefined {
+  if (raw === undefined || raw === null || raw === '') return undefined
+  if (displayName === 'Days to Treatment') return `${raw} days`
+  return String(raw)
+}
 
 export function FeatureContribution() {
   const navigate = useNavigate()
@@ -20,9 +27,10 @@ export function FeatureContribution() {
     )
   }
 
-  const prob         = latest.failureProbability
+  const prob          = latest.failureProbability
   const contributions = latest.contributions
   const maxDelta      = Math.max(...contributions.map(c => c.delta), 0.001)
+  const featuresUsed  = latest.featuresUsed ?? patient.features
 
   return (
     <div className="min-h-screen bg-bg flex flex-col">
@@ -45,15 +53,20 @@ export function FeatureContribution() {
         <div className="bg-surface border border-border rounded-2xl p-4 lg:p-5 shadow-sm">
           <p className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-4">Feature Contributions</p>
           <div className="space-y-1">
-            {contributions.map(c => (
-              <FeatureBar
-                key={c.feature}
-                feature={c.feature}
-                delta={c.delta}
-                direction={c.direction}
-                maxDelta={maxDelta}
-              />
-            ))}
+            {contributions.map(c => {
+              const key = featureKeyFor(c.feature)
+              const value = key ? formatValue(c.feature, featuresUsed[key]) : undefined
+              return (
+                <FeatureBar
+                  key={c.feature}
+                  feature={c.feature}
+                  delta={c.delta}
+                  direction={c.direction}
+                  maxDelta={maxDelta}
+                  value={value}
+                />
+              )
+            })}
           </div>
           <div className="flex gap-4 mt-4 pt-3 border-t border-border">
             <div className="flex items-center gap-1.5">

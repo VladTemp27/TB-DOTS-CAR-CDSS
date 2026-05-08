@@ -82,6 +82,7 @@ export function PatientIntakeStep2() {
           label: result.label,
           failureProbability: result.failureProbability,
           contributions: result.contributions,
+          featuresUsed: features,
           timestamp: Date.now(),
         }],
         monthlyRecords: [],

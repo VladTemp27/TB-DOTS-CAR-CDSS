@@ -13,6 +13,7 @@ export interface PredictionRecord {
   label: 0 | 1
   failureProbability: number
   contributions: ContributionResult['contributions']
+  featuresUsed?: PatientFeatures
   timestamp: number
 }
 
