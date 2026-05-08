@@ -100,7 +100,7 @@ export function TreatmentSelection() {
           {/* Date input */}
           <div className="bg-surface border border-border rounded-2xl p-4 lg:p-5">
             <label className="block text-sm font-medium text-ink-secondary mb-2" htmlFor="startDate">
-              Treatment Start Date *
+              Treatment Start Date <span className="text-red-500">*</span>
             </label>
             <input
               id="startDate"

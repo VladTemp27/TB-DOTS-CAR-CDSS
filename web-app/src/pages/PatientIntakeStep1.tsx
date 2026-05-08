@@ -57,13 +57,13 @@ export function PatientIntakeStep1() {
           <div className="bg-surface border border-border rounded-2xl p-4 lg:p-6 space-y-3">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
-                <label className={labelCls} htmlFor="name">Full Name *</label>
+                <label className={labelCls} htmlFor="name">Full Name <span className="text-red-500">*</span></label>
                 <input id="name" type="text" placeholder="Juan dela Cruz" value={name}
                   onChange={e => setName(e.target.value)}
                   className={inputCls} autoComplete="name" />
               </div>
               <div>
-                <label className={labelCls} htmlFor="age">Age *</label>
+                <label className={labelCls} htmlFor="age">Age <span className="text-red-500">*</span></label>
                 <input id="age" type="number" placeholder="35" value={age}
                   onChange={e => setAge(e.target.value)}
                   min={1} max={120} className={inputCls} />
@@ -72,7 +72,7 @@ export function PatientIntakeStep1() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
-                <label className={labelCls} htmlFor="sex">Gender *</label>
+                <label className={labelCls} htmlFor="sex">Gender <span className="text-red-500">*</span></label>
                 <select id="sex" value={sex} onChange={e => setSex(e.target.value)} className={selectCls}>
                   <option value="">Select gender</option>
                   {sexChoices.map(s => <option key={s} value={s}>{s === 'M' ? 'Male' : 'Female'}</option>)}
@@ -90,7 +90,7 @@ export function PatientIntakeStep1() {
           {/* Registration & Location */}
           <div className="bg-surface border border-border rounded-2xl p-4 lg:p-6 space-y-3">
             <div>
-              <label className={labelCls} htmlFor="regGroup">Registration Group *</label>
+              <label className={labelCls} htmlFor="regGroup">Registration Group <span className="text-red-500">*</span></label>
               <select id="regGroup" value={registrationGroup} onChange={e => setRegistrationGroup(e.target.value)} className={selectCls}>
                 <option value="">Select group</option>
                 {regGroupChoices.map(g => <option key={g} value={g}>{g}</option>)}
@@ -99,7 +99,7 @@ export function PatientIntakeStep1() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
-                <label className={labelCls} htmlFor="province">Province *</label>
+                <label className={labelCls} htmlFor="province">Province <span className="text-red-500">*</span></label>
                 <select id="province" value={province} onChange={e => setProvince(e.target.value)} className={selectCls}>
                   <option value="">Select province</option>
                   {provinceChoices.map(p => <option key={p} value={p}>{p}</option>)}

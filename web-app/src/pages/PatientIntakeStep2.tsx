@@ -114,14 +114,14 @@ export function PatientIntakeStep2() {
           <div className="bg-surface border border-border rounded-2xl p-4 lg:p-6 space-y-3">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
-                <label className={labelCls} htmlFor="bactStatus">Bacteriologic Status *</label>
+                <label className={labelCls} htmlFor="bactStatus">Bacteriologic Status <span className="text-red-500">*</span></label>
                 <select id="bactStatus" value={bacteriologicStatus} onChange={e => setBacteriologicStatus(e.target.value)} className={selectCls}>
                   <option value="">Select</option>
                   {bactChoices.map(v => <option key={v} value={v}>{v}</option>)}
                 </select>
               </div>
               <div>
-                <label className={labelCls} htmlFor="microResult">Microscopy / Smear Result *</label>
+                <label className={labelCls} htmlFor="microResult">Microscopy / Smear Result <span className="text-red-500">*</span></label>
                 <select id="microResult" value={microscopyResult} onChange={e => setMicroscopyResult(e.target.value)} className={selectCls}>
                   <option value="">Select</option>
                   {microChoices.map(v => <option key={v} value={v}>{v}</option>)}
@@ -131,14 +131,14 @@ export function PatientIntakeStep2() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
-                <label className={labelCls} htmlFor="anatSite">Anatomical Site *</label>
+                <label className={labelCls} htmlFor="anatSite">Anatomical Site <span className="text-red-500">*</span></label>
                 <select id="anatSite" value={anatomicalSite} onChange={e => setAnatomicalSite(e.target.value)} className={selectCls}>
                   <option value="">Select</option>
                   {siteChoices.map(v => <option key={v} value={v}>{v === 'P' ? 'PTB (Pulmonary)' : 'EPTB (Extra-pulmonary)'}</option>)}
                 </select>
               </div>
               <div>
-                <label className={labelCls} htmlFor="source">Source of Patient *</label>
+                <label className={labelCls} htmlFor="source">Source of Patient <span className="text-red-500">*</span></label>
                 <select id="source" value={sourceOfPatient} onChange={e => setSourceOfPatient(e.target.value)} className={selectCls}>
                   <option value="">Select</option>
                   {sourceChoices.map(v => <option key={v} value={v}>{v}</option>)}
@@ -147,7 +147,7 @@ export function PatientIntakeStep2() {
             </div>
 
             <div>
-              <label className={labelCls} htmlFor="caseType">Case Type *</label>
+              <label className={labelCls} htmlFor="caseType">Case Type <span className="text-red-500">*</span></label>
               <select id="caseType" value={type} onChange={e => setType(e.target.value)} className={selectCls}>
                 <option value="">Select</option>
                 {typeChoices.map(v => <option key={v} value={v}>{v}</option>)}
