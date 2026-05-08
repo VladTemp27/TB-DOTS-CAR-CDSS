@@ -1,6 +1,8 @@
 import asyncio
 import json
+import logging
 import threading
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator, Literal
@@ -23,6 +25,17 @@ from config import (
 from prompt import build_prompt
 
 # ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
+log = logging.getLogger("medgemma")
+
+# ---------------------------------------------------------------------------
 # Model lifecycle
 # ---------------------------------------------------------------------------
 
@@ -39,25 +52,43 @@ _load_error: str | None = None
 async def lifespan(app: FastAPI):
     global llm, _load_error
     app.state.llm_lock = asyncio.Lock()  # Created inside running event loop
-    if Llama is not None:
-        model_path = Path(MODEL_PATH)
-        if not model_path.exists():
-            _load_error = f"Model file not found: {model_path}"
-            print(f"[ERROR] {_load_error}")
-        else:
-            try:
-                llm = await asyncio.to_thread(
-                    Llama,
-                    model_path=MODEL_PATH,
-                    n_ctx=N_CTX,
-                    n_threads=N_THREADS,
-                    n_gpu_layers=N_GPU_LAYERS,
-                    verbose=False,
-                )
-                print(f"[INFO] MedGemma loaded successfully from {MODEL_PATH}")
-            except Exception as exc:
-                _load_error = str(exc)
-                print(f"[ERROR] Model failed to load: {exc}")
+
+    if Llama is None:
+        _load_error = "llama_cpp not installed — run: pip install llama-cpp-python"
+        log.error(_load_error)
+        yield
+        return
+
+    model_path = Path(MODEL_PATH)
+    log.info("Model path resolved to: %s", model_path.resolve())
+
+    if not model_path.exists():
+        _load_error = f"Model file not found: {model_path.resolve()}"
+        log.error(_load_error)
+        yield
+        return
+
+    log.info(
+        "Loading MedGemma (size=%.1f GB, n_ctx=%d, n_threads=%d, n_gpu_layers=%d)...",
+        model_path.stat().st_size / 1e9,
+        N_CTX,
+        N_THREADS,
+        N_GPU_LAYERS,
+    )
+    t0 = time.monotonic()
+    try:
+        llm = await asyncio.to_thread(
+            Llama,
+            model_path=str(model_path),
+            n_ctx=N_CTX,
+            n_threads=N_THREADS,
+            n_gpu_layers=N_GPU_LAYERS,
+            verbose=False,
+        )
+        log.info("MedGemma ready — loaded in %.1fs", time.monotonic() - t0)
+    except Exception as exc:
+        _load_error = f"{type(exc).__name__}: {exc}"
+        log.exception("Model load failed after %.1fs", time.monotonic() - t0)
     yield
 
 
@@ -103,14 +134,23 @@ class InterpretRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-async def _generate(prompt: str, lock: asyncio.Lock) -> AsyncGenerator:
+async def _generate(prompt: str, lock: asyncio.Lock, patient_name: str) -> AsyncGenerator:
+    log.debug(
+        "Inference queued for %r — prompt length: %d chars", patient_name, len(prompt)
+    )
     async with lock:
+        log.info("Inference started for %r", patient_name)
+        t0 = time.monotonic()
+        token_count = 0
+
         loop = asyncio.get_running_loop()
         queue: asyncio.Queue = asyncio.Queue()
         stop_event = threading.Event()
 
         def run_inference():
+            nonlocal token_count
             try:
+                log.debug("llm() call entered for %r", patient_name)
                 for chunk in llm(  # type: ignore[misc]
                     prompt,
                     stream=True,
@@ -120,12 +160,15 @@ async def _generate(prompt: str, lock: asyncio.Lock) -> AsyncGenerator:
                     repeat_penalty=REPEAT_PENALTY,
                 ):
                     if stop_event.is_set():
+                        log.debug("Inference cancelled for %r after %d tokens", patient_name, token_count)
                         break
                     token = chunk.get("choices", [{}])[0].get("text", "")
-                    if token:  # Skip empty tokens
+                    if token:
+                        token_count += 1
                         loop.call_soon_threadsafe(queue.put_nowait, ("token", token))
                 loop.call_soon_threadsafe(queue.put_nowait, ("done", None))
             except Exception as e:
+                log.exception("Inference error for %r: %s", patient_name, e)
                 loop.call_soon_threadsafe(queue.put_nowait, ("error", str(e)))
 
         t = threading.Thread(target=run_inference, daemon=True)
@@ -136,14 +179,21 @@ async def _generate(prompt: str, lock: asyncio.Lock) -> AsyncGenerator:
                 if kind == "token":
                     yield {"data": json.dumps({"token": value})}
                 elif kind == "done":
+                    elapsed = time.monotonic() - t0
+                    log.info(
+                        "Inference done for %r — %d tokens in %.1fs (%.1f tok/s)",
+                        patient_name, token_count, elapsed,
+                        token_count / elapsed if elapsed > 0 else 0,
+                    )
                     yield {"data": json.dumps({"token": "", "done": True})}
                     break
                 elif kind == "error":
+                    log.error("Inference stream error for %r: %s", patient_name, value)
                     yield {"data": json.dumps({"error": value, "done": True})}
                     break
         finally:
             stop_event.set()
-            await asyncio.to_thread(t.join)  # Wait for thread to finish before releasing lock
+            await asyncio.to_thread(t.join)
 
 
 # ---------------------------------------------------------------------------
@@ -170,13 +220,23 @@ def health():
 
 @app.post("/api/interpret")
 async def interpret(req: InterpretRequest, request: Request):
+    log.info(
+        "POST /api/interpret — patient=%r failure_prob=%.1f%% contributions=%d",
+        req.patient_name,
+        req.failure_probability * 100,
+        len(req.contributions),
+    )
+
     if llm is None:
         error_msg = _load_error or "Model not loaded"
+        log.warning("Rejecting request — model unavailable: %s", error_msg)
 
         async def err():
             yield {"data": json.dumps({"error": error_msg, "done": True})}
 
         return EventSourceResponse(err())
+
     lock = request.app.state.llm_lock
     prompt = build_prompt(req)
-    return EventSourceResponse(_generate(prompt, lock))
+    log.debug("Prompt built (%d chars)", len(prompt))
+    return EventSourceResponse(_generate(prompt, lock, req.patient_name))

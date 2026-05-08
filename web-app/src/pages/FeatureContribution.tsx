@@ -4,6 +4,8 @@ import { RiskBadge } from '../components/RiskBadge'
 import { FeatureBar } from '../components/FeatureBar'
 import { getPatient } from '../lib/storage'
 import { PageFooter } from '../components/PageFooter'
+import { ClinicalInterpretation } from '../components/ClinicalInterpretation'
+import type { ContributionResult } from '../lib/inference'
 
 export function FeatureContribution() {
   const navigate = useNavigate()
@@ -22,6 +24,15 @@ export function FeatureContribution() {
   const prob = latest.failureProbability
   const contributions = latest.contributions
   const maxDelta = Math.max(...contributions.map(c => c.delta), 0.001)
+
+  // Reconstruct a ContributionResult shape from the stored PredictionRecord
+  // (successProbability is derived — storage omits it as redundant)
+  const result: ContributionResult = {
+    label: latest.label,
+    failureProbability: latest.failureProbability,
+    successProbability: 1 - latest.failureProbability,
+    contributions: latest.contributions,
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -65,6 +76,8 @@ export function FeatureContribution() {
             </div>
           </div>
         </div>
+
+        <ClinicalInterpretation patient={patient} result={result} />
 
         <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex gap-2">
           <span className="text-blue-500">ℹ</span>
