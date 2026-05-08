@@ -30,7 +30,7 @@ export function ClinicalInterpretation({ patient, result }: ClinicalInterpretati
         <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">MedGemma</span>
       </div>
 
-      {isStreaming && text.length === 0 && (
+      {!isComplete && !error && text.length === 0 && (
         <div className="space-y-2 animate-pulse">
           <div className="h-3 bg-gray-200 rounded w-full" />
           <div className="h-3 bg-gray-200 rounded w-5/6" />

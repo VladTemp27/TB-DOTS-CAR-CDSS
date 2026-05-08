@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { Patient } from '../lib/storage'
 import type { ContributionResult } from '../lib/inference'
 import { streamInterpretation } from '../lib/medgemma'
@@ -22,6 +22,9 @@ export function useStreamingInterpretation(
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
 
+  // Fix 1: Use scalar IDs as deps to prevent re-firing on parent re-render
+  // patient.id is unique per patient; failureProbability is the prediction result.
+  // On DiagnosticResult page both are set once from route state, so this is stable.
   useEffect(() => {
     if (patient === null || result === null) return
 
@@ -61,12 +64,19 @@ export function useStreamingInterpretation(
       },
     )
 
+    // Fix 4: Set isStreaming=false in cleanup so AbortError path clears streaming state
     return () => {
       controller.abort()
+      setIsStreaming(false)
     }
-  }, [patient, result, retryCount])
+  }, [patient?.id, result?.failureProbability, retryCount])
 
-  const retry = () => setRetryCount((c) => c + 1)
+  // Fix 3: Clear error immediately on retry click and optimistically set streaming
+  const retry = useCallback(() => {
+    setError(null)
+    setIsStreaming(true)
+    setRetryCount((c) => c + 1)
+  }, [])
 
   return { text, isStreaming, isComplete, error, retry }
 }
