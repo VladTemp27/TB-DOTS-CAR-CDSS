@@ -5,6 +5,7 @@ import { PatientIntakeStep2 } from './pages/PatientIntakeStep2'
 import { DiagnosticResult } from './pages/DiagnosticResult'
 import { TreatmentSelection } from './pages/TreatmentSelection'
 import { PatientProfile } from './pages/PatientProfile'
+import { PatientChart } from './pages/PatientChart'
 import { MonthlyCheckin } from './pages/MonthlyCheckin'
 import { RiskUpdate } from './pages/RiskUpdate'
 import { FeatureContribution } from './pages/FeatureContribution'
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/patient/new" element={<PatientIntakeStep1 />} />
           <Route path="/patient/new/lab" element={<PatientIntakeStep2 />} />
           <Route path="/patient/:id" element={<PatientProfile />} />
+          <Route path="/patient/:id/chart" element={<PatientChart />} />
           <Route path="/patient/:id/result" element={<DiagnosticResult />} />
           <Route path="/patient/:id/treatment" element={<TreatmentSelection />} />
           <Route path="/patient/:id/checkin" element={<MonthlyCheckin />} />

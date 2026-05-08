@@ -22,7 +22,7 @@ export function PatientCard({ patient, monthNumber }: Props) {
 
   return (
     <button
-      onClick={() => navigate(`/patient/${patient.id}`)}
+      onClick={() => navigate(`/patient/${patient.id}/chart`)}
       className={`w-full bg-surface rounded-xl border border-border border-l-4 ${riskEdge[label]} p-4 text-left
         shadow-sm hover:shadow-md hover:border-primary/30 transition-shadow duration-150 active:bg-gray-50`}
     >

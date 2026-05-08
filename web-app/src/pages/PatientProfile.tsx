@@ -81,6 +81,13 @@ export function PatientProfile() {
             >
               Log Monthly Update →
             </button>
+
+            <button
+              onClick={() => navigate(`/patient/${id}/chart`)}
+              className="hidden lg:block w-full bg-surface border border-border text-ink-base py-3.5 rounded-xl font-semibold text-sm active:bg-gray-50 hover:border-primary/30 transition-all"
+            >
+              View Patient Chart →
+            </button>
           </div>
 
           {/* Right column: risk trend + monthly records */}
