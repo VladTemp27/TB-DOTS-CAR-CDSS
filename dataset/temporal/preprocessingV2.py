@@ -1158,28 +1158,91 @@ def structure_temporal_data(df: pd.DataFrame):
 
 
 # ============================================================================
-# STAGE 7: MISSING DATA HANDLING VIA MICE (ITERATIVE IMPUTATION)  [CLEANING]
+# STAGE 7: MISSING DATA HANDLING (DIAGNOSTIC-FIRST PIPELINE)  [CLEANING]
 # ============================================================================
+
+def _post_imputation_clinical_clipping(
+    df_static: pd.DataFrame,
+    df_temporal: pd.DataFrame,
+) -> tuple:
+    """
+    Re-apply clinical bounds and repair temporal constraints after imputation.
+
+    This runs AFTER handle_missing_data() returns.  The missing_data package
+    handles statistical imputation strategy; clinical domain constraints
+    (impossible vital-sign values, monotonic cumulative doses) are a
+    pipeline-level concern kept separate so the package stays reusable.
+
+    Clipping mirrors the bounds enforced in Stage 3 to catch anything
+    ExtraTreesRegressor may have extrapolated outside the plausible range.
+    """
+    # ---- Static clinical bounds -------------------------------------------
+    static_clip = {
+        "weight_kg":        (10,  180),
+        "height_cm":        (80,  220),
+        "bp_systolic":      (60,  220),
+        "bp_diastolic":     (30,  140),
+        "heart_rate":       (20,  250),
+        "respiratory_rate": (4,    60),
+        "temperature":      (30,   45),
+        "o2_sat":           (70,  100),
+        "age":              (0,   110),
+    }
+    for col, (cmin, cmax) in static_clip.items():
+        if col in df_static.columns and pd.api.types.is_numeric_dtype(df_static[col]):
+            n = ((df_static[col] < cmin) | (df_static[col] > cmax)).sum()
+            if n > 0:
+                df_static[col] = df_static[col].clip(lower=cmin, upper=cmax)
+                print(f"    Clipped static '{col}': {n} value(s) outside [{cmin}, {cmax}]")
+
+    # Re-round age to integer (imputer may introduce decimals)
+    if "age" in df_static.columns and pd.api.types.is_numeric_dtype(df_static["age"]):
+        df_static["age"] = df_static["age"].round(0).astype("Int64")
+
+    # ---- Temporal clinical bounds -----------------------------------------
+    temporal_clip = {
+        "weight":               (10,  180),
+        "height":               (80,  220),
+        "pct_adherence":        (0,   100),
+        "monthly_doses_taken":  (0,    31),
+        "monthly_missed_doses": (0,  None),   # floor only
+        "smear_tb_lamp":        (0,     1),
+        "xpert_mtb_rif":        (0,     1),
+    }
+    for col, (cmin, cmax) in temporal_clip.items():
+        if col in df_temporal.columns and pd.api.types.is_numeric_dtype(df_temporal[col]):
+            if cmax is not None:
+                n = ((df_temporal[col] < cmin) | (df_temporal[col] > cmax)).sum()
+            else:
+                n = (df_temporal[col] < cmin).sum()
+            if n > 0:
+                df_temporal[col] = df_temporal[col].clip(lower=cmin, upper=cmax)
+                bound_str = f"[{cmin}, {cmax}]" if cmax else f"[{cmin}, inf)"
+                print(f"    Clipped temporal '{col}': {n} value(s) outside {bound_str}")
+
+    # ---- Cumulative dose monotonicity repair ------------------------------
+    # MICE imputes months independently; cumulative_doses_taken must be
+    # non-decreasing per patient.  Repair with running max (forward only).
+    cum_col = "cumulative_doses_taken"
+    if cum_col in df_temporal.columns:
+        df_temporal = df_temporal.sort_values(["patient_id", "month"])
+        violations = 0
+        for _, grp in df_temporal.groupby("patient_id"):
+            vals = grp[cum_col].values
+            violations += sum(1 for i in range(1, len(vals)) if vals[i] < vals[i - 1])
+        if violations > 0:
+            df_temporal[cum_col] = df_temporal.groupby("patient_id")[cum_col].cummax()
+            print(f"    Repaired {violations} monotonicity violation(s) in '{cum_col}'")
+
+    return df_static, df_temporal
+
 
 def impute_missing_mice(df_static: pd.DataFrame,
                         df_temporal: pd.DataFrame):
     """
-    Stage 7 [CLEANING]: Handle missing values using MICE (Multiple
-    Imputation by Chained Equations) via sklearn's IterativeImputer.
-
-    Strategy:
-        - Numerical variables: BayesianRidge regression (default)
-        - Categorical variables: Imputed via mode within groups
-        - Temporal imputation: Forward-fill within patient first
-          (respects time ordering), then MICE for remaining gaps
-
-    IMPORTANT: Temporal imputation only uses past data (forward fill)
-    to prevent future data leakage in time-series features. Backward
-    fill is intentionally NOT used.
-
-    Returns:
-        df_static, df_temporal - with missing values imputed, but values
-        still in original clinical units (no scaling or encoding applied).
+    Retained for backwards compatibility only.
+    Stage 7 now calls handle_missing_data() from the missing_data package.
+    This function is no longer called by run_pipeline().
     """
     print("=" * 70)
     print("STAGE 7: Missing Data Handling (MICE Imputation)")
@@ -1581,9 +1644,36 @@ def run_pipeline():
     # Stage 6: Separate static vs temporal, reshape to long format
     df_static, df_temporal = structure_temporal_data(df)
 
-    # Stage 7: Impute missing values (forward-fill + MICE)
-    # NOTE: Forward-fill only (no backward fill) to prevent future leakage
-    df_static, df_temporal = impute_missing_mice(df_static, df_temporal)
+    # Stage 7: Missing data handling (diagnostic-first pipeline)
+    # Routes each column to Alpha/Beta/Gamma/Delta based on MCAR/MAR/MNAR
+    # diagnosis + feature importance.
+    #
+    # Config rationale:
+    #   alpha_hard_threshold=0.90  — raises the drop threshold from the default
+    #     0.80 so that smear_microscopy (83.8%) and height_cm (82.1%) are
+    #     preserved as Gamma indicators rather than dropped.  Both have
+    #     clinical relevance; their absence is itself a predictive signal.
+    #
+    #   delta_min_importance_pct=30 — routes all four MAR cardiovascular/
+    #     respiratory vitals (o2_sat, bp_systolic, bp_diastolic, heart_rate)
+    #     to MICE instead of Gamma.  All four have confirmed MAR mechanism and
+    #     are measured together on the same clinical visit; splitting them by
+    #     sub-noise importance differences is a threshold artifact.
+    #     The lowest-ranking of the four (bp_diastolic) sits at the 36.4th
+    #     percentile; threshold=30 captures all four without affecting any
+    #     MNAR columns (Delta gate fires only for MAR).
+    from missing_data import handle_missing_data
+    df_static, df_temporal = handle_missing_data(
+        df_static, df_temporal,
+        config={
+            "alpha_hard_threshold":     0.90,
+            "delta_min_importance_pct": 30,
+        },
+    )
+    # Stage 7B: Clinical bounds clipping + cumulative dose monotonicity repair
+    # (domain constraints kept outside the missing_data package for reusability)
+    print("\n  [Post-imputation] Applying clinical bounds & monotonicity repair...")
+    df_static, df_temporal = _post_imputation_clinical_clipping(df_static, df_temporal)
 
     # Stage 8: Export human-readable cleaned dataset + validation
     # This CSV preserves categorical labels and clinical units.
