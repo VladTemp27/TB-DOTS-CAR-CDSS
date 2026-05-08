@@ -22,8 +22,25 @@ export function Dashboard() {
   const avgRisk  = total > 0
     ? patients.reduce((sum, p) => sum + latestProb(p), 0) / total
     : null
-  const dueCheckin  = patients.filter(p => p.treatmentRegimen !== undefined && p.monthlyRecords.length < DOTS_COURSE_MONTHS).length
+  const dueCheckin = patients.filter(p => {
+    if (p.monthlyRecords.length >= 6) return false
+    if (!p.treatmentStartDate) return false
+    const start = new Date(p.treatmentStartDate).getTime()
+    const monthsElapsed = Math.floor((Date.now() - start) / (1000 * 60 * 60 * 24 * 30))
+    if (monthsElapsed < 1) return false
+    return p.monthlyRecords.length < monthsElapsed
+  }).length
   const onTreatment = patients.filter(p => p.treatmentRegimen !== undefined).length
+
+  const patientsWithDays = patients.filter(p => p.features.daysToTreatment != null)
+  const avgDaysToTreatment = patientsWithDays.length > 0
+    ? Math.round(patientsWithDays.reduce((sum, p) => sum + p.features.daysToTreatment, 0) / patientsWithDays.length)
+    : null
+  // WHO recommends treatment within 1 day of diagnosis; >7 days is a concern
+  const daysToTreatmentStatus = avgDaysToTreatment === null ? null
+    : avgDaysToTreatment <= 3 ? 'good'
+    : avgDaysToTreatment <= 7 ? 'moderate'
+    : 'poor'
 
   const allRecords = patients.flatMap(p => p.monthlyRecords)
   const totalRecords = allRecords.length
@@ -39,6 +56,23 @@ export function Dashboard() {
     unassigned: patients.filter(p => p.treatmentRegimen === undefined).length,
   }
   const maxRegimen = Math.max(...Object.values(regimenGroups), 1)
+
+  const regimenOutcomes = (['hrze', 'mdr', 'xdr'] as const).map(regimen => {
+    const group = patients.filter(p => p.treatmentRegimen === regimen)
+    const count = group.length
+    const avgProb = count > 0
+      ? group.reduce((sum, p) => sum + latestProb(p), 0) / count
+      : null
+    const improving = group.filter(p => {
+      if (p.predictions.length < 2) return false
+      return p.predictions.at(-1)!.failureProbability - p.predictions.at(-2)!.failureProbability < -0.05
+    }).length
+    const worsening = group.filter(p => {
+      if (p.predictions.length < 2) return false
+      return p.predictions.at(-1)!.failureProbability - p.predictions.at(-2)!.failureProbability > 0.05
+    }).length
+    return { regimen, count, avgProb, improving, worsening }
+  })
 
   const maleCount   = patients.filter(p => p.features.sex === 'M').length
   const femaleCount = patients.filter(p => p.features.sex === 'F').length
@@ -89,7 +123,7 @@ export function Dashboard() {
             {/* Summary Cards */}
             <section aria-labelledby="summary-heading">
               <p id="summary-heading" className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-3">Summary</p>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
 
                 <div className="bg-surface rounded-2xl border border-border p-4 shadow-sm text-center">
                   <p className="text-2xl font-bold font-display text-primary tabular-nums">{total}</p>
@@ -129,6 +163,24 @@ export function Dashboard() {
                 <div className="bg-surface rounded-2xl border border-border p-4 shadow-sm text-center">
                   <p className="text-2xl font-bold font-display text-primary tabular-nums">{onTreatment}</p>
                   <p className="text-xs text-ink-muted mt-1">On Treatment</p>
+                </div>
+
+                <div className={`rounded-2xl border p-4 shadow-sm text-center
+                  ${daysToTreatmentStatus === 'good' ? 'bg-risk-low/5 border-risk-low/20'
+                    : daysToTreatmentStatus === 'moderate' ? 'bg-risk-med/5 border-risk-med/20'
+                    : daysToTreatmentStatus === 'poor' ? 'bg-risk-high/5 border-risk-high/20'
+                    : 'bg-surface border-border'}`}>
+                  {avgDaysToTreatment !== null ? (
+                    <p className={`text-2xl font-bold font-display tabular-nums
+                      ${daysToTreatmentStatus === 'good' ? 'text-risk-low'
+                        : daysToTreatmentStatus === 'moderate' ? 'text-risk-med'
+                        : 'text-risk-high'}`}>
+                      {avgDaysToTreatment}d
+                    </p>
+                  ) : (
+                    <p className="text-2xl font-bold text-ink-muted/30 font-display">—</p>
+                  )}
+                  <p className="text-xs text-ink-muted mt-1">Avg Days to Tx</p>
                 </div>
 
               </div>
@@ -335,6 +387,130 @@ export function Dashboard() {
                 )}
               </section>
             </div>
+
+            {/* Avg Days to Treatment */}
+            <section className="bg-surface rounded-2xl border border-border p-4 lg:p-5 shadow-sm" aria-labelledby="days-to-tx-heading">
+              <p id="days-to-tx-heading" className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-4">Average Days to Treatment</p>
+              {avgDaysToTreatment === null ? (
+                <p className="text-xs text-ink-muted italic">No diagnosis-to-treatment data available yet.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                  {/* Big number */}
+                  <div className="text-center md:border-r border-border">
+                    <p className={`text-5xl font-extrabold font-display tabular-nums
+                      ${daysToTreatmentStatus === 'good' ? 'text-risk-low'
+                        : daysToTreatmentStatus === 'moderate' ? 'text-risk-med'
+                        : 'text-risk-high'}`}>
+                      {avgDaysToTreatment}
+                    </p>
+                    <p className="text-sm text-ink-muted mt-1">days on average</p>
+                    <p className={`text-xs font-semibold mt-2 uppercase tracking-wide
+                      ${daysToTreatmentStatus === 'good' ? 'text-risk-low'
+                        : daysToTreatmentStatus === 'moderate' ? 'text-risk-med'
+                        : 'text-risk-high'}`}>
+                      {daysToTreatmentStatus === 'good' ? '✓ Within target'
+                        : daysToTreatmentStatus === 'moderate' ? '⚠ Moderate delay'
+                        : '✕ Significant delay'}
+                    </p>
+                  </div>
+
+                  {/* Distribution bar */}
+                  <div className="md:col-span-2 space-y-3">
+                    {[
+                      { label: '≤ 3 days', count: patientsWithDays.filter(p => p.features.daysToTreatment <= 3).length, color: 'bg-risk-low' },
+                      { label: '4–7 days', count: patientsWithDays.filter(p => p.features.daysToTreatment > 3 && p.features.daysToTreatment <= 7).length, color: 'bg-risk-med' },
+                      { label: '> 7 days', count: patientsWithDays.filter(p => p.features.daysToTreatment > 7).length, color: 'bg-risk-high' },
+                    ].map(({ label, count, color }) => (
+                      <div key={label} className="flex items-center gap-3">
+                        <span className="text-xs text-ink-secondary w-16">{label}</span>
+                        <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                          <div className={`h-full rounded-full ${color}`}
+                            style={{ width: `${patientsWithDays.length > 0 ? Math.round((count / patientsWithDays.length) * 100) : 0}%` }} />
+                        </div>
+                        <span className="text-xs font-semibold text-ink-secondary tabular-nums w-8 text-right">
+                          {count}
+                        </span>
+                      </div>
+                    ))}
+                    <p className="text-xs text-ink-muted pt-1">
+                      WHO target: treatment within 1 day of diagnosis. Based on {patientsWithDays.length} patient{patientsWithDays.length !== 1 ? 's' : ''}.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {/* Regimen Outcomes */}
+            <section className="bg-surface rounded-2xl border border-border p-4 lg:p-5 shadow-sm" aria-labelledby="regimen-outcomes-heading">
+              <p id="regimen-outcomes-heading" className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-4">Regimen Outcomes by Type</p>
+              {regimenOutcomes.every(r => r.count === 0) ? (
+                <p className="text-xs text-ink-muted italic">No patients with assigned regimens yet.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {regimenOutcomes.map(({ regimen, count, avgProb, improving, worsening }) => {
+                    const label = regimen === 'hrze' ? 'HRZE' : regimen === 'mdr' ? 'MDR-TB' : 'XDR-TB'
+                    const description = regimen === 'hrze'
+                      ? 'Drug-Susceptible TB'
+                      : regimen === 'mdr'
+                      ? 'Multi-Drug Resistant'
+                      : 'Extensively Drug Resistant'
+                    return (
+                      <div key={regimen} className="border border-border rounded-xl p-4 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="text-sm font-bold text-ink-base">{label}</p>
+                            <p className="text-xs text-ink-muted">{description}</p>
+                          </div>
+                          <span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                            {count} patient{count !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+
+                        {count === 0 ? (
+                          <p className="text-xs text-ink-muted italic">No patients assigned.</p>
+                        ) : (
+                          <>
+                            {/* Avg Risk */}
+                            <div>
+                              <p className="text-xs text-ink-muted mb-1">Avg Failure Risk</p>
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full ${avgProb! >= 0.6 ? 'bg-risk-high' : avgProb! >= 0.4 ? 'bg-risk-med' : 'bg-risk-low'}`}
+                                    style={{ width: `${Math.round((avgProb ?? 0) * 100)}%` }}
+                                  />
+                                </div>
+                                <span className={`text-sm font-bold tabular-nums ${riskColor(avgProb ?? 0).text}`}>
+                                  {avgProb !== null ? `${Math.round(avgProb * 100)}%` : '—'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Trend mini-summary */}
+                            <div className="flex gap-2">
+                              <div className="flex-1 bg-risk-low/5 border border-risk-low/20 rounded-lg p-2 text-center">
+                                <p className="text-sm font-bold text-risk-low tabular-nums">{improving}</p>
+                                <p className="text-xs text-ink-muted">Improving</p>
+                              </div>
+                              <div className="flex-1 bg-risk-high/5 border border-risk-high/20 rounded-lg p-2 text-center">
+                                <p className="text-sm font-bold text-risk-high tabular-nums">{worsening}</p>
+                                <p className="text-xs text-ink-muted">Worsening</p>
+                              </div>
+                              <div className="flex-1 bg-gray-50 border border-border rounded-lg p-2 text-center">
+                                <p className="text-sm font-bold text-ink-muted tabular-nums">
+                                  {count - improving - worsening}
+                                </p>
+                                <p className="text-xs text-ink-muted">Stable</p>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </section>
           </>
         )}
       </div>
