@@ -1,4 +1,5 @@
 import type { PatientFeatures, ContributionResult } from './inference'
+import { putXray } from './xrayStore'
 
 export interface MonthlyRecord {
   month: number
@@ -7,12 +8,15 @@ export interface MonthlyRecord {
   adherence: 'full' | 'partial' | 'poor'
   failureProbability: number
   timestamp: number
+  // TODO(server): these are IndexedDB keys today; replace with server-side asset IDs
+  xrayIds?: string[]
 }
 
 export interface PredictionRecord {
   label: 0 | 1
   failureProbability: number
   contributions: ContributionResult['contributions']
+  featuresUsed?: PatientFeatures
   timestamp: number
 }
 
@@ -26,6 +30,8 @@ export interface Patient {
   createdAt: number
   predictions: PredictionRecord[]
   monthlyRecords: MonthlyRecord[]
+  // TODO(server): these are IndexedDB keys today; replace with server-side asset IDs
+  intakeXrayIds?: string[]
 }
 
 const STORAGE_KEY = 'tb_patients'
@@ -39,8 +45,16 @@ function load(): Patient[] {
   }
 }
 
+// SECURITY NOTE: Patient structured data is stored unencrypted in localStorage.
+// Deploy only on a dedicated, access-controlled clinical workstation. See xrayStore.ts.
 function save(patients: Patient[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(patients))
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(patients))
+  } catch (e) {
+    // QuotaExceededError — alert clinician so data loss is visible
+    console.error('localStorage quota exceeded — patient data may not have been saved.', e)
+    alert('Storage limit reached. Some patient data could not be saved. Please export records and clear storage.')
+  }
 }
 
 export function getAllPatients(): Patient[] {
@@ -86,4 +100,29 @@ export function addMonthlyRecord(id: string, record: MonthlyRecord): void {
 
 export function generateId(): string {
   return `MED-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`
+}
+
+// TODO(server): replace putXray calls below with server upload; see xrayStore.ts
+
+export async function attachIntakeXrays(patientId: string, files: File[]): Promise<void> {
+  if (files.length === 0) return
+  // Load and verify patient exists before writing blobs to IndexedDB
+  const patients = load()
+  const p = patients.find(p => p.id === patientId)
+  if (!p) return
+  const ids = await Promise.all(files.map(f => putXray(f)))
+  p.intakeXrayIds = [...(p.intakeXrayIds ?? []), ...ids]
+  save(patients)
+}
+
+export async function attachMonthlyXrays(patientId: string, month: number, files: File[]): Promise<void> {
+  if (files.length === 0) return
+  // Load and verify both patient and monthly record exist before writing blobs
+  const patients = load()
+  const p = patients.find(p => p.id === patientId)
+  const record = p?.monthlyRecords.find(r => r.month === month)
+  if (!p || !record) return
+  const ids = await Promise.all(files.map(f => putXray(f)))
+  record.xrayIds = [...(record.xrayIds ?? []), ...ids]
+  save(patients)
 }

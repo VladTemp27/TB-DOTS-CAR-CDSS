@@ -1,83 +1,97 @@
 import { useNavigate, useParams } from 'react-router-dom'
+import { Info } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
-import { RiskBadge } from '../components/RiskBadge'
+import { RiskBadge, riskColor } from '../components/RiskBadge'
 import { FeatureBar } from '../components/FeatureBar'
 import { getPatient } from '../lib/storage'
+import { featureKeyFor } from '../lib/inference'
 import { PageFooter } from '../components/PageFooter'
+
+function formatValue(displayName: string, raw: unknown): string | undefined {
+  if (raw === undefined || raw === null || raw === '') return undefined
+  if (displayName === 'Days to Treatment') return `${raw} days`
+  return String(raw)
+}
 
 export function FeatureContribution() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const patient = id ? getPatient(id) : null
-  const latest = patient?.predictions.at(-1)
+  const latest  = patient?.predictions.at(-1)
 
   if (!patient || !latest) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">No prediction data available.</p>
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <p className="text-ink-muted">No prediction data available.</p>
       </div>
     )
   }
 
-  const prob = latest.failureProbability
+  const prob          = latest.failureProbability
   const contributions = latest.contributions
-  const maxDelta = Math.max(...contributions.map(c => c.delta), 0.001)
+  const maxDelta      = Math.max(...contributions.map(c => c.delta), 0.001)
+  const featuresUsed  = latest.featuresUsed ?? patient.features
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-bg flex flex-col">
       <AppHeader backLabel="Back to Patient Profile" onBack={() => navigate(`/patient/${id}`)} />
 
-      <main className="flex-1 px-4 pb-6 pt-4 space-y-4">
+      <div className="flex-1 px-4 lg:px-8 pb-6 pt-4 w-full max-w-3xl mx-auto space-y-4">
         <div>
-          <h2 className="font-bold text-gray-900 text-lg">Risk Factor Analysis</h2>
-          <p className="text-sm text-gray-500">What's driving {patient.name}'s failure risk</p>
+          <h2 className="font-bold text-ink-base text-lg font-display">Risk Factor Analysis</h2>
+          <p className="text-sm text-ink-secondary">What's driving {patient.name}'s failure risk</p>
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex items-center gap-3">
-          <span className="text-sm font-semibold text-gray-600">Overall Risk:</span>
-          <span className="text-2xl font-extrabold text-red-500">{Math.round(prob * 100)}%</span>
+        <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm flex items-center gap-3">
+          <span className="text-sm font-semibold text-ink-secondary">Overall Risk:</span>
+          <span className={`text-2xl font-extrabold font-display tabular-nums ${riskColor(prob).text}`}>
+            {Math.round(prob * 100)}%
+          </span>
           <RiskBadge probability={prob} size="lg" />
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Feature Contributions</p>
-
+        <div className="bg-surface border border-border rounded-2xl p-4 lg:p-5 shadow-sm">
+          <p className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-4">Feature Contributions</p>
           <div className="space-y-1">
-            {contributions.map(c => (
-              <FeatureBar
-                key={c.feature}
-                feature={c.feature}
-                delta={c.delta}
-                direction={c.direction}
-                maxDelta={maxDelta}
-              />
-            ))}
+            {contributions.map(c => {
+              const key = featureKeyFor(c.feature)
+              const value = key ? formatValue(c.feature, featuresUsed[key]) : undefined
+              return (
+                <FeatureBar
+                  key={c.feature}
+                  feature={c.feature}
+                  delta={c.delta}
+                  direction={c.direction}
+                  maxDelta={maxDelta}
+                  value={value}
+                />
+              )
+            })}
           </div>
-
-          <div className="flex gap-4 mt-4 pt-3 border-t border-gray-100">
+          <div className="flex gap-4 mt-4 pt-3 border-t border-border">
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-red-400" />
-              <span className="text-xs text-gray-500">Increases failure risk</span>
+              <div className="w-3 h-3 rounded-sm bg-risk-high/70" aria-hidden="true" />
+              <span className="text-xs text-ink-secondary">Increases failure risk</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-green-400" />
-              <span className="text-xs text-gray-500">Decreases failure risk</span>
+              <div className="w-3 h-3 rounded-sm bg-risk-low/70" aria-hidden="true" />
+              <span className="text-xs text-ink-secondary">Decreases failure risk</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex gap-2">
-          <span className="text-blue-500">ℹ</span>
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 flex gap-2.5 items-start">
+          <Info size={16} className="text-blue-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
           <p className="text-xs text-blue-700">
             This explanation is generated by the AI model. Final clinical decisions must be made by qualified healthcare professionals.
           </p>
         </div>
-      </main>
+      </div>
 
       <PageFooter>
         <button onClick={() => navigate(`/patient/${id}`)}
-          className="w-full border border-gray-200 text-gray-700 py-3.5 rounded-xl font-semibold text-sm">
-          ← Back
+          className="w-full border border-border text-ink-secondary py-3.5 rounded-xl font-semibold text-sm">
+          ← Back to Patient Profile
         </button>
       </PageFooter>
     </div>

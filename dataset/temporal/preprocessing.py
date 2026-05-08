@@ -46,7 +46,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # ============================================================================
 
 # Paths
-INPUT_PATH = os.path.join("dataset", "temporal", "combined_dataset.csv")
+INPUT_PATH = os.path.join("dataset", "temporal", "combined_complete_dataset.csv")
 OUTPUT_DIR = os.path.join("dataset", "temporal", "output")
 
 # Monthly time-step range
@@ -198,6 +198,8 @@ def load_and_validate_schema(path: str) -> pd.DataFrame:
     dupes = df.columns[df.columns.duplicated()].tolist()
     if dupes:
         print(f"  WARNING: Duplicate columns found: {dupes}")
+        df = df.loc[:, ~df.columns.duplicated(keep="first")]
+        print(f"  Deduplicated: kept first occurrence of each duplicate column")
 
     # Report null columns
     all_null = df.columns[df.isnull().all()].tolist()
@@ -1693,8 +1695,18 @@ def run_pipeline():
     # Stage 6: Temporal structuring
     df_static, df_temporal = structure_temporal_data(df)
 
-    # Stage 7: MICE imputation
-    df_static, df_temporal = impute_missing_mice(df_static, df_temporal)
+    # Stage 7: Missing data handling (diagnostic-first modular pipeline)
+    # Replaces the monolithic impute_missing_mice() with a four-pathway workflow:
+    #   Alpha (drop) → Beta (listwise) → Gamma (indicator+fill) → Delta (MICE/missForest)
+    # Audit report written to dataset/temporal/output/missing_data_report.json
+    from missing_data import handle_missing_data
+    # alpha_hard_threshold raised to 0.90 so smear_microscopy (83.8% missing)
+    # is routed to Gamma (indicator + fill) rather than dropped — clinically
+    # important test; its absence is itself a predictive signal.
+    df_static, df_temporal = handle_missing_data(
+        df_static, df_temporal,
+        config={"alpha_hard_threshold": 0.90},
+    )
 
     # Stage 7B: Export human-readable cleaned dataset
     df_cleaned = export_cleaned_dataset(df_static, df_temporal, OUTPUT_DIR)
