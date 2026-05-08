@@ -36,6 +36,8 @@ export function streamInterpretation(
         signal: controller.signal,
       })
     } catch (err) {
+      // Ignore intentional aborts (component unmount, navigation away)
+      if (err instanceof Error && err.name === 'AbortError') return
       onError(err instanceof Error ? err : new Error(String(err)))
       return
     }
@@ -72,7 +74,7 @@ export function streamInterpretation(
           const raw = line.slice('data: '.length).trim()
           if (!raw) continue
 
-          let parsed: { token?: string; done?: boolean; error?: string }
+          let parsed: { token?: string; done?: boolean; error?: string; status?: string }
           try {
             parsed = JSON.parse(raw)
           } catch {

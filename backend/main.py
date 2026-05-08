@@ -47,6 +47,16 @@ except ImportError:
 llm: "Llama | None" = None
 _load_error: str | None = None
 
+# Runtime stats — updated during inference, read by /api/stats
+_stats: dict = {
+    "requests_served": 0,
+    "requests_active": 0,
+    "last_patient": None,
+    "last_tokens": 0,
+    "last_elapsed_s": 0.0,
+    "model_load_time_s": 0.0,
+}
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -85,7 +95,9 @@ async def lifespan(app: FastAPI):
             n_gpu_layers=N_GPU_LAYERS,
             verbose=False,
         )
-        log.info("MedGemma ready — loaded in %.1fs", time.monotonic() - t0)
+        elapsed = time.monotonic() - t0
+        _stats["model_load_time_s"] = round(elapsed, 1)
+        log.info("MedGemma ready — loaded in %.1fs", elapsed)
     except Exception as exc:
         _load_error = f"{type(exc).__name__}: {exc}"
         log.exception("Model load failed after %.1fs", time.monotonic() - t0)
@@ -134,10 +146,12 @@ class InterpretRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-async def _generate(prompt: str, lock: asyncio.Lock, patient_name: str) -> AsyncGenerator:
+async def _generate(prompt: str, lock: asyncio.Lock, patient_name: str, request: Request) -> AsyncGenerator:
     log.debug(
         "Inference queued for %r — prompt length: %d chars", patient_name, len(prompt)
     )
+    _stats["requests_served"] += 1
+    _stats["requests_active"] += 1
     async with lock:
         log.info("Inference started for %r", patient_name)
         t0 = time.monotonic()
@@ -173,8 +187,14 @@ async def _generate(prompt: str, lock: asyncio.Lock, patient_name: str) -> Async
 
         t = threading.Thread(target=run_inference, daemon=True)
         t.start()
+        # Yield immediately so the SSE byte stream opens and the client knows
+        # the backend is alive during the (potentially long) prompt-prefill phase.
+        yield {"data": json.dumps({"status": "thinking"})}
         try:
             while True:
+                if await request.is_disconnected():
+                    log.info("Client disconnected for %r — stopping inference", patient_name)
+                    break
                 kind, value = await queue.get()
                 if kind == "token":
                     yield {"data": json.dumps({"token": value})}
@@ -194,6 +214,10 @@ async def _generate(prompt: str, lock: asyncio.Lock, patient_name: str) -> Async
         finally:
             stop_event.set()
             await asyncio.to_thread(t.join)
+            _stats["requests_active"] -= 1
+            _stats["last_patient"] = patient_name
+            _stats["last_tokens"] = token_count
+            _stats["last_elapsed_s"] = round(time.monotonic() - t0, 1)
 
 
 # ---------------------------------------------------------------------------
@@ -218,6 +242,25 @@ def health():
     return {"status": "ready", "model": "medgemma-1.5-4b-it-IQ4_XS", "n_ctx": N_CTX}
 
 
+@app.get("/api/stats")
+async def stats_endpoint(request: Request):
+    import sys, resource as _resource
+    lock = request.app.state.llm_lock
+    try:
+        rss = _resource.getrusage(_resource.RUSAGE_SELF).ru_maxrss
+        # macOS: bytes; Linux: kilobytes
+        ram_mb = rss // (1024 * 1024) if sys.platform == "darwin" else rss // 1024
+    except Exception:
+        ram_mb = 0
+    return {
+        "status": "error" if _load_error else ("loading" if llm is None else "ready"),
+        "error": _load_error,
+        "inference_active": lock.locked(),
+        "ram_mb": ram_mb,
+        **_stats,
+    }
+
+
 @app.post("/api/interpret")
 async def interpret(req: InterpretRequest, request: Request):
     log.info(
@@ -239,4 +282,4 @@ async def interpret(req: InterpretRequest, request: Request):
     lock = request.app.state.llm_lock
     prompt = build_prompt(req)
     log.debug("Prompt built (%d chars)", len(prompt))
-    return EventSourceResponse(_generate(prompt, lock, req.patient_name))
+    return EventSourceResponse(_generate(prompt, lock, req.patient_name, request))

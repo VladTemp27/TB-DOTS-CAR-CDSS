@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { Patient } from '../lib/storage'
 import type { ContributionResult } from '../lib/inference'
 import { useStreamingInterpretation } from '../hooks/useStreamingInterpretation'
@@ -7,15 +8,82 @@ interface ClinicalInterpretationProps {
   result: ContributionResult | null
 }
 
-function renderText(text: string) {
-  const paragraphs = text.split(/\n\n+/)
-  return paragraphs.map((para, i) => {
-    const parts = para.split(/\*\*/)
-    const nodes = parts.map((part, j) =>
-      j % 2 === 1 ? <strong key={j}>{part}</strong> : part
+// Render **bold** spans within a line of text
+function renderInline(text: string): ReactNode[] {
+  return text.split(/\*\*/).map((part, i) =>
+    i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+  )
+}
+
+// Line-by-line renderer: handles headers, bullet lists, numbered lists,
+// and plain paragraphs. Consecutive list items are grouped into one <ul>/<ol>.
+function renderText(text: string): ReactNode[] {
+  const lines = text.split('\n')
+  const nodes: ReactNode[] = []
+  let pendingList: { type: 'ul' | 'ol'; items: string[] } | null = null
+  let key = 0
+
+  const flushList = () => {
+    if (!pendingList) return
+    const { type, items } = pendingList
+    const liItems = items.map((item, i) => <li key={i}>{renderInline(item)}</li>)
+    const cls = 'text-sm text-gray-700 mb-2 pl-4 space-y-0.5'
+    nodes.push(
+      type === 'ul'
+        ? <ul key={key++} className={`${cls} list-disc`}>{liItems}</ul>
+        : <ol key={key++} className={`${cls} list-decimal`}>{liItems}</ol>
     )
-    return <p key={i} className="text-sm text-gray-700 mb-2 last:mb-0">{nodes}</p>
-  })
+    pendingList = null
+  }
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim()
+
+    // Blank line — paragraph break, flush any pending list
+    if (line === '') {
+      flushList()
+      continue
+    }
+
+    // Unordered list item: - or * or •
+    const ulMatch = line.match(/^[-*•]\s+(.+)/)
+    if (ulMatch) {
+      if (pendingList?.type !== 'ul') { flushList(); pendingList = { type: 'ul', items: [] } }
+      pendingList.items.push(ulMatch[1])
+      continue
+    }
+
+    // Ordered list item: 1. 2. etc.
+    const olMatch = line.match(/^\d+\.\s+(.+)/)
+    if (olMatch) {
+      if (pendingList?.type !== 'ol') { flushList(); pendingList = { type: 'ol', items: [] } }
+      pendingList.items.push(olMatch[1])
+      continue
+    }
+
+    // Anything else — flush pending list, render as paragraph
+    flushList()
+
+    // Markdown heading: ## or ###
+    const headingMatch = line.match(/^#{1,3}\s+(.+)/)
+    if (headingMatch) {
+      nodes.push(
+        <p key={key++} className="text-sm font-bold text-gray-900 mt-3 mb-1">
+          {renderInline(headingMatch[1])}
+        </p>
+      )
+      continue
+    }
+
+    nodes.push(
+      <p key={key++} className="text-sm text-gray-700 mb-1">
+        {renderInline(line)}
+      </p>
+    )
+  }
+
+  flushList()
+  return nodes
 }
 
 export function ClinicalInterpretation({ patient, result }: ClinicalInterpretationProps) {
@@ -31,10 +99,20 @@ export function ClinicalInterpretation({ patient, result }: ClinicalInterpretati
       </div>
 
       {!isComplete && !error && text.length === 0 && (
-        <div className="space-y-2 animate-pulse">
-          <div className="h-3 bg-gray-200 rounded w-full" />
-          <div className="h-3 bg-gray-200 rounded w-5/6" />
-          <div className="h-3 bg-gray-200 rounded w-4/6" />
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <span className="animate-pulse">Thinking</span>
+            <span className="flex gap-0.5">
+              <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+              <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+              <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+            </span>
+          </div>
+          <div className="space-y-2 animate-pulse mt-2">
+            <div className="h-3 bg-gray-100 rounded w-full" />
+            <div className="h-3 bg-gray-100 rounded w-5/6" />
+            <div className="h-3 bg-gray-100 rounded w-4/6" />
+          </div>
         </div>
       )}
 
@@ -48,9 +126,10 @@ export function ClinicalInterpretation({ patient, result }: ClinicalInterpretati
         </p>
       )}
 
-      {error && (
+      {error && text.length === 0 && !isStreaming && (
         <div>
           <p className="text-sm text-gray-500">AI interpretation unavailable.</p>
+          <p className="text-xs text-gray-400 mt-1 font-mono break-all">{error}</p>
           <button
             onClick={retry}
             className="mt-2 text-sm text-primary border border-primary rounded px-3 py-1"
