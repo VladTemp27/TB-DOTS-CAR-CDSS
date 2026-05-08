@@ -101,6 +101,10 @@ yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
 
+## ─── ML models ────────────────────────────────────────────────────────────────
+# GGUF model weights — too large for git (fetch separately)
+models/*.gguf
+
 ## ─── Misc ─────────────────────────────────────────────────────────────────────
 *.bak
 *.tmp
