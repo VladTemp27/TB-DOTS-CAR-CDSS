@@ -1,241 +1,211 @@
 # Preprocessing Pipeline — Technical Documentation
 
-## How `preprocessing.py` Meets Every Requirement
+This document describes `preprocessingV2.py`, the canonical preprocessing script for the TB-DOTS CAR CDSS temporal dataset.
+
+> **Scope:** Pure data cleaning only (Stages 1–8). Encoding, scaling, outlier capping, and tensor preparation are deliberately deferred to model-specific scripts to prevent data leakage across train/test splits.
 
 ---
 
-### 1. Remove Identifiers
+## Pipeline Architecture
 
-**Where:** Stage 2 (`remove_identifiers`) + Stage 9 (`encode_features`)
+```
+preprocessingV2.py  (Stages 1–8)
+┌──────────────────────────────────────────────────────┐
+│  Stage 1: Schema Validation & Column Standardization │
+│  Stage 2: Identifier Removal (Patient Privacy)       │
+│  Stage 3: Data Cleaning & Type Coercion              │
+│  Stage 4: Categorical Harmonization                  │
+│  Stage 5: Drop Uninformative Columns                 │
+│  Stage 6: Wide → Long Temporal Structuring           │
+│  Stage 7: Missing Data Handling (diagnostic-first)   │
+│  Stage 7B: Post-imputation Clinical Clipping         │
+│  Stage 8: Export & Validate                          │
+│                                                      │
+│  Output: cleaned_human_readable.csv (599 rows)       │
+│          missing_data_report.json                    │
+└──────────────────────────────────────────────────────┘
+           ↓
+  Model-specific scripts (after train/test split)
+┌──────────────────────────────────────────────────────┐
+│  - One-hot encoding                                  │
+│  - StandardScaler (fit on train only)                │
+│  - IQR + Z-score outlier capping                     │
+│  - 3D tensor preparation for RNN/LSTM                │
+└──────────────────────────────────────────────────────┘
+```
 
-| Phase | What happens |
-|-------|-------------|
-| **Phase A** | Stage 2 **flags** 4 identifier columns (`no`, `source_file`, `name_of_diagnosing_facility`, `name_of_treatment_unit`) but **retains** them in `cleaned_human_readable.csv` for traceability — per the no-drop policy |
-| **Phase B** | Stage 9 **removes** those same 4 columns from the model-ready DataFrame via `non_feature_cols` list + `df_static.drop(columns=cols_to_drop)`. They never appear in `static_features.csv`, `X_static.npy`, or any tensor |
-
-**Result:** Identifiers exist only in the human-readable CSV. Zero identifiers in any model output.
+The separation ensures that scalers and encoders are never fit on the full dataset before splitting — a common source of data leakage.
 
 ---
 
-### 2. Handle Missing Values (Diagnostic-First Pipeline)
+## Stage-by-Stage Reference
 
-**Where:** Stage 7 (`handle_missing_data` from `missing_data/`)
+### Stage 1 — Schema Validation & Column Standardization
 
-> **Note:** Stage 7 was rewritten from a monolithic `impute_missing_mice()` to a modular diagnostic-first pipeline. See [`missing_data/README.md`](missing_data/README.md) for full documentation.
+Loads `combined_complete_dataset.csv`, standardizes all column names to `snake_case`, and reports:
+- Duplicate columns (auto-deduplicated, keeps first)
+- Entirely null columns (flagged, not dropped)
+- Data type distribution
 
-The pipeline diagnoses each column's missingness mechanism before deciding how to handle it. Every column is routed to one of four pathways:
+### Stage 2 — Identifier Removal
+
+Flags 4 patient/facility-identifying columns (`no`, `source_file`, `name_of_diagnosing_facility`, `name_of_treatment_unit`). They are **retained** in `cleaned_human_readable.csv` for traceability but must be excluded before any model training.
+
+### Stage 3 — Data Cleaning & Type Coercion
+
+Parses all columns to correct types with clinical validation:
+
+| Issue | Fix |
+|---|---|
+| Future DOBs (e.g. 2063 instead of 1963) | Subtract 100 years if DOB year > data year |
+| Future clinical dates | Subtract 10 years if year > data year + 2 |
+| Weight/height strings with units | Regex parse → float |
+| BP written as `120/80` strings | Split into `bp_systolic` / `bp_diastolic` |
+| O2 sat with `%` suffix | Strip and parse |
+| Temperature 300°C, BP impossible | Clip: temp [30, 45], BP [60/30, 220/140] |
+| Smear/Xpert free-text results | Map to binary 0/1 |
+| Monthly doses > 31 | Clip to [0, 31] |
+| Misplaced CXR findings in `tuberculin_skin_test` | Regex detect → NaN |
+
+### Stage 4 — Categorical Harmonization
+
+Standardizes inconsistent categorical values to canonical labels:
+- `nationality` — merges raw nationality strings with a `nationality_raw` column; normalises to Filipino / Foreign / Unknown
+- `outcome` — maps variants to: Cured, Treatment Completed, Died, Treatment Failed, Lost to Follow-Up, Not Evaluated
+- `sex` — maps M/F/Male/Female to Male/Female
+- `regimen_type_at_start_of_treatment`, `diagnosis`, `civil_status`, comorbidities, prior TB history, DAT support — all standardised to consistent labels
+
+### Stage 5 — Drop Uninformative Columns
+
+Flags columns that are entirely null, near-entirely null, or redundant after harmonisation (e.g. `nationality_raw` after merging into `nationality`). Columns are flagged in the output rather than silently dropped to maintain auditability.
+
+### Stage 6 — Wide → Long Temporal Structuring
+
+Melts the wide-format dataset (one row per patient, columns like `m3_weight`, `m6_weight`) into long format:
+
+```
+df_static  — one row per patient  (baseline/demographic features)
+df_temporal — one row per patient-month  (monthly observations M0–M12)
+              columns: [patient_id, month, weight, height, pct_adherence,
+                        monthly_doses_taken, monthly_missed_doses,
+                        cumulative_doses_taken, smear_tb_lamp, xpert_mtb_rif]
+```
+
+### Stage 7 — Missing Data Handling (Diagnostic-First Pipeline)
+
+> Full documentation: [`missing_data/README.md`](missing_data/README.md)
+
+Replaces the original `impute_missing_mice()` with a modular pipeline that **diagnoses each column's missingness mechanism before deciding how to handle it**.
+
+**Why this matters:** Applying the same imputation to every column regardless of mechanism is statistically incorrect. A missing M9 weight because a patient dropped out (MNAR) should be handled differently from a missing BP reading that is explainable by other observed variables (MAR).
+
+**The four pathways:**
 
 | Pathway | Condition | Action |
 |---|---|---|
-| **Alpha — Drop** | >80% missing (hard), or >50% + low importance (soft) | Column removed |
-| **Beta — Listwise** | MCAR + <15% missing + N > 500 after deletion | Rows removed, patient IDs synced |
-| **Gamma — Indicator + Fill** | MNAR, temporal features, or moderate missingness | `is_missing_{col}` flag added; NaN filled with forward-fill (temporal) or median/mode (static) |
+| **Alpha — Drop** | >90% missing (hard), or >50% + bottom importance quartile (soft) | Column removed |
+| **Beta — Listwise** | MCAR proven + <15% missing + N > 500 after deletion | Rows removed, patient IDs synced |
+| **Gamma — Indicator + Fill** | MNAR, all temporal features, or moderate missingness | Binary `is_missing_{col}` flag added; NaN filled with forward-fill (temporal) or median/mode (static) |
 | **Delta — MICE** | MAR + informative feature | Stochastic MICE via `ExtraTreesRegressor` (missForest-style), FMI-scaled iterations |
+
+> **Why temporal features are never Alpha-dropped:** Monthly observation columns have structurally high missingness because later months have fewer recorded values — patients hadn't reached those timepoints yet. The absence of a Month 9 weight is itself predictive (likely dropout). Gamma preserves this signal via the `is_missing_*` indicator.
 
 **Results on `combined_complete_dataset.csv` (599 patients):**
 
-| Pathway | Count |
-|---|---|
-| Alpha — dropped | 9 static columns (all >80% missing) |
-| Beta — listwise | 0 (N=599 too small; MCAR not confirmed) |
-| Gamma — indicator + fill | 20 static + 8 temporal columns |
-| Delta — MICE | 1 static column (`bp_systolic`, 69.3%, MAR) |
+| Pathway | Columns | Notes |
+|---|---|---|
+| Alpha — dropped | 15 | All >90% missing |
+| Beta — listwise | 0 | N=599 too small; MCAR not confirmed |
+| Gamma — indicator + fill | 28 | All 8 temporal features + 20 static (includes `smear_microscopy` at 83.8%) |
+| Delta — MICE | 1 | `bp_systolic` (69.3%, MAR) |
 
-**Rows retained: 599 / 599** — zero patients removed.
+**`smear_microscopy` note:** Clinically important despite 83.8% missingness. Threshold raised to 0.90 so it routes to Gamma — the `is_missing_smear_microscopy` indicator captures the structured absence signal (patients not tested via smear often have a distinct diagnostic pathway).
 
-**Key design constraints:**
-- Temporal features are never Alpha-dropped (structural missingness; absence IS the signal)
+**Key constraints:**
+- Temporal features never Alpha-dropped (structural missingness)
 - No `bfill()` on temporal data — forward-fill only (no future data leakage)
-- `max_iter` scaled to FMI: `max(20, min(100, int(miss_rate × 100)))` per Von Hippel's rule
+- `max_iter` scaled to FMI via Von Hippel's rule: `max(20, min(100, int(miss_rate × 100)))`
+- Audit trail written to `output/missing_data_report.json`
 
-**Post-imputation sanity clipping** (unchanged from original):
-- Weight: [10, 180] kg | Height: [80, 220] cm | Monthly doses: [0, 31] | Smear/Xpert: [0, 1]
+**Result:** 0 missing values in both `df_static` and `df_temporal`.
 
-**Audit trail:** Every routing decision is written to `dataset/temporal/output/missing_data_report.json`.
+### Stage 7B — Post-Imputation Clinical Clipping
 
-**Result:** 0 missing values across all outputs.
+Applied immediately after `handle_missing_data()` returns. Handled separately from the `missing_data/` package to keep clinical domain constraints out of the reusable imputation logic.
 
----
+**Static bounds:**
 
-### 3. Feature Encoding
+| Column | Range |
+|---|---|
+| `weight_kg` | [10, 180] kg |
+| `height_cm` | [80, 220] cm |
+| `bp_systolic` | [60, 220] mmHg |
+| `bp_diastolic` | [30, 140] mmHg |
+| `heart_rate` | [20, 250] bpm |
+| `respiratory_rate` | [4, 60] breaths/min |
+| `temperature` | [30, 45] °C |
+| `o2_sat` | [70, 100] % |
+| `age` | [0, 110] years (re-rounded to int) |
 
-**Where:** Stage 9 (`encode_features`)
+**Temporal bounds:** weight [10,180], height [80,220], pct_adherence [0,100], monthly_doses_taken [0,31], monthly_missed_doses [0,∞), smear_tb_lamp [0,1], xpert_mtb_rif [0,1]
 
-```python
-# One-hot encoding via pandas get_dummies
-df_static_encoded = pd.get_dummies(
-    df_static, columns=cat_cols_static,
-    prefix_sep="_", dummy_na=False, dtype=float
-)
-```
+**Cumulative dose monotonicity:** `cumulative_doses_taken` is repaired via `cummax()` per patient — MICE imputes months independently and can introduce decreasing values (442 violations repaired on current dataset).
 
-| What gets encoded | Example transformation |
-|-------------------|----------------------|
-| `sex` → `sex_Male`, `sex_Female` | "Male" → 1.0, 0.0 |
-| `outcome` → `outcome_Cured`, `outcome_Died`, `outcome_Treatment Completed`, etc. | "Cured" → 1.0, 0.0, 0.0, ... |
-| `diagnosis` → `diagnosis_TB Disease`, `diagnosis_TB Infection` | "TB Disease" → 1.0, 0.0 |
-| 16 categorical columns total | All converted to binary indicators |
+### Stage 8 — Export & Validate
 
-**Additional handling:**
-- Any remaining `object` columns not in the curated list are **dropped** from model data
-- Date columns are converted to **ordinal integers** (days since 1970-01-01) so they remain numeric
-- Temporal categoricals are also one-hot encoded if any exist
-
-**Result:** 0 object/datetime columns in model-ready data. All features are `float64`.
-
----
-
-### 4. Scaling/Normalization
-
-**Where:** Stage 10 (`scale_features`)
-
-```python
-# StandardScaler on static numerics
-scaler_static = StandardScaler()
-if static_num_cols:
-    df_static[static_num_cols] = scaler_static.fit_transform(
-        df_static[static_num_cols]
-    )
-```
-
-| Dataset | Columns Scaled | Method |
-|---------|---------------|--------|
-| **Static** | 9 baseline clinical numerics: `age`, `weight_kg`, `height_cm`, `bp_systolic`, `bp_diastolic`, `heart_rate`, `respiratory_rate`, `temperature`, `o2_sat` | `StandardScaler` (zero mean, unit variance) |
-| **Temporal** | Continuous temporal features with >2 unique values (doses, adherence, weight, height — excludes binary smear/xpert) | `StandardScaler` |
-
-**Why StandardScaler?** It works well with RNN/LSTM models and preserves outlier signal for the subsequent capping stage. The scalers are returned so inverse transforms are possible.
-
-**Data leakage prevention:** For future train/test splitting, the scaler should be fit on training data only.
-
-**Separation guarantee:** Scaling happens **only in Phase B**. Phase A's `cleaned_human_readable.csv` has age mean ~45.6 (real years), not ~0.0. This is validated by `_validate_cleaned_human_readable()` which checks `age_mean > 1.0`.
-
----
-
-### 5. Outlier Detection
-
-**Where:** Stage 11 (`detect_and_cap_outliers`)
-
-Two methods applied sequentially:
-
-```python
-# IQR method
-def cap_outliers_iqr(series, col_name):
-    Q1 = series.quantile(0.25)
-    Q3 = series.quantile(0.75)
-    IQR = Q3 - Q1
-    lower = Q1 - 1.5 * IQR
-    upper = Q3 + 1.5 * IQR
-    n_outliers = ((series < lower) | (series > upper)).sum()
-    capped = series.clip(lower=lower, upper=upper)
-    return capped, n_outliers
-```
-
-| Method | Threshold | Applied to |
-|--------|-----------|-----------|
-| **IQR** | Q1 − 1.5×IQR to Q3 + 1.5×IQR | Static: 9 vital columns (`OUTLIER_COLUMNS`). Temporal: all continuous numeric columns |
-| **Z-score** | \|z\| > 3.0 (applied after IQR) | Same columns, catching any remaining extremes |
-
-Values are **capped (winsorized)**, not removed — no patients are deleted.
-
-**Note:** This runs on already-scaled data (post-Stage 10), so z-score of 3.0 = ±3 standard deviations from the mean.
-
----
-
-### 6. Schema Validation
-
-**Where:** Stage 1 (`load_and_validate_schema`) + Stage 13a (`validate_model_ready`)
-
-**Stage 1 — Input validation:**
-
-```python
-dupes = df.columns[df.columns.duplicated()].tolist()      # duplicate columns
-all_null = df.columns[df.isnull().all()].tolist()          # entirely null columns
-print(f"  Data types: {df.dtypes.value_counts().to_dict()}")  # dtype distribution
-```
-
-**Stage 13a — Output validation (6 checks):**
-
-| Check | What it verifies | How |
-|-------|-----------------|-----|
-| 1 | No identifier columns in model data | Scans column names for `name`, `no.`, `source`, `facility_name` |
-| 2 | No NaN in temporal tensor | `np.isnan(X_temporal).sum() == 0` |
-| 3 | No NaN in static array | `np.isnan(X_static).sum() == 0` |
-| 4 | No object/datetime dtypes | `df_static.select_dtypes(include=["object", "datetime64"])` must be empty |
-| 5 | Tensor shape consistency | `X_temporal.shape == (n_patients, n_timesteps, n_temporal_features)` i.e. `(205, 13, 8)` |
-| 6 | No infinite values | `np.isinf(X_temporal).sum() + np.isinf(X_static).sum() == 0` |
-
-**Phase A validation** (`_validate_cleaned_human_readable`):
+Exports `cleaned_human_readable.csv` with all original clinical units and categorical labels (no encoding, no scaling). Validates:
 
 | Check | What it verifies |
-|-------|-----------------|
+|---|---|
 | Age not scaled | `age_mean > 1.0` (real years, not standardized) |
 | Categorical labels preserved | `sex`, `outcome`, `diagnosis` have `dtype == object` |
-| No one-hot columns | No columns matching `sex_Male`, `outcome_Cured` pattern |
+| No one-hot columns | No columns matching `sex_Male`, `outcome_Cured` patterns |
 
 ---
 
-### 7. Impossible Values Prevention
+## Outputs
 
-**Where:** Stage 3 (`clean_and_coerce_types`) + Stage 7 (post-MICE clipping)
-
-| Issue | Fix | Location |
-|-------|-----|----------|
-| Future DOBs (2063 instead of 1963) | Subtract 100 years if DOB year > data_year | Stage 3 |
-| Future clinical dates (2028 instead of 2018) | Subtract 10 years if year > data_year + 2 | Stage 3 |
-| Negative weight/height from MICE | Clip to [10, 180] kg and [80, 220] cm | Stage 3 (pre-MICE) + Stage 7 (post-MICE) |
-| Negative test results from MICE | Clip smear/xpert to [0, 1], missed doses to [0, ∞) | Stage 7 |
-| Monthly doses > 31 | Clip to [0, 31] | Stage 3 + Stage 7 |
-| Misplaced CXR findings in tuberculin_skin_test | Regex detect → NaN | Stage 3 |
-| Near-empty columns mode-filled with single misleading value | >90% missing → `"Unknown"` instead of mode | Stage 7 |
-| Temperature 300°C, BP impossible | Clinical range clipping: temp [30, 45], BP [40/20, 300/200] | Stage 3 |
+| File | Description |
+|---|---|
+| `output/cleaned_human_readable.csv` | 599 rows × 269 columns — cleaned data in original units and labels, suitable for EDA and clinical review |
+| `output/missing_data_report.json` | Audit trail of every missing data routing decision — mechanism, pathway, rationale per column |
 
 ---
 
-## Two-Phase Architecture Summary
+## What This Pipeline Does NOT Do
 
-```
-PHASE A (Cleaning)                          PHASE B (Model Preparation)
-┌─────────────────────────┐                ┌──────────────────────────────┐
-│ Stage 1: Schema         │                │ Stage 9:  One-hot encoding   │
-│ Stage 2: Flag IDs       │                │ Stage 10: StandardScaler     │
-│ Stage 3: Type coercion  │                │ Stage 11: IQR + Z-score cap  │
-│ Stage 4: Harmonize cats │   deep copy    │ Stage 12: 3D tensor build    │
-│ Stage 5: Flag redundant │ ────────────►  │ Stage 13: Validate + export  │
-│ Stage 6: Wide → long    │                │                              │
-│ Stage 7: MICE impute    │                │ Outputs:                     │
-│ Stage 8: Export + valid  │                │   static_features.csv        │
-│                         │                │   temporal_features.csv      │
-│ Output:                 │                │   X_temporal.npy (205,13,8)  │
-│   cleaned_human_        │                │   X_static.npy   (205,78)   │
-│   readable.csv          │                │   X_combined_flat.npy        │
-│   (real units, labels)  │                │   (scaled, encoded, capped)  │
-└─────────────────────────┘                └──────────────────────────────┘
+Deliberately excluded from `preprocessingV2.py` to prevent data leakage:
+
+| Task | Where it belongs |
+|---|---|
+| One-hot encoding | Model-specific script, after train/test split |
+| StandardScaler / MinMaxScaler | Model-specific script, fit on train set only |
+| Outlier capping (IQR / Z-score) | Model-specific script |
+| 3D tensor preparation for RNN/LSTM | Model-specific script |
+
+Fitting a scaler on the full dataset before splitting leaks test-set distribution into training — a subtle but common bug. The cleaned CSV is the hand-off point.
+
+---
+
+## Running the Pipeline
+
+```bash
+python dataset/temporal/preprocessingV2.py
 ```
 
-Phase B operates on a **deep copy** of Phase A data, ensuring the cleaned CSV is never retroactively modified by scaling or encoding.
+From the project root. Reads `dataset/temporal/combined_complete_dataset.csv`, writes to `dataset/temporal/output/`.
 
 ---
 
-## Verification Results
+## Verification Checklist
 
-| # | Checklist Item | Status | Details |
-|---|---------------|--------|---------|
-| 1 | Remove identifiers | **PASS** | 4 ID columns retained in Phase A; 0 in Phase B |
-| 2 | Handle missing values (diagnostic-first) | **PASS** | 0 missing across all outputs; 599/599 rows retained |
-| 3 | Feature encoding | **PASS** | 38 readable object cols in Phase A; 0 in Phase B |
-| 4 | Scaling/Normalization | **PASS** | Original units in Phase A; ~0 mean in Phase B |
-| 5 | Outlier detection | **PASS** | 0 Inf, 0 NaN in model arrays |
-| 6 | Schema validation | **PASS** | X_temporal (599,13,16), X_static (599,69), X_combined_flat (599,277) |
-
-### Impossible Values Audit — All Clear
-
-| Category | Result |
-|----------|--------|
-| Future dates | 0 found |
-| Negative test results | 0 found |
-| Monthly doses > 31 | 0 found |
-| Weight outside [10, 180 kg] | 0 found |
-| Height outside [80, 220 cm] | 0 found |
-| Near-empty mode-fill errors | 0 found |
-| Whitespace issues | 0 found |
-| **Total missing values** | **0** |
+| # | Check | Status | Evidence |
+|---|---|---|---|
+| 1 | Identifiers removed from model data | **PASS** | 4 ID cols in CSV only; excluded in model scripts |
+| 2 | Zero NaN in cleaned outputs | **PASS** | Static: 0 / Temporal: 0 (from missing_data_report.json) |
+| 3 | No scaled/encoded values in CSV | **PASS** | `age_mean > 1.0`; object dtypes preserved |
+| 4 | No impossible clinical values | **PASS** | All columns within bounds post-clipping |
+| 5 | Temporal leakage prevented | **PASS** | Forward-fill only; no bfill in temporal imputation |
+| 6 | 599 rows retained | **PASS** | Zero rows deleted (Beta pathway not triggered) |
+| 7 | `smear_microscopy` preserved | **PASS** | GAMMA_INDICATOR at 83.8% missing |
+| 8 | Audit trail generated | **PASS** | `output/missing_data_report.json` written every run |
