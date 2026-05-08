@@ -1,4 +1,5 @@
-MODEL_PATH = "../models/medgemma-1.5-4b-it-IQ4_XS.gguf"
+from pathlib import Path
+MODEL_PATH = str(Path(__file__).parent.parent / "models" / "medgemma-1.5-4b-it-IQ4_XS.gguf")
 N_CTX = 2048
 N_THREADS = 4
 N_GPU_LAYERS = 0      # CPU-only, no CUDA/Metal dependency

@@ -7,7 +7,7 @@ def build_prompt(req) -> str:
     # Expand anatomical site code
     anatomical_site_full = (
         "PTB (Pulmonary)" if req.anatomical_site == "P" else "EPTB (Extra-pulmonary)"
-    )
+    )  # req.anatomical_site is Literal["P", "EP"]
 
     # Failure percentage
     failure_pct = req.failure_probability * 100
@@ -15,7 +15,7 @@ def build_prompt(req) -> str:
     # Build contributions text from top 5
     top_contributions = req.contributions[:5]
     contributions_lines = [
-        f"- {c.feature}: +{c.delta * 100:.1f}% ({c.direction})"
+        f"- {c.feature}: {c.delta * 100:+.1f}% ({c.direction})"
         for c in top_contributions
     ]
     contributions_text = "\n".join(contributions_lines)

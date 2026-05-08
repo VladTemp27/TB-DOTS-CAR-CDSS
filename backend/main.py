@@ -1,5 +1,8 @@
+import asyncio
 import json
-from typing import Literal
+import threading
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator, Literal
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,17 +21,6 @@ from config import (
 )
 from prompt import build_prompt
 
-app = FastAPI(title="MedGemma Clinical CDSS API")
-
-# CORS — allow all origins for development
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # ---------------------------------------------------------------------------
 # Model lifecycle
 # ---------------------------------------------------------------------------
@@ -39,20 +31,39 @@ except ImportError:
     Llama = None  # type: ignore[assignment,misc]
 
 llm: "Llama | None" = None
+_load_error: str | None = None
+_llm_lock = asyncio.Lock()
 
 
-@app.on_event("startup")
-async def load_model() -> None:
-    global llm
-    if Llama is None:
-        return
-    llm = Llama(
-        model_path=MODEL_PATH,
-        n_ctx=N_CTX,
-        n_threads=N_THREADS,
-        n_gpu_layers=N_GPU_LAYERS,
-        verbose=False,
-    )
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global llm, _load_error
+    if Llama is not None:
+        try:
+            llm = await asyncio.to_thread(
+                Llama,
+                model_path=MODEL_PATH,
+                n_ctx=N_CTX,
+                n_threads=N_THREADS,
+                n_gpu_layers=N_GPU_LAYERS,
+                verbose=False,
+            )
+            print(f"[INFO] MedGemma loaded successfully from {MODEL_PATH}")
+        except Exception as exc:
+            _load_error = str(exc)
+            print(f"[ERROR] Model failed to load: {exc}")
+    yield
+
+
+app = FastAPI(title="MedGemma Clinical CDSS API", lifespan=lifespan)
+
+# CORS — allow all origins for development (no credentials needed for SSE)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # ---------------------------------------------------------------------------
@@ -69,10 +80,10 @@ class ContributionItem(BaseModel):
 class InterpretRequest(BaseModel):
     patient_name: str
     age: int
-    sex: str
+    sex: Literal["M", "F"]
     bacteriologic_status: str
     microscopy_result: str
-    anatomical_site: str
+    anatomical_site: Literal["P", "EP"]
     registration_group: str
     source_of_patient: str
     type: str
@@ -82,39 +93,68 @@ class InterpretRequest(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Inference helpers
+# ---------------------------------------------------------------------------
+
+
+async def _generate(prompt: str) -> AsyncGenerator:
+    async with _llm_lock:
+        loop = asyncio.get_event_loop()
+        queue: asyncio.Queue = asyncio.Queue()
+
+        def run_inference():
+            try:
+                for chunk in llm(  # type: ignore[misc]
+                    prompt,
+                    stream=True,
+                    max_tokens=MAX_TOKENS,
+                    temperature=TEMPERATURE,
+                    top_p=TOP_P,
+                    repeat_penalty=REPEAT_PENALTY,
+                ):
+                    token = chunk.get("choices", [{}])[0].get("text", "")
+                    loop.call_soon_threadsafe(queue.put_nowait, ("token", token))
+                loop.call_soon_threadsafe(queue.put_nowait, ("done", None))
+            except Exception as e:
+                loop.call_soon_threadsafe(queue.put_nowait, ("error", str(e)))
+
+        t = threading.Thread(target=run_inference, daemon=True)
+        t.start()
+
+        while True:
+            kind, value = await queue.get()
+            if kind == "token":
+                yield {"data": json.dumps({"token": value})}
+            elif kind == "done":
+                yield {"data": json.dumps({"token": "", "done": True})}
+                break
+            elif kind == "error":
+                yield {"data": json.dumps({"error": value, "done": True})}
+                break
+
+
+# ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
 
 
 @app.get("/api/health")
-async def health() -> dict:
-    return {
-        "status": "ready" if llm is not None else "loading",
-        "model": "medgemma-1.5-4b-it-IQ4_XS",
-        "n_ctx": N_CTX,
-    }
+def health():
+    if _load_error:
+        return {"status": "error", "error": _load_error, "model": "medgemma-1.5-4b-it-IQ4_XS", "n_ctx": N_CTX}
+    if llm is None:
+        return {"status": "loading", "model": "medgemma-1.5-4b-it-IQ4_XS", "n_ctx": N_CTX}
+    return {"status": "ready", "model": "medgemma-1.5-4b-it-IQ4_XS", "n_ctx": N_CTX}
 
 
 @app.post("/api/interpret")
-async def interpret(req: InterpretRequest) -> EventSourceResponse:
-    async def generate():
-        if llm is None:
-            yield {"data": json.dumps({"error": "Model not loaded"})}
-            return
+async def interpret(req: InterpretRequest):
+    if llm is None:
+        error_msg = _load_error or "Model not loaded"
 
-        prompt = build_prompt(req)
+        async def err():
+            yield {"data": json.dumps({"error": error_msg, "done": True})}
 
-        for chunk in llm(
-            prompt,
-            stream=True,
-            max_tokens=MAX_TOKENS,
-            temperature=TEMPERATURE,
-            top_p=TOP_P,
-            repeat_penalty=REPEAT_PENALTY,
-        ):
-            token = chunk["choices"][0]["text"]
-            yield {"data": json.dumps({"token": token})}
-
-        yield {"data": json.dumps({"token": "", "done": True})}
-
-    return EventSourceResponse(generate())
+        return EventSourceResponse(err())
+    prompt = build_prompt(req)
+    return EventSourceResponse(_generate(prompt))
