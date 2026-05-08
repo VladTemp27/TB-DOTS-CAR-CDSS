@@ -499,7 +499,7 @@ class TBAnalysisPipeline:
                 "Other"
             )
             if "Year" in df.columns:
-                outcome_by_year = pd.crosstab(df["Year"], outcome_category, normalize="index") * 100
+                outcome_by_year = (pd.crosstab(df["Year"], outcome_category, normalize="index") * 100).round(2)
                 outputs["outcome_trends_by_year"] = self.save_table_latex(
                     outcome_by_year.reset_index(),
                     "outcome_trends_by_year",
