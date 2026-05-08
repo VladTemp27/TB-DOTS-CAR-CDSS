@@ -152,6 +152,18 @@ const FEATURE_NAMES = [
   'Treatment Facility', 'Screening Facility',
 ]
 
+export const FEATURE_KEYS = [
+  'age', 'daysToTreatment', 'year', 'sex', 'anatomicalSite',
+  'registrationGroup', 'bacteriologicStatus', 'microscopyResult',
+  'sourceOfPatient', 'type', 'province', 'cityMunicipality',
+  'treatmentHealthFacility', 'screeningDiagnosingHealthFacility',
+] as const satisfies readonly (keyof PatientFeatures)[]
+
+export function featureKeyFor(displayName: string): keyof PatientFeatures | undefined {
+  const idx = FEATURE_NAMES.indexOf(displayName)
+  return idx >= 0 ? FEATURE_KEYS[idx] : undefined
+}
+
 export async function predictWithContributions(features: PatientFeatures): Promise<ContributionResult> {
   console.log('Predicting with contributions for features:', features)
   const sess = await getSession()

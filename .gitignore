@@ -69,6 +69,7 @@ Desktop.ini
 .idea/
 *.swp
 *.swo
+.worktrees/
 *~
 
 ## ─── Python ───────────────────────────────────────────────────────────────────
@@ -104,6 +105,10 @@ pnpm-debug.log*
 ## ─── ML models ────────────────────────────────────────────────────────────────
 # GGUF model weights — too large for git (fetch separately)
 models/*.gguf
+
+## ─── Superpowers / AI tooling ────────────────────────────────────────────────
+.superpowers/
+docs/superpowers/
 
 ## ─── Misc ─────────────────────────────────────────────────────────────────────
 *.bak
