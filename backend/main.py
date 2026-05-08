@@ -150,8 +150,13 @@ async def _generate(prompt: str, lock: asyncio.Lock, patient_name: str, request:
     log.debug(
         "Inference queued for %r — prompt length: %d chars", patient_name, len(prompt)
     )
-    _stats["requests_active"] += 1
+    # Yield before acquiring the lock so the SSE byte stream opens immediately
+    # (sse_starlette needs a first yield to finalise response headers).
+    # requests_active is incremented inside the lock so it only reflects
+    # requests that are actually running inference, not ones waiting to acquire.
+    yield {"data": json.dumps({"status": "thinking"})}
     async with lock:
+        _stats["requests_active"] += 1
         log.info("Inference started for %r", patient_name)
         t0 = time.monotonic()
         token_count = 0
@@ -186,9 +191,6 @@ async def _generate(prompt: str, lock: asyncio.Lock, patient_name: str, request:
 
         t = threading.Thread(target=run_inference, daemon=True)
         t.start()
-        # Yield immediately so the SSE byte stream opens and the client knows
-        # the backend is alive during the (potentially long) prompt-prefill phase.
-        yield {"data": json.dumps({"status": "thinking"})}
         try:
             while True:
                 if await request.is_disconnected():
