@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Info } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { StepProgress } from '../components/StepProgress'
 import { getChoices, predictWithContributions } from '../lib/inference'
@@ -12,6 +13,10 @@ const DRAFT_KEY = 'tb_intake_draft'
 function loadDraft() {
   try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '{}') } catch { return {} }
 }
+
+const inputCls = 'w-full min-h-[44px] border border-border rounded-xl px-3 py-2.5 text-sm text-ink-base bg-surface placeholder-ink-muted focus:border-primary outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1'
+const selectCls = `${inputCls} bg-surface`
+const labelCls = 'block text-sm font-medium text-ink-secondary mb-1'
 
 export function PatientIntakeStep2() {
   const navigate = useNavigate()
@@ -28,11 +33,11 @@ export function PatientIntakeStep2() {
   const [dateOfDiagnosis, setDateOfDiagnosis] = useState(draft.dateOfDiagnosis ?? '')
   const [loading, setLoading] = useState(false)
 
-  const bactChoices = getChoices('Bacteriologic_Status')
-  const microChoices = getChoices('Microscopy_Result')
-  const siteChoices = getChoices('Anatomical_Site')
-  const sourceChoices = getChoices('Source_of_Patient')
-  const typeChoices = getChoices('Type')
+  const bactChoices         = getChoices('Bacteriologic_Status')
+  const microChoices        = getChoices('Microscopy_Result')
+  const siteChoices         = getChoices('Anatomical_Site')
+  const sourceChoices       = getChoices('Source_of_Patient')
+  const typeChoices         = getChoices('Type')
   const treatmentFacChoices = getChoices('Treatment_Health_Facility')
   const screeningFacChoices = getChoices('Screening_Diagnosing_Health_Facility')
 
@@ -44,7 +49,7 @@ export function PatientIntakeStep2() {
 
     const daysToTreatment = dateStartedTx && dateOfDiagnosis
       ? Math.max(0, (new Date(dateStartedTx).getTime() - new Date(dateOfDiagnosis).getTime()) / 86400000)
-      : 7 // median default
+      : 7
 
     const features: PatientFeatures = {
       age: draft.age ?? 35,
@@ -64,9 +69,7 @@ export function PatientIntakeStep2() {
     }
 
     try {
-      console.log('Triggering inference with features:', features)
       const result = await predictWithContributions(features)
-      console.log('Inference complete, result:', result)
       const id = generateId()
       savePatient({
         id,
@@ -94,103 +97,111 @@ export function PatientIntakeStep2() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-bg flex flex-col">
       <AppHeader />
       <StepProgress steps={4} current={2} />
 
-      <main className="flex-1 px-4 pb-6 space-y-4">
-        <div>
-          <h2 className="font-semibold text-gray-900 text-base">Lab Results & Diagnosis</h2>
-          <p className="text-sm text-gray-500">Enter laboratory and clinical results</p>
-        </div>
-
-        <div className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Bacteriologic Status *</label>
-            <select value={bacteriologicStatus} onChange={e => setBacteriologicStatus(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary bg-white">
-              <option value="">Select</option>
-              {bactChoices.map(v => <option key={v} value={v}>{v}</option>)}
-            </select>
-          </div>
+      <div className="flex-1 flex flex-col">
+        <div className="flex-1 px-4 lg:px-8 pb-6 pt-4 w-full max-w-3xl mx-auto space-y-4">
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Microscopy / Smear Result *</label>
-            <select value={microscopyResult} onChange={e => setMicroscopyResult(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary bg-white">
-              <option value="">Select</option>
-              {microChoices.map(v => <option key={v} value={v}>{v}</option>)}
-            </select>
+            <h1 className="font-bold text-ink-base text-base font-display">Lab Results &amp; Diagnosis</h1>
+            <p className="text-sm text-ink-secondary">Enter laboratory and clinical results</p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Anatomical Site *</label>
-            <select value={anatomicalSite} onChange={e => setAnatomicalSite(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary bg-white">
-              <option value="">Select</option>
-              {siteChoices.map(v => <option key={v} value={v}>{v === 'P' ? 'PTB (Pulmonary)' : 'EPTB (Extra-pulmonary)'}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Source of Patient *</label>
-            <select value={sourceOfPatient} onChange={e => setSourceOfPatient(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary bg-white">
-              <option value="">Select</option>
-              {sourceChoices.map(v => <option key={v} value={v}>{v}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Case Type *</label>
-            <select value={type} onChange={e => setType(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary bg-white">
-              <option value="">Select</option>
-              {typeChoices.map(v => <option key={v} value={v}>{v}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Treatment Health Facility</label>
-            <select value={treatmentFacility} onChange={e => setTreatmentFacility(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary bg-white">
-              <option value="">Select (optional)</option>
-              {treatmentFacChoices.map(v => <option key={v} value={v}>{v}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Screening / Diagnosing Facility</label>
-            <select value={screeningFacility} onChange={e => setScreeningFacility(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary bg-white">
-              <option value="">Select (optional)</option>
-              {screeningFacChoices.map(v => <option key={v} value={v}>{v}</option>)}
-            </select>
-          </div>
-
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date of Diagnosis</label>
-              <input type="date" value={dateOfDiagnosis} onChange={e => setDateOfDiagnosis(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary" />
+          {/* Bacteriology */}
+          <div className="bg-surface border border-border rounded-2xl p-4 lg:p-6 space-y-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls} htmlFor="bactStatus">Bacteriologic Status *</label>
+                <select id="bactStatus" value={bacteriologicStatus} onChange={e => setBacteriologicStatus(e.target.value)} className={selectCls}>
+                  <option value="">Select</option>
+                  {bactChoices.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="microResult">Microscopy / Smear Result *</label>
+                <select id="microResult" value={microscopyResult} onChange={e => setMicroscopyResult(e.target.value)} className={selectCls}>
+                  <option value="">Select</option>
+                  {microChoices.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
             </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date Started Tx</label>
-              <input type="date" value={dateStartedTx} onChange={e => setDateStartedTx(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary" />
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls} htmlFor="anatSite">Anatomical Site *</label>
+                <select id="anatSite" value={anatomicalSite} onChange={e => setAnatomicalSite(e.target.value)} className={selectCls}>
+                  <option value="">Select</option>
+                  {siteChoices.map(v => <option key={v} value={v}>{v === 'P' ? 'PTB (Pulmonary)' : 'EPTB (Extra-pulmonary)'}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="source">Source of Patient *</label>
+                <select id="source" value={sourceOfPatient} onChange={e => setSourceOfPatient(e.target.value)} className={selectCls}>
+                  <option value="">Select</option>
+                  {sourceChoices.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className={labelCls} htmlFor="caseType">Case Type *</label>
+              <select id="caseType" value={type} onChange={e => setType(e.target.value)} className={selectCls}>
+                <option value="">Select</option>
+                {typeChoices.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
             </div>
           </div>
-        </div>
 
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-700">
-          TB Diagnostic Guide: TB diagnosis requires at least 2 positive confirmatory tests or clinical + radiological evidence with positive bacteriology.
+          {/* Facilities & Dates */}
+          <div className="bg-surface border border-border rounded-2xl p-4 lg:p-6 space-y-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls} htmlFor="txFac">Treatment Health Facility</label>
+                <select id="txFac" value={treatmentFacility} onChange={e => setTreatmentFacility(e.target.value)} className={selectCls}>
+                  <option value="">Select (optional)</option>
+                  {treatmentFacChoices.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="screenFac">Screening / Diagnosing Facility</label>
+                <select id="screenFac" value={screeningFacility} onChange={e => setScreeningFacility(e.target.value)} className={selectCls}>
+                  <option value="">Select (optional)</option>
+                  {screeningFacChoices.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls} htmlFor="diagDate">Date of Diagnosis</label>
+                <input id="diagDate" type="date" value={dateOfDiagnosis}
+                  onChange={e => setDateOfDiagnosis(e.target.value)}
+                  className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="txDate">Date Started Treatment</label>
+                <input id="txDate" type="date" value={dateStartedTx}
+                  onChange={e => setDateStartedTx(e.target.value)}
+                  className={inputCls} />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 flex gap-2.5 items-start">
+            <Info size={16} className="text-blue-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
+            <p className="text-xs text-blue-700">
+              TB diagnosis requires at least 2 positive confirmatory tests or clinical + radiological evidence with positive bacteriology.
+            </p>
+          </div>
         </div>
-      </main>
+      </div>
 
       <PageFooter>
         <div className="flex gap-3">
           <button onClick={() => navigate(-1)}
-            className="flex-1 border border-gray-200 text-gray-700 py-3.5 rounded-xl font-semibold text-sm active:bg-gray-50">
+            className="flex-1 border border-border text-ink-secondary py-3.5 rounded-xl font-semibold text-sm active:bg-gray-50">
             ← Back
           </button>
           <button
