@@ -1,19 +1,17 @@
 """
 ==============================================================================
 TB-DOTS CAR Clinical Decision Support System (CDSS)
-Preprocessing Pipeline for Pulmonary Tuberculosis (PTB) Dataset
+Pure Preprocessing Pipeline for Pulmonary Tuberculosis (PTB) Dataset
 ==============================================================================
 
 This pipeline prepares longitudinal TB clinical registry data (2015-2025)
-from the Cordillera Administrative Region (CAR), Philippines, for temporal
-machine learning models (RNN, LSTM, LSTM+XGBoost hybrid).
+from the Cordillera Administrative Region (CAR), Philippines, for machine
+learning models.
 
 Dataset: TB-DOTS treatment monitoring records with monthly observations
          (M0-M12) covering demographics, diagnostics, vitals, and adherence.
 
-The pipeline is split into two distinct phases:
-
-  PHASE A - DATA CLEANING (produces cleaned_human_readable.csv)
+Pipeline Scope - PURE PREPROCESSING ONLY:
     1. Schema Validation & Column Standardization
     2. Identifier Removal (Patient Privacy)
     3. Data Cleaning & Type Coercion
@@ -23,24 +21,26 @@ The pipeline is split into two distinct phases:
     7. Missing Data Handling (forward-fill + MICE imputation)
     8. Export & Validate cleaned_human_readable.csv
 
-  PHASE B - MODEL PREPARATION (produces model-ready outputs)
-    9.  One-Hot Encoding of categorical features
-   10.  Feature Scaling (StandardScaler)
-   11.  Outlier Detection & Capping (IQR + Z-score)
-   12.  Temporal Modeling Preparation (3D tensor for RNN/LSTM)
-   13.  Final Validation & Export of model-ready outputs
+Output:
+    - cleaned_human_readable.csv: Clean, interpretable data with original
+      clinical units (kg, cm, %, mmHg) and readable categorical labels
+      (Male/Female, Cured, Regimen 1, etc.)
+
+What this pipeline does NOT do:
+    - No feature scaling (StandardScaler, MinMaxScaler, etc.)
+    - No one-hot encoding or categorical encoding
+    - No outlier detection or capping
+    - No tensor preparation for specific model architectures
+
+These transformations should be applied later in model-specific
+preparation scripts, after train/test splitting to prevent data leakage.
 
 Design rationale:
-  - Phase A produces a single, interpretable CSV suitable for EDA and
-    clinical validation, with real units (kg, cm, %, mmHg) and readable
-    categorical labels (Male/Female, Cured, Regimen 1, etc.).
-  - Phase B derives all model-ready outputs strictly from the cleaned
-    data produced in Phase A. This ensures:
-      * Scaling and encoding happen only after cleaning and imputation.
-      * No data leakage: temporal imputation uses only past data
-        (forward-fill, never backward-fill).
-      * Future train/test splitting can be inserted between Phase A
-        and Phase B without re-running the cleaning pipeline.
+    - This is a PURE PREPROCESSING pipeline focused on data cleaning only.
+    - Output is suitable for EDA, clinical validation, and as input to
+      multiple downstream model-specific pipelines.
+    - Scaling, encoding, and model-specific transformations are deferred
+      to separate scripts to ensure proper train/test split handling.
 
 Author: TB-DOTS CAR CDSS Research Team
 Date:   2025 (revised 2026)
@@ -53,8 +53,6 @@ import numpy as np
 import pandas as pd
 from sklearn.experimental import enable_iterative_imputer  # noqa: F401
 from sklearn.impute import IterativeImputer
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, OneHotEncoder
-from scipy import stats
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -101,45 +99,8 @@ ALWAYS_DROP_COLUMNS = [
     "risk_factors_for_drug_resistance_tuberculosis",  # all null
 ]
 
-# Categorical columns for one-hot encoding (used in Phase B only)
-# NOTE: The complete dataset has both 'Nationality?' (standardized -> 'nationality')
-# and a new 'Nationality' column (standardized -> 'nationality'). After standardization
-# these will collide; the duplicate is handled in Stage 1 schema validation.
-# Only 'nationality' (from 'Nationality?') is kept in the model as it has more coverage.
-CATEGORICAL_COLUMNS = [
-    "sex",
-    "civil_status",
-    "nationality",
-    "diagnosis",
-    "bacteriologic_status",
-    "treatment_regimen",
-    "outcome",
-    "case_registration_group",
-    "drug_resistance_bacteriological_status",
-    "chest_x_ray_at_case_notification",
-    "xpert_mtb_rif",
-    "smear_microscopy",
-    "co_morbidities",
-    "prior_history_of_tb",
-    "regimen_type_at_start_of_treatment",
-    "dat_supported",
-]
-
-# Numerical columns for scaling (baseline clinical numerics)
-NUMERICAL_COLUMNS_SCALE = [
-    "age",
-    "weight_kg",
-    "height_cm",
-    "bp_systolic",
-    "bp_diastolic",
-    "heart_rate",
-    "respiratory_rate",
-    "temperature",
-    "o2_sat",
-]
-
-# Columns for outlier detection
-OUTLIER_COLUMNS = [
+# Columns for MICE imputation (numerical only)
+IMPUTE_COLUMNS = [
     "age",
     "weight_kg",
     "height_cm",
@@ -1561,796 +1522,45 @@ def _validate_cleaned_human_readable(df_clean: pd.DataFrame):
     print()
 
 
-# ############################################################################
-#
-#  PHASE B - MODEL PREPARATION
-#
-#  Stages 9-13: Encode -> Scale -> Outlier cap -> Tensor -> Validate -> Export
-#  All model-ready outputs are derived from the cleaned data (Phase A).
-#  This separation allows future train/test splitting before scaling.
-#
-# ############################################################################
-
-
 # ============================================================================
-# STAGE 9: FEATURE ENCODING (ONE-HOT)  [MODEL PREPARATION]
-# ============================================================================
-
-def encode_features(df_static: pd.DataFrame, df_temporal: pd.DataFrame):
-    """
-    Stage 9 [MODEL PREPARATION]: One-hot encode categorical features.
-
-    Only encodes columns listed in CATEGORICAL_COLUMNS (the curated set
-    of clinically meaningful categorical features). Identifier columns,
-    raw text columns with parsed numeric equivalents, and uninformative
-    columns are dropped from the model-ready DataFrame since they are
-    not useful model features. (They remain in cleaned_human_readable.csv.)
-
-    Date columns are converted to ordinal (days since epoch).
-
-    Returns:
-        df_static:    with one-hot encoded categoricals, identifiers removed
-        df_temporal:  with one-hot encoded categoricals (if any)
-        encoding_map: dict mapping original column -> encoded column names
-    """
-    print("=" * 70)
-    print("STAGE 9: Feature Encoding (One-Hot)  [MODEL PREPARATION]")
-    print("=" * 70)
-
-    encoding_map = {}
-
-    # --- Remove non-feature columns from model-ready data ---
-    # These are retained in cleaned_human_readable.csv but serve no purpose
-    # as ML features (identifiers, raw text with parsed equivalents, etc.)
-    non_feature_cols = (
-        list(ID_COLUMNS_TO_DROP)                # identifiers
-        + list(ALWAYS_DROP_COLUMNS)             # uninformative / near-empty
-        + ["weight", "height", "blood_pressure",  # raw text (parsed to numerics)
-           "facility",                           # derived from source_file
-           "nationality_raw",                    # duplicate of nationality (new complete dataset)
-           "regimen_type_at_end_of_treatment",   # end-of-treatment (leakage risk)
-           "regimen_type_at_6th_month_of_treatment",  # mid-treatment (leakage risk)
-           ]
-    )
-    cols_to_drop = [c for c in non_feature_cols if c in df_static.columns]
-    if cols_to_drop:
-        df_static = df_static.drop(columns=cols_to_drop)
-        print(f"  Removed {len(cols_to_drop)} non-feature columns from "
-              f"model-ready data: {cols_to_drop}")
-
-    # --- Identify categorical columns to encode ---
-    # Only encode columns from the curated CATEGORICAL_COLUMNS list
-    # that are present and still have object dtype
-    exclude = {"patient_id"}
-    date_cols = [c for c in df_static.columns
-                 if df_static[c].dtype == "datetime64[ns]"
-                 or "date" in c.lower()]
-
-    cat_cols_static = [c for c in CATEGORICAL_COLUMNS
-                       if c in df_static.columns
-                       and c not in exclude
-                       and c not in date_cols
-                       and df_static[c].dtype == "object"]
-
-    # Also catch any remaining object columns NOT in the curated list
-    remaining_obj = [c for c in df_static.columns
-                     if df_static[c].dtype == "object"
-                     and c not in cat_cols_static
-                     and c not in exclude
-                     and c not in date_cols]
-    if remaining_obj:
-        print(f"  Dropping {len(remaining_obj)} remaining non-feature text "
-              f"columns: {remaining_obj}")
-        df_static = df_static.drop(columns=remaining_obj)
-
-    if cat_cols_static:
-        print(f"  Encoding {len(cat_cols_static)} static categorical columns:")
-        for col in cat_cols_static:
-            unique_vals = df_static[col].nunique()
-            print(f"    {col}: {unique_vals} categories")
-
-        df_static_encoded = pd.get_dummies(
-            df_static, columns=cat_cols_static,
-            prefix_sep="_", dummy_na=False, dtype=float
-        )
-
-        for col in cat_cols_static:
-            encoded_cols = [c for c in df_static_encoded.columns
-                           if c.startswith(col + "_")]
-            encoding_map[col] = encoded_cols
-
-        n_new = df_static_encoded.shape[1] - df_static.shape[1]
-        print(f"  Static columns: {df_static.shape[1]} -> "
-              f"{df_static_encoded.shape[1]} (+{n_new} one-hot)")
-        df_static = df_static_encoded
-
-    # --- Temporal categoricals ---
-    cat_cols_temporal = [c for c in df_temporal.columns
-                         if c not in ("patient_id", "month")
-                         and df_temporal[c].dtype == "object"]
-
-    if cat_cols_temporal:
-        print(f"  Encoding {len(cat_cols_temporal)} temporal categorical columns:")
-        for col in cat_cols_temporal:
-            unique_vals = df_temporal[col].nunique()
-            print(f"    {col}: {unique_vals} categories")
-
-        df_temporal = pd.get_dummies(
-            df_temporal, columns=cat_cols_temporal,
-            prefix_sep="_", dummy_na=False, dtype=float
-        )
-
-    # Flag date columns (retained in DataFrame, excluded from tensor in Stage 12)
-    date_cols_present = [c for c in df_static.columns
-                         if df_static[c].dtype == "datetime64[ns]"
-                         or ("date" in c.lower() and c != "data_year")]
-    if date_cols_present:
-        # Convert date columns to numeric (ordinal) so they don't block
-        # downstream numeric operations, while preserving the information
-        for dc in date_cols_present:
-            if pd.api.types.is_datetime64_any_dtype(df_static[dc]):
-                ref_date = pd.Timestamp("1970-01-01")
-                df_static[dc] = (df_static[dc] - ref_date).dt.days.astype(float)
-        print(f"  Converted {len(date_cols_present)} date columns to ordinal "
-              f"days (retained): {date_cols_present}")
-
-    print()
-    return df_static, df_temporal, encoding_map
-
-
-# ============================================================================
-# STAGE 10: SCALING  [MODEL PREPARATION]
-# ============================================================================
-
-def scale_features(
-    df_static: pd.DataFrame,
-    df_temporal: pd.DataFrame,
-):
-    """
-    Stage 10 [MODEL PREPARATION]: Normalize numerical features using
-    StandardScaler (zero mean, unit variance).
-
-    Applies scaling to:
-        - Baseline clinical numerics (age, weight, height, vitals)
-        - Monthly numerical features (doses, weight, height, adherence)
-
-    StandardScaler is used because it works well with RNN/LSTM models
-    and preserves outlier information for subsequent capping.
-
-    NOTE: Scaling is applied AFTER cleaning and imputation (Phase A)
-    and AFTER encoding (Stage 9).
-
-    This function fits and transforms the full dataset in one pass.
-    When a proper train/test split is introduced (recommended before
-    model training), call this function on the training split only,
-    then use scaler_static.transform() and scaler_temporal.transform()
-    to scale the held-out test split — never refit on test data.
-
-    Returns:
-        df_static:        scaled in-place
-        df_temporal:      scaled in-place
-        scaler_static:    fitted StandardScaler for static features
-        scaler_temporal:  fitted StandardScaler for temporal features
-    """
-
-    print("=" * 70)
-    print("STAGE 10: Feature Scaling (StandardScaler)  [MODEL PREPARATION]")
-    print("=" * 70)
-
-    # --- Static numerical columns ---
-    static_num_cols = [c for c in NUMERICAL_COLUMNS_SCALE
-                       if c in df_static.columns]
-
-    scaler_static = StandardScaler()
-
-    if static_num_cols:
-        df_static[static_num_cols] = scaler_static.fit_transform(
-            df_static[static_num_cols]
-        )
-        print(f"  Scaled {len(static_num_cols)} static numeric columns: "
-              f"{static_num_cols}")
-
-    # --- Temporal numerical columns ---
-    temporal_num_cols = [c for c in df_temporal.columns
-                         if c not in ("patient_id", "month")
-                         and pd.api.types.is_numeric_dtype(df_temporal[c])
-                         and df_temporal[c].nunique() > 2]
-
-    scaler_temporal = StandardScaler()
-
-    if temporal_num_cols:
-        df_temporal[temporal_num_cols] = scaler_temporal.fit_transform(
-            df_temporal[temporal_num_cols]
-        )
-        print(f"  Scaled {len(temporal_num_cols)} temporal numeric columns: "
-              f"{temporal_num_cols}")
-
-    print()
-
-    return df_static, df_temporal, scaler_static, scaler_temporal
-
-
-# ============================================================================
-# STAGE 11: OUTLIER DETECTION & CAPPING  [MODEL PREPARATION]
-# ============================================================================
-
-def detect_and_cap_outliers(df_static: pd.DataFrame,
-                            df_temporal: pd.DataFrame):
-    """
-    Stage 11 [MODEL PREPARATION]: Detect outliers using IQR and Z-score
-    methods. Flag and cap outliers rather than removing patients.
-
-    Methods:
-        1. IQR method: Values beyond Q1 - 1.5*IQR or Q3 + 1.5*IQR
-        2. Z-score method: |z| > 3.0
-
-    Outliers are capped (winsorized) to the boundary values.
-
-    Note: Applied AFTER scaling, so z-scores are on standardized data.
-    Since StandardScaler centers to mean=0, std=1, a z-score threshold
-    of 3.0 means capping at +/-3 standard deviations.
-
-    Returns:
-        df_static, df_temporal with outliers capped
-        outlier_report: dict with outlier counts per column
-    """
-    print("=" * 70)
-    print("STAGE 11: Outlier Detection & Capping  [MODEL PREPARATION]")
-    print("=" * 70)
-
-    outlier_report = {}
-
-    def cap_outliers_iqr(series, col_name):
-        """Cap outliers using IQR method and return count."""
-        Q1 = series.quantile(0.25)
-        Q3 = series.quantile(0.75)
-        IQR = Q3 - Q1
-        lower = Q1 - 1.5 * IQR
-        upper = Q3 + 1.5 * IQR
-        n_outliers = ((series < lower) | (series > upper)).sum()
-        capped = series.clip(lower=lower, upper=upper)
-        return capped, n_outliers
-
-    def cap_outliers_zscore(series, col_name, threshold=3.0):
-        """Cap outliers using Z-score method and return count."""
-        mean = series.mean()
-        std = series.std()
-        if std == 0:
-            return series, 0
-        z = np.abs((series - mean) / std)
-        n_outliers = (z > threshold).sum()
-        lower = mean - threshold * std
-        upper = mean + threshold * std
-        capped = series.clip(lower=lower, upper=upper)
-        return capped, n_outliers
-
-    # --- Static features ---
-    static_outlier_cols = [c for c in OUTLIER_COLUMNS if c in df_static.columns]
-    print("\n  --- Static Features (IQR + Z-score) ---")
-    for col in static_outlier_cols:
-        if pd.api.types.is_numeric_dtype(df_static[col]):
-            # IQR method
-            df_static[col], n_iqr = cap_outliers_iqr(df_static[col], col)
-            # Z-score method (applied after IQR)
-            df_static[col], n_z = cap_outliers_zscore(df_static[col], col)
-            total = n_iqr + n_z
-            if total > 0:
-                outlier_report[f"static_{col}"] = {
-                    "iqr_outliers": n_iqr, "zscore_outliers": n_z
-                }
-                print(f"    {col}: {n_iqr} IQR outliers, {n_z} Z-score outliers")
-
-    # --- Temporal features ---
-    temporal_outlier_cols = [c for c in df_temporal.columns
-                             if c not in ("patient_id", "month")
-                             and pd.api.types.is_numeric_dtype(df_temporal[c])
-                             and df_temporal[c].nunique() > 2]
-
-    print("\n  --- Temporal Features (IQR + Z-score) ---")
-    for col in temporal_outlier_cols:
-        df_temporal[col], n_iqr = cap_outliers_iqr(df_temporal[col], col)
-        df_temporal[col], n_z = cap_outliers_zscore(df_temporal[col], col)
-        total = n_iqr + n_z
-        if total > 0:
-            outlier_report[f"temporal_{col}"] = {
-                "iqr_outliers": n_iqr, "zscore_outliers": n_z
-            }
-            print(f"    {col}: {n_iqr} IQR outliers, {n_z} Z-score outliers")
-
-    if not outlier_report:
-        print("  No significant outliers detected after scaling.")
-
-    print()
-    return df_static, df_temporal, outlier_report
-
-
-# ============================================================================
-# STAGE 12: TEMPORAL MODELING PREPARATION (3D TENSOR)  [MODEL PREPARATION]
-# ============================================================================
-
-def prepare_for_temporal_modeling(df_static: pd.DataFrame,
-                                  df_temporal: pd.DataFrame):
-    """
-    Stage 12 [MODEL PREPARATION]: Construct datasets ready for RNN/LSTM
-    and hybrid models.
-
-    Outputs:
-        1. X_temporal: 3D numpy array (n_patients, n_timesteps, n_features)
-           for RNN/LSTM input - preserves M0->M12 temporal ordering
-        2. X_static: 2D numpy array (n_patients, n_static_features)
-           for combining with temporal models or for XGBoost
-        3. X_combined_flat: 2D array with flattened temporal + static features
-           for XGBoost/tabular models
-        4. patient_ids: array of patient IDs
-
-    The 3D tensor preserves temporal ordering (M0 -> M12) and per-patient
-    sequences, which is essential for recurrent models.
-    """
-    print("=" * 70)
-    print("STAGE 12: Temporal Modeling Preparation  [MODEL PREPARATION]")
-    print("=" * 70)
-
-    patient_ids = df_static["patient_id"].values
-    n_patients = len(patient_ids)
-    n_timesteps = len(MONTH_RANGE)
-
-    # Get temporal feature names (exclude patient_id and month)
-    temporal_feature_cols = [c for c in df_temporal.columns
-                             if c not in ("patient_id", "month")]
-    n_temporal_features = len(temporal_feature_cols)
-
-    print(f"  Patients: {n_patients}")
-    print(f"  Time steps: {n_timesteps} (M0-M12)")
-    print(f"  Temporal features per step: {n_temporal_features}")
-
-    # Build 3D tensor: (patients, timesteps, features)
-    X_temporal = np.zeros((n_patients, n_timesteps, n_temporal_features))
-    df_temporal_sorted = df_temporal.sort_values(["patient_id", "month"])
-
-    for i, pid in enumerate(patient_ids):
-        patient_data = df_temporal_sorted[
-            df_temporal_sorted["patient_id"] == pid
-        ][temporal_feature_cols].values
-        # Ensure we have exactly n_timesteps rows
-        if patient_data.shape[0] == n_timesteps:
-            X_temporal[i] = patient_data
-        else:
-            # Pad with zeros if fewer months available
-            actual_steps = min(patient_data.shape[0], n_timesteps)
-            X_temporal[i, :actual_steps] = patient_data[:actual_steps]
-
-    print(f"  X_temporal shape: {X_temporal.shape} "
-          f"(patients x timesteps x features)")
-
-    # Static features (exclude patient_id)
-    static_feature_cols = [c for c in df_static.columns if c != "patient_id"]
-    X_static = df_static[static_feature_cols].values.astype(np.float32)
-    print(f"  X_static shape: {X_static.shape}")
-
-    # Flattened combined for XGBoost / tabular models
-    X_temporal_flat = X_temporal.reshape(n_patients, -1)
-    X_combined_flat = np.hstack([X_static, X_temporal_flat])
-    print(f"  X_combined_flat shape: {X_combined_flat.shape} "
-          f"(for XGBoost/tabular)")
-
-    # Feature name lists for interpretability
-    static_feature_names = static_feature_cols
-    temporal_feature_names = [
-        f"M{m}_{feat}"
-        for m in MONTH_RANGE
-        for feat in temporal_feature_cols
-    ]
-    combined_feature_names = static_feature_names + temporal_feature_names
-
-    print()
-    return {
-        "X_temporal": X_temporal,
-        "X_static": X_static,
-        "X_combined_flat": X_combined_flat,
-        "patient_ids": patient_ids,
-        "static_feature_names": static_feature_names,
-        "temporal_feature_names": temporal_feature_names,
-        "combined_feature_names": combined_feature_names,
-        "n_patients": n_patients,
-        "n_timesteps": n_timesteps,
-        "n_temporal_features": n_temporal_features,
-    }
-
-
-# ============================================================================
-# STAGE 13: FINAL VALIDATION & EXPORT  [MODEL PREPARATION]
-# ============================================================================
-
-def validate_model_ready(df_static: pd.DataFrame,
-                         df_temporal: pd.DataFrame,
-                         model_data: dict):
-    """
-    Stage 13a [MODEL PREPARATION]: Run validation checks on model-ready
-    outputs to ensure data quality before export.
-
-    Checks:
-        1. No identifier columns remain
-        2. No missing values in temporal tensor
-        3. No missing values in static array
-        4. All features properly encoded (no object or date dtypes)
-        5. Tensor shapes are consistent
-        6. No infinite values
-
-    Returns:
-        validation_report: dict with check results
-    """
-    print("=" * 70)
-    print("STAGE 13a: Model-Ready Validation")
-    print("=" * 70)
-
-    validation_report = {}
-    all_passed = True
-
-    # Check 1: No identifier columns remain (removed in Stage 9)
-    id_keywords = ["name", "no.", "source", "facility_name"]
-    remaining_ids = [c for c in df_static.columns
-                     if any(kw in c.lower() for kw in id_keywords)]
-    check_1 = len(remaining_ids) == 0
-    validation_report["no_identifiers"] = check_1
-    if remaining_ids:
-        print(f"  [{'PASS' if check_1 else 'FAIL'}] No identifier columns: "
-              f"{remaining_ids}")
-    else:
-        print(f"  [PASS] No identifier columns in model-ready data")
-    all_passed &= check_1
-
-    # Check 2: No missing values in temporal tensor
-    n_nan_temporal = np.isnan(model_data["X_temporal"]).sum()
-    check_2 = n_nan_temporal == 0
-    validation_report["no_missing_temporal"] = check_2
-    print(f"  [{'PASS' if check_2 else 'WARN'}] Temporal tensor NaN count: "
-          f"{n_nan_temporal}")
-
-    # Check 3: No missing values in static array
-    n_nan_static = np.isnan(model_data["X_static"]).sum()
-    check_3 = n_nan_static == 0
-    validation_report["no_missing_static"] = check_3
-    print(f"  [{'PASS' if check_3 else 'WARN'}] Static array NaN count: "
-          f"{n_nan_static}")
-
-    # Check 4: No object or date dtypes in model-ready DataFrames
-    obj_cols = df_static.select_dtypes(include=["object"]).columns.tolist()
-    date_cols = df_static.select_dtypes(
-        include=["datetime64"]
-    ).columns.tolist()
-    bad_cols = obj_cols + date_cols
-    check_4 = len(bad_cols) == 0
-    validation_report["all_encoded"] = check_4
-    print(f"  [{'PASS' if check_4 else 'FAIL'}] No object/date columns "
-          f"in model-ready data"
-          f"{'' if check_4 else f': {bad_cols}'}")
-    all_passed &= check_4
-
-    # Check 5: Tensor shape consistency
-    X = model_data["X_temporal"]
-    check_5 = (X.shape[0] == model_data["n_patients"]
-               and X.shape[1] == model_data["n_timesteps"]
-               and X.shape[2] == model_data["n_temporal_features"])
-    validation_report["tensor_shape_ok"] = check_5
-    print(f"  [{'PASS' if check_5 else 'FAIL'}] Tensor shape consistent: "
-          f"{X.shape}")
-    all_passed &= check_5
-
-    # Check 6: No infinite values
-    n_inf_temp = np.isinf(model_data["X_temporal"]).sum()
-    n_inf_stat = np.isinf(model_data["X_static"]).sum()
-    check_6 = (n_inf_temp + n_inf_stat) == 0
-    validation_report["no_inf"] = check_6
-    print(f"  [{'PASS' if check_6 else 'FAIL'}] No infinite values "
-          f"(temporal: {n_inf_temp}, static: {n_inf_stat})")
-    all_passed &= check_6
-
-    # Summary
-    status = "ALL CHECKS PASSED" if all_passed else "SOME CHECKS NEED REVIEW"
-    print(f"\n  >>> MODEL-READY VALIDATION: {status} <<<")
-    print()
-
-    return validation_report
-
-
-def export_model_ready_outputs(df_static: pd.DataFrame,
-                               df_temporal: pd.DataFrame,
-                               model_data: dict,
-                               output_dir: str):
-    """
-    Stage 13b [MODEL PREPARATION]: Export all model-ready datasets and
-    numpy arrays.
-
-    Outputs:
-        - static_features.csv       : Encoded & scaled static features
-        - temporal_features.csv     : Encoded & scaled temporal features (long)
-        - X_temporal.npy            : 3D tensor for RNN/LSTM
-        - X_static.npy              : 2D static feature matrix
-        - X_combined_flat.npy       : Flattened combined matrix for XGBoost
-        - patient_ids.npy           : Patient ID mapping
-        - feature_names.npz         : Feature name arrays
-        - preprocessing_summary.txt : Pipeline execution summary
-        - OUTPUT_README.txt         : Documentation for all output files
-    """
-    print("=" * 70)
-    print("STAGE 13b: Export Model-Ready Data")
-    print("=" * 70)
-
-    os.makedirs(output_dir, exist_ok=True)
-
-    # CSV exports
-    df_static.to_csv(os.path.join(output_dir, "static_features.csv"),
-                     index=False)
-    print(f"  Saved static_features.csv ({df_static.shape})")
-
-    df_temporal.to_csv(os.path.join(output_dir, "temporal_features.csv"),
-                       index=False)
-    print(f"  Saved temporal_features.csv ({df_temporal.shape})")
-
-    # Numpy arrays for direct model input
-    np.save(os.path.join(output_dir, "X_temporal.npy"),
-            model_data["X_temporal"])
-    print(f"  Saved X_temporal.npy {model_data['X_temporal'].shape}")
-
-    np.save(os.path.join(output_dir, "X_static.npy"),
-            model_data["X_static"])
-    print(f"  Saved X_static.npy {model_data['X_static'].shape}")
-
-    np.save(os.path.join(output_dir, "X_combined_flat.npy"),
-            model_data["X_combined_flat"])
-    print(f"  Saved X_combined_flat.npy {model_data['X_combined_flat'].shape}")
-
-    np.save(os.path.join(output_dir, "patient_ids.npy"),
-            model_data["patient_ids"])
-    print(f"  Saved patient_ids.npy ({len(model_data['patient_ids'])})")
-
-    # Feature name mappings
-    np.savez(
-        os.path.join(output_dir, "feature_names.npz"),
-        static=np.array(model_data["static_feature_names"], dtype=object),
-        temporal=np.array(model_data["temporal_feature_names"], dtype=object),
-        combined=np.array(model_data["combined_feature_names"], dtype=object),
-    )
-    print(f"  Saved feature_names.npz")
-
-    # Summary text
-    summary_path = os.path.join(output_dir, "preprocessing_summary.txt")
-    with open(summary_path, "w") as f:
-        f.write("TB-DOTS CAR CDSS - Preprocessing Pipeline Summary\n")
-        f.write("=" * 50 + "\n\n")
-        f.write(f"Patients:              {model_data['n_patients']}\n")
-        f.write(f"Time steps:            {model_data['n_timesteps']} (M0-M12)\n")
-        f.write(f"Temporal features:     {model_data['n_temporal_features']}\n")
-        f.write(f"Static features:       {len(model_data['static_feature_names'])}\n")
-        f.write(f"X_temporal shape:      {model_data['X_temporal'].shape}\n")
-        f.write(f"X_static shape:        {model_data['X_static'].shape}\n")
-        f.write(f"X_combined_flat shape: {model_data['X_combined_flat'].shape}\n")
-        f.write(f"\nPipeline Design:\n")
-        f.write(f"  Phase A (Cleaning): Stages 1-8\n")
-        f.write(f"    -> cleaned_human_readable.csv\n")
-        f.write(f"  Phase B (Model Prep): Stages 9-13\n")
-        f.write(f"    -> static_features.csv, temporal_features.csv,\n")
-        f.write(f"      X_temporal.npy, X_static.npy, X_combined_flat.npy\n")
-        f.write(f"\nStatic feature names:\n")
-        for fn in model_data["static_feature_names"]:
-            f.write(f"  - {fn}\n")
-        f.write(f"\nTemporal feature names (per timestep):\n")
-        seen = set()
-        for fn in model_data["temporal_feature_names"]:
-            base = "_".join(fn.split("_")[1:])
-            if base not in seen:
-                seen.add(base)
-                f.write(f"  - {base}\n")
-    print(f"  Saved preprocessing_summary.txt")
-
-    # Output file descriptions (README)
-    readme_path = os.path.join(output_dir, "OUTPUT_README.txt")
-    with open(readme_path, "w") as f:
-        f.write("=" * 70 + "\n")
-        f.write("TB-DOTS CAR CDSS - Output File Descriptions\n")
-        f.write("=" * 70 + "\n\n")
-        f.write("This folder contains all outputs produced by the\n")
-        f.write("preprocessing pipeline (preprocessing.py).\n")
-        f.write("Below is a description of each file and its intended use.\n\n")
-        f.write("The pipeline is split into two phases:\n")
-        f.write("  PHASE A (Cleaning)   -> cleaned_human_readable.csv\n")
-        f.write("  PHASE B (Model Prep) -> all other files\n\n")
-        f.write("-" * 70 + "\n")
-        f.write("PHASE A OUTPUT: HUMAN-READABLE CLEANED DATA\n")
-        f.write("-" * 70 + "\n\n")
-        f.write("cleaned_human_readable.csv\n")
-        f.write("  The fully cleaned version of the original combined_complete_dataset.csv.\n")
-        f.write("  One row per patient, wide format (M0-M12 columns preserved).\n")
-        f.write("  Contains human-readable categorical labels (e.g., 'Male',\n")
-        f.write("  'Treatment Completed', 'Regimen 1') and numeric values in\n")
-        f.write("  natural units (kg, cm, mmHg, %, etc.).\n")
-        f.write("  Missing values have been imputed (MICE for numerics, mode\n")
-        f.write("  for categoricals, forward-fill for temporal columns).\n")
-        f.write("  NOT encoded, scaled, or outlier-capped - suitable for\n")
-        f.write("  manual review, EDA, descriptive statistics, and research\n")
-        f.write("  documentation.\n\n")
-        f.write("-" * 70 + "\n")
-        f.write("PHASE B OUTPUTS: MODEL-READY DATA\n")
-        f.write("-" * 70 + "\n\n")
-        f.write("static_features.csv\n")
-        f.write("  Baseline (non-temporal) patient features after full\n")
-        f.write("  preprocessing: imputed, one-hot encoded, scaled, and\n")
-        f.write("  outlier-capped.\n")
-        f.write("  Categorical variables are split into binary indicator\n")
-        f.write("  columns (e.g., sex_Male, sex_Female). Numeric values\n")
-        f.write("  are standardized (zero mean, unit variance).\n")
-        f.write("  Includes a 'patient_id' column linking to temporal data.\n\n")
-        f.write("temporal_features.csv\n")
-        f.write("  Monthly monitoring data in long format: one row per\n")
-        f.write("  patient per month (patient_id x month). Contains\n")
-        f.write("  treatment adherence, doses, weight, height, smear, and\n")
-        f.write("  Xpert results - all imputed, scaled, and outlier-capped.\n")
-        f.write("  Columns: patient_id, month (0-12), plus temporal features.\n\n")
-        f.write("preprocessing_summary.txt\n")
-        f.write("  A brief text summary of the pipeline execution, including\n")
-        f.write("  dataset dimensions, tensor shapes, and lists of feature\n")
-        f.write("  names used in static and temporal components.\n\n")
-        f.write("OUTPUT_README.txt\n")
-        f.write("  This file - describes every output file in the folder.\n\n")
-        f.write("-" * 70 + "\n")
-        f.write("MODEL-READY FILES (NumPy arrays)\n")
-        f.write("-" * 70 + "\n\n")
-        f.write("X_temporal.npy\n")
-        f.write(f"  Shape: {model_data['X_temporal'].shape}\n")
-        f.write("  3D NumPy array: (n_patients, n_timesteps, n_features).\n")
-        f.write("  Each patient has 13 time steps (M0 through M12), each with\n")
-        f.write(f"  {model_data['n_temporal_features']} features (doses, adherence, weight, height,\n")
-        f.write("  smear result, Xpert result, etc.).\n")
-        f.write("  Ready for direct input into RNN, LSTM, or GRU models.\n")
-        f.write("  Usage: X = np.load('X_temporal.npy')\n\n")
-        f.write("X_static.npy\n")
-        f.write(f"  Shape: {model_data['X_static'].shape}\n")
-        f.write("  2D NumPy array: (n_patients, n_static_features).\n")
-        f.write("  Contains baseline demographics, diagnostics, and clinical\n")
-        f.write("  indicators - all encoded, scaled, and outlier-capped.\n")
-        f.write("  Use for: hybrid models (e.g., concatenate with LSTM output),\n")
-        f.write("  or standalone tabular models like XGBoost/Random Forest.\n")
-        f.write("  Usage: X = np.load('X_static.npy')\n\n")
-        f.write("X_combined_flat.npy\n")
-        f.write(f"  Shape: {model_data['X_combined_flat'].shape}\n")
-        f.write("  2D NumPy array: static features + flattened temporal features\n")
-        f.write("  concatenated side by side. Each patient is one row.\n")
-        f.write("  Designed for tabular ML models (XGBoost, LightGBM, etc.)\n")
-        f.write("  that don't natively handle 3D sequential input.\n")
-        f.write("  Usage: X = np.load('X_combined_flat.npy')\n\n")
-        f.write("patient_ids.npy\n")
-        f.write(f"  Shape: ({model_data['n_patients']},)\n")
-        f.write("  1D array of integer patient IDs (0-indexed row numbers).\n")
-        f.write("  Maps each row in X_temporal / X_static / X_combined_flat\n")
-        f.write("  back to the corresponding patient.\n")
-        f.write("  Usage: ids = np.load('patient_ids.npy')\n\n")
-        f.write("feature_names.npz\n")
-        f.write("  Compressed archive containing three string arrays:\n")
-        f.write("    - 'static':   names of columns in X_static\n")
-        f.write("    - 'temporal': names of columns in the flattened temporal\n")
-        f.write("                  portion (M0_feature, M1_feature, ...)\n")
-        f.write("    - 'combined': names of all columns in X_combined_flat\n")
-        f.write("  Useful for model interpretability and feature importance.\n")
-        f.write("  Usage: fn = np.load('feature_names.npz', allow_pickle=True)\n")
-        f.write("         print(fn['static'])  # static feature names\n\n")
-        f.write("-" * 70 + "\n")
-        f.write("NOTES\n")
-        f.write("-" * 70 + "\n\n")
-        f.write("- All .npy files can be loaded with: np.load('filename.npy')\n")
-        f.write("- All .csv files can be opened in Excel, Google Sheets, or\n")
-        f.write("  loaded with: pd.read_csv('filename.csv')\n")
-        f.write("- The cleaned_human_readable.csv is best for reviewing\n")
-        f.write("  the data manually or generating summary tables.\n")
-        f.write("- The .npy files are best for feeding directly into ML models.\n")
-        f.write("- Model-ready outputs are derived strictly from the cleaned\n")
-        f.write("  data. For train/test splitting, insert the split between\n")
-        f.write("  Phase A and Phase B to prevent data leakage in scaling.\n")
-    print(f"  Saved OUTPUT_README.txt")
-    print()
-
-
-def prepare_model_ready_dataset(df_static: pd.DataFrame,
-                                df_temporal: pd.DataFrame,
-                                output_dir: str):
-    """
-    Orchestrate the complete Phase B (Model Preparation) pipeline.
-
-    Takes the cleaned and imputed DataFrames from Phase A and applies:
-        Stage  9: One-hot encoding
-        Stage 10: Feature scaling (StandardScaler)
-        Stage 11: Outlier detection & capping (IQR + Z-score)
-        Stage 12: 3D tensor preparation for RNN/LSTM
-        Stage 13: Validation & export
-
-    All model-ready outputs are derived strictly from the cleaned data.
-    For future train/test splitting, this function can be modified to
-    accept train/test indices and fit scalers on training data only.
-
-    Args:
-        df_static:   Cleaned static features from Phase A (with patient_id)
-        df_temporal:  Cleaned temporal features from Phase A (long format)
-        output_dir:  Directory to save model-ready outputs
-
-    Returns:
-        df_static:    Encoded, scaled, outlier-capped static features
-        df_temporal:  Encoded, scaled, outlier-capped temporal features
-        model_data:   Dict with numpy arrays and metadata for modeling
-    """
-    print("\n" + "#" * 70)
-    print("# PHASE B: MODEL PREPARATION")
-    print("# Deriving model-ready outputs from cleaned data")
-    print("#" * 70 + "\n")
-
-    # Stage 9: One-hot encoding (categorical -> binary indicators)
-    df_static, df_temporal, encoding_map = encode_features(
-        df_static, df_temporal
-    )
-
-    # Stage 10: Feature scaling (StandardScaler: zero mean, unit variance)
-    # NOTE: This fits on the full dataset. When train/test splitting is
-    # introduced, call scale_features() on the training split only, then
-    # use scaler_static.transform() / scaler_temporal.transform() on the
-    # test split to avoid leaking test statistics into the scaler.
-    df_static, df_temporal, scaler_static, scaler_temporal = scale_features(
-        df_static, df_temporal
-    )
-
-    # Stage 11: Outlier detection & capping (on scaled data)
-    df_static, df_temporal, outlier_report = detect_and_cap_outliers(
-        df_static, df_temporal
-    )
-
-    # Stage 12: Build 3D tensor for RNN/LSTM input
-    model_data = prepare_for_temporal_modeling(df_static, df_temporal)
-
-    # Stage 13a: Validate model-ready outputs
-    validation_report = validate_model_ready(df_static, df_temporal, model_data)
-
-    # Stage 13b: Export model-ready files
-    export_model_ready_outputs(df_static, df_temporal, model_data, output_dir)
-
-    return df_static, df_temporal, model_data
-
-
-# ============================================================================
-# MAIN PIPELINE EXECUTION
+# MAIN PIPELINE EXECUTION - PURE PREPROCESSING ONLY
 # ============================================================================
 
 def run_pipeline():
     """
-    Execute the complete preprocessing pipeline end-to-end.
+    Execute the pure preprocessing pipeline end-to-end.
 
-    The pipeline is organized into two distinct phases:
+    This pipeline performs ONLY data cleaning (Stages 1-8):
+        1. Schema Validation & Column Standardization
+        2. Identifier Removal (Patient Privacy)
+        3. Data Cleaning & Type Coercion
+        4. Categorical Harmonization
+        5. Drop Uninformative Columns
+        6. Temporal Data Structuring (wide -> long format)
+        7. Missing Data Handling (forward-fill + MICE imputation)
+        8. Export & Validate cleaned_human_readable.csv
 
-    PHASE A - DATA CLEANING (Stages 1-8)
-        Produces: cleaned_human_readable.csv
-        Contains cleaned, harmonized, imputed data with original
-        categorical labels and clinical units. Suitable for EDA.
+    Output:
+        - cleaned_human_readable.csv: Clean, interpretable data with
+          original clinical units and categorical labels.
 
-    PHASE B - MODEL PREPARATION (Stages 9-13)
-        Produces: static_features.csv, temporal_features.csv,
-                  X_temporal.npy, X_static.npy, X_combined_flat.npy
-        Applies encoding, scaling, outlier capping, and tensor
-        construction. Derived strictly from Phase A output.
+    What this pipeline does NOT do:
+        - No feature scaling
+        - No one-hot encoding
+        - No outlier detection or capping
+        - No tensor preparation
+
+    These transformations should be applied in separate model-specific
+    scripts after train/test splitting to prevent data leakage.
 
     Returns:
-        df_static:   Model-ready static features (encoded, scaled)
-        df_temporal:  Model-ready temporal features (encoded, scaled)
-        model_data:   Dict with numpy arrays for modeling
+        df_static:   Cleaned static features (unscaled, unencoded)
+        df_temporal: Cleaned temporal features (unscaled, unencoded)
     """
     print("\n" + "#" * 70)
-    print("# TB-DOTS CAR CDSS - Preprocessing Pipeline")
+    print("# TB-DOTS CAR CDSS - Pure Preprocessing Pipeline")
     print("# Longitudinal PTB Dataset (2015-2025)")
-    print("#" * 70 + "\n")
-
-    # ==================================================================
-    # PHASE A: DATA CLEANING
-    # Stages 1-8: Load -> clean -> harmonize -> impute -> export
-    # Output: cleaned_human_readable.csv (human-readable, no scaling)
-    # ==================================================================
-    print("#" * 70)
-    print("# PHASE A: DATA CLEANING")
-    print("# Producing cleaned_human_readable.csv")
+    print("# DATA CLEANING ONLY (No Scaling, No Encoding)")
     print("#" * 70 + "\n")
 
     # Stage 1: Load and validate schema
@@ -2382,33 +1592,18 @@ def run_pipeline():
         df_static, df_temporal, OUTPUT_DIR
     )
 
-    # ==================================================================
-    # PHASE B: MODEL PREPARATION
-    # Stages 9-13: Encode -> Scale -> Outlier cap -> Tensor -> Export
-    # All derived from the cleaned data produced in Phase A.
-    # Deep copy to avoid modifying the cleaned data used in Phase A.
-    # ==================================================================
-
-    # Deep copy to preserve the cleaned Phase A data untouched
-    df_static_model = df_static.copy()
-    df_temporal_model = df_temporal.copy()
-
-    df_static_model, df_temporal_model, model_data = prepare_model_ready_dataset(
-        df_static_model, df_temporal_model, OUTPUT_DIR
-    )
-
     print("#" * 70)
     print("# PIPELINE COMPLETE")
     print(f"# Output directory: {os.path.abspath(OUTPUT_DIR)}")
     print("#")
-    print("# Outputs:")
-    print("#   Phase A: cleaned_human_readable.csv  (EDA / clinical review)")
-    print("#   Phase B: static_features.csv, temporal_features.csv,")
-    print("#            X_temporal.npy, X_static.npy, X_combined_flat.npy")
-    print("#            (model training)")
+    print("# Output:")
+    print("#   cleaned_human_readable.csv (EDA / clinical review)")
+    print("#")
+    print("# NOTE: For model training, apply scaling/encoding in a separate")
+    print("#       script AFTER train/test splitting to prevent data leakage.")
     print("#" * 70)
 
-    return df_static_model, df_temporal_model, model_data
+    return df_static, df_temporal
 
 
 # ============================================================================
@@ -2416,4 +1611,4 @@ def run_pipeline():
 # ============================================================================
 
 if __name__ == "__main__":
-    df_static, df_temporal, model_data = run_pipeline()
+    df_static, df_temporal = run_pipeline()
