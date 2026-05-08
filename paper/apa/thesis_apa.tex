@@ -46,6 +46,7 @@
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric,arrows.meta,positioning}
 \usepackage{booktabs}
+\usepackage{placeins}
 \usepackage{pdfpages}
 \usepackage{caption}
 % APA: table/figure captions are bold label, newline, then italic title
@@ -234,10 +235,11 @@ This study uses a dataset of records of PTB patients from the Cordillera Adminis
 \end{tikzpicture}%
 }
 \end{figure}
+\FloatBarrier
 
 \subsection{Data Acquisition and Preprocessing}
 
-The study utilizes a retrospective dataset of PTB patients from the Cordillera Administrative Region (CAR), Philippines, covering the period from 2015 to 2025. Data is centrally consolidated by the Department of Health-CAR (DOH-CAR), which manages reports from government TB-DOTS facilities and private practitioners under the Public-Private Mix DOTS (PPMD) scheme \citep{ref6}.
+The study utilizes a retrospective dataset of PTB patients from the Cordillera Administrative Region (CAR), Philippines, covering the period from 2015 to 2025. This dataset was acquired through a collaborative arrangement with a thesis team from the School of Nursing, Allied Health, and Biological Sciences (SONAHBS) Department of Pharmacy, who facilitated access to records consolidated by the Department of Health-CAR (DOH-CAR). Data is centrally consolidated by the Department of Health-CAR (DOH-CAR), which manages reports from government TB-DOTS facilities and private practitioners under the Public-Private Mix DOTS (PPMD) scheme \citep{ref6}.
 
 The raw dataset comprises demographic variables (e.g., age, sex, civil status), clinical indicators (e.g., BMI, blood pressure), and diagnostic results (e.g., GeneXpert, Smear Microscopy). To ensure data quality for machine learning applications, a reproducible preprocessing pipeline is implemented. This includes schema harmonization to standardize variable formats and units, and the removal of direct identifiers to strictly enforce patient privacy. Missing data (a common challenge in clinical registries) is handled using Multivariate Imputation by Chained Equations \citep[MICE;][]{ref1}.
 
