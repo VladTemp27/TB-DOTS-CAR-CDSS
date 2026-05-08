@@ -19,6 +19,10 @@ class TBAnalysisPipeline:
         self.output_dir = output_dir or (base_dir / "paper" / "apa" / "figures")
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
+        # Tables go to paper/apa/tables/
+        self.table_dir = base_dir / "paper" / "apa" / "tables"
+        self.table_dir.mkdir(parents=True, exist_ok=True)
+
     def load_data(self, file_path: Path) -> pd.DataFrame:
         df = pd.read_csv(file_path)
         return df.replace("No Data", np.nan)
@@ -61,18 +65,109 @@ class TBAnalysisPipeline:
             "Percent": (counts.values / total * 100).round(2),
         })
 
+    # ------------------------------------------------------------------ #
+    #  LaTeX table output                                                  #
+    # ------------------------------------------------------------------ #
+    def save_table_latex(
+        self,
+        df: pd.DataFrame,
+        name: str,
+        caption: str = "",
+        label: str = "",
+    ) -> Path:
+        """Render *df* as a publication-style LaTeX table and write it to the
+        tables directory.  Returns the path to the written .tex file.
+
+        The generated table uses booktabs rules (\\toprule / \\midrule /
+        \\bottomrule) and no vertical rules, matching the project style.
+        """
+        output_path = self.table_dir / f"{name}.tex"
+
+        n_cols = len(df.columns)
+
+        # Column alignment: first column left-aligned, rest centred
+        col_spec = "l" + "c" * (n_cols - 1)
+
+        caption_str = caption or name.replace("_", " ").title()
+        label_str = label or f"tab:{name}"
+
+        lines: list[str] = []
+        lines.append(r"\begin{table}[htbp]")
+        lines.append("")
+        lines.append(rf"\caption{{{caption_str}}}")
+        lines.append(rf"\label{{{label_str}}}")
+        lines.append(rf"\begin{{tabular}}{{{col_spec}}}")
+        lines.append("")
+        lines.append(r"\toprule")
+        lines.append("")
+
+        # Header row
+        header = " & ".join(str(c).replace("_", r"\_") for c in df.columns) + r" \\"
+        lines.append(header)
+        lines.append("")
+        lines.append(r"\midrule")
+        lines.append("")
+
+        # Data rows
+        for _, row in df.iterrows():
+            cells = " & ".join(
+                str(v).replace("_", r"\_") if pd.notna(v) else ""
+                for v in row
+            )
+            lines.append(cells + r" \\")
+        lines.append("")
+        lines.append(r"\bottomrule")
+        lines.append("")
+        lines.append(r"\end{tabular}")
+        lines.append("")
+        lines.append(r"\end{table}")
+
+        output_path.write_text("\n".join(lines), encoding="utf-8")
+        return output_path
+
+    # ------------------------------------------------------------------ #
+    #  Publication-style PDF table (kept for internal / figure use)       #
+    # ------------------------------------------------------------------ #
     def save_table_pdf(self, df: pd.DataFrame, name: str, width: float = 8.0) -> Path:
-        fig, ax = plt.subplots(figsize=(width, max(1.6, 0.32 * len(df) + 1)))
+        n_rows = len(df)
+        n_cols = len(df.columns)
+
+        row_height = 0.28
+        header_height = 0.38
+        fig_height = max(1.6, n_rows * row_height + header_height + 0.3)
+
+        fig, ax = plt.subplots(figsize=(width, fig_height))
         ax.axis("off")
+
         table = ax.table(
             cellText=df.fillna("").values,
             colLabels=list(df.columns),
             loc="center",
-            cellLoc="center",
+            cellLoc="left",
         )
         table.auto_set_font_size(False)
         table.set_fontsize(9)
-        table.scale(1, 1.2)
+        table.auto_set_column_width(list(range(n_cols)))
+
+        last_data_row = n_rows
+
+        for (row, col), cell in table.get_celld().items():
+            cell.set_facecolor("white")
+            cell.set_edgecolor("black")
+            cell.set_linewidth(0.7)
+
+            if row == 0:
+                cell.visible_edges = "TB"
+                cell.set_text_props(fontweight="bold")
+                cell.PAD = 0.06
+            elif row == last_data_row:
+                cell.visible_edges = "B"
+                cell.PAD = 0.06
+            else:
+                cell.visible_edges = ""
+                cell.PAD = 0.06
+
+        fig.tight_layout(pad=0.3)
         return self._save_fig(fig, name)
 
     def save_bar_pdf(self, df: pd.DataFrame, x: str, y: str, name: str, title: str) -> Path:
@@ -104,13 +199,38 @@ class TBAnalysisPipeline:
         fig.tight_layout()
         return self._save_fig(fig, name)
 
-    def save_pie_pdf(self, df: pd.DataFrame, labels: str, values: str, name: str, title: str, use_legend: bool = False) -> Path:
-        fig, ax = plt.subplots(figsize=(8, 6) if use_legend else (6, 6))
+    def save_pie_pdf(
+        self,
+        df: pd.DataFrame,
+        labels: str,
+        values: str,
+        name: str,
+        title: str,
+        use_legend: bool = False,
+    ) -> Path:
+        total = df[values].sum()
+        pct = (df[values] / total * 100).round(1)
+
         if use_legend:
-            wedges, texts, autotexts = ax.pie(df[values], autopct="%1.1f%%", startangle=90)
-            ax.legend(wedges, df[labels], title=labels, loc="center left", bbox_to_anchor=(1, 0.5))
+            fig, ax = plt.subplots(figsize=(10, 6))
+            wedges, _ = ax.pie(df[values], startangle=90)
+            legend_labels = [
+                f"{lbl}  ({p:.1f}%)"
+                for lbl, p in zip(df[labels].astype(str), pct)
+            ]
+            ax.legend(
+                wedges,
+                legend_labels,
+                title=labels,
+                loc="center left",
+                bbox_to_anchor=(1.02, 0.5),
+                fontsize=9,
+                title_fontsize=9,
+            )
         else:
-            ax.pie(df[values], labels=df[labels], autopct="%1.1f%%", startangle=90)
+            fig, ax = plt.subplots(figsize=(6, 6))
+            ax.pie(df[values], labels=df[labels].astype(str), autopct="%1.1f%%", startangle=90)
+
         ax.set_title(title)
         fig.tight_layout()
         return self._save_fig(fig, name)
@@ -202,8 +322,14 @@ class TBAnalysisPipeline:
     def export_all_figures(self, df: pd.DataFrame) -> dict[str, Path]:
         outputs: dict[str, Path] = {}
 
+        # --- Missing data summary ---
         missing_summary = self.compute_missing_summary(df)
-        outputs["missing_data_summary"] = self.save_table_pdf(missing_summary, "missing_data_summary", width=11.0)
+        outputs["missing_data_summary"] = self.save_table_latex(
+            missing_summary,
+            "missing_data_summary",
+            caption="Missing Data Summary by Column",
+            label="tab:missing_data_summary",
+        )
 
         key_columns = [
             "Days_Screening_To_Diagnosis",
@@ -216,10 +342,11 @@ class TBAnalysisPipeline:
         ]
         missing_by_year = self.compute_missing_by_year(df, key_columns)
         if not missing_by_year.empty:
-            outputs["missing_data_by_year"] = self.save_table_pdf(
+            outputs["missing_data_by_year"] = self.save_table_latex(
                 missing_by_year.reset_index(),
                 "missing_data_by_year",
-                width=14.0
+                caption="Missing Data Percentage by Year for Key Variables",
+                label="tab:missing_data_by_year",
             )
             outputs["missing_data_trends"] = self.save_line_pdf(
                 missing_by_year,
@@ -241,7 +368,12 @@ class TBAnalysisPipeline:
 
         if "Type" in df.columns and "Year" in df.columns:
             type_by_year = pd.crosstab(df["Year"], df["Type"], normalize="index") * 100
-            outputs["type_by_year_table"] = self.save_table_pdf(type_by_year.reset_index(), "type_by_year_table", width=10.0)
+            outputs["type_by_year_table"] = self.save_table_latex(
+                type_by_year.reset_index(),
+                "type_by_year_table",
+                caption="Distribution of TB Case Types by Year (\\%)",
+                label="tab:type_by_year",
+            )
 
         if "Diagnosis_Month" in df.columns:
             month_counts = df["Diagnosis_Month"].value_counts().sort_index().reset_index()
@@ -314,7 +446,6 @@ class TBAnalysisPipeline:
 
         if "Bacteriologic Status" in df.columns:
             bact_counts = self.compute_value_counts(df, "Bacteriologic Status")
-            # FIX Issue 1: Converted to horizontal bar chart
             outputs["bacteriologic_status"] = self.save_barh_pdf(
                 bact_counts,
                 "Bacteriologic Status",
@@ -358,7 +489,7 @@ class TBAnalysisPipeline:
                 "Count",
                 "treatment_outcomes_pie",
                 "Outcome Distribution",
-                use_legend=True
+                use_legend=True,
             )
 
             outcome_category = df["Outcome/Status"].apply(
@@ -369,10 +500,11 @@ class TBAnalysisPipeline:
             )
             if "Year" in df.columns:
                 outcome_by_year = pd.crosstab(df["Year"], outcome_category, normalize="index") * 100
-                outputs["outcome_trends_by_year"] = self.save_table_pdf(
+                outputs["outcome_trends_by_year"] = self.save_table_latex(
                     outcome_by_year.reset_index(),
                     "outcome_trends_by_year",
-                    width=10.0
+                    caption="Treatment Outcome Distribution by Year (\\%)",
+                    label="tab:outcome_trends_by_year",
                 )
 
         interval_cols = [
@@ -394,24 +526,35 @@ class TBAnalysisPipeline:
                 interval_stats.append({
                     "Interval": col,
                     "Count": series.dropna().shape[0],
-                    "Median": series.median(),
-                    "Q1": series.quantile(0.25),
-                    "Q3": series.quantile(0.75),
+                    "Median": round(series.median(), 2),
+                    "Q1": round(series.quantile(0.25), 2),
+                    "Q3": round(series.quantile(0.75), 2),
                 })
 
         if interval_stats:
             interval_df = pd.DataFrame(interval_stats)
-            outputs["time_interval_summary"] = self.save_table_pdf(
+            outputs["time_interval_summary"] = self.save_table_latex(
                 interval_df,
                 "time_interval_summary",
-                width=10.0
+                caption="Summary Statistics for Time Intervals (Days)",
+                label="tab:time_interval_summary",
             )
 
         summary_df = self.build_summary_table(df)
-        outputs["summary_statistics"] = self.save_table_pdf(summary_df, "summary_statistics")
+        outputs["summary_statistics"] = self.save_table_latex(
+            summary_df,
+            "summary_statistics",
+            caption="Summary Statistics of the TB Dataset",
+            label="tab:summary_statistics",
+        )
 
         quality_df = self.build_quality_table(df)
-        outputs["data_quality"] = self.save_table_pdf(quality_df, "data_quality", width=9.0)
+        outputs["data_quality"] = self.save_table_latex(
+            quality_df,
+            "data_quality",
+            caption="Data Quality Assessment",
+            label="tab:data_quality",
+        )
 
         return outputs
 

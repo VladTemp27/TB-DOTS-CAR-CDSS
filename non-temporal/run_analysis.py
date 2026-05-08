@@ -5,7 +5,7 @@ import sys
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR))
 
-from non_temporal_analysis import TBAnalysisPipeline
+from analysis_pipeline import TBAnalysisPipeline
 
 
 logging.basicConfig(

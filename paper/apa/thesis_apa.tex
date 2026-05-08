@@ -294,38 +294,28 @@ Conversely, adverse outcomes accounted for a critical minority of the dataset. P
 
 An analysis of annual treatment outcomes from 2015 to 2025 revealed significant temporal shifts, reflecting both programmatic improvements and external systemic shocks:
 
-\begin{itemize}
+\begin{enumerate}
     \item \textbf{Treatment Success Rates:} The success rate remained relatively stable in the low-to-mid 80\% range for most of the decade. Success rates dipped slightly to 81.03\% in 2018 before steadily climbing to a peak of 88.92\% in 2023.
     \item \textbf{Mortality and Pandemic Impact:} The mortality rate among TB patients showed a distinct peak in 2020 (5.47\%) and 2021 (6.63\%), up from 3.65\% in 2019. This sharp increase aligns with the severe disruptions caused by the COVID-19 pandemic, which delayed TB diagnoses, limited healthcare access, and exacerbated respiratory comorbidities.
     \item \textbf{Loss to Follow-up:} The rate of patients lost to follow-up was highest between 2018 and 2020, peaking at 11.99\%. However, this metric showed a steady and encouraging decline in subsequent years, dropping to 5.56\% by 2024. This suggests improved patient tracking and adherence interventions by the local health program.
     \item \textbf{2025 Cohort Anomaly:} The data for 2025 showed a drastic drop in recorded success (30.01\%) and a massive spike in unresolved cases (64.80\%). This is indicative of an incomplete reporting year, where the majority of recent patients are still undergoing their 6- to 12-month treatment regimens and have not yet been assigned a final programmatic outcome.
-\end{itemize}
+\end{enumerate}
 
-\begin{figure}[htbp]
-    \caption{Longitudinal Trends in TB Treatment Outcomes (2015--2025)}
-    \label{fig:longitudinal_trends}
-    \centering
-    \includegraphics[width=0.85\textwidth]{figures/outcome_trends_by_year.pdf}
-\end{figure}
+\input{tables/outcome_trends_by_year.tex}
 
 \subsection{Diagnostic and Treatment Intervals}
 
 The temporal intervals between screening, diagnosis, and treatment initiation were extracted to identify operational delays, which are known risk factors for both disease transmission and treatment failure. Statistical summaries of these intervals revealed highly right-skewed distributions:
 
-\begin{itemize}
+\begin{enumerate}
     \item \textbf{Screening to Diagnosis:} The median time from initial screening to official diagnosis was 2.0 days. However, the upper quartile (Q3) extended to 21.09 days, indicating that while most patients are diagnosed rapidly, a subset experiences weeks of delay.
     \item \textbf{Diagnosis to Treatment:} The median duration between diagnosis and treatment initiation was efficient at approximately 2.68 days. Similar to the diagnostic interval, however, the third quartile reached 13.12 days.
     \item \textbf{Microscopy Results:} The median time to receive microscopy results was 6.60 days, with the third quartile extending to 14.95 days.
-\end{itemize}
+\end{enumerate}
 
 These skewed distributions demonstrate that while the median programmatic response is efficient, the long tails represent significant delays for high-risk patients. These interval metrics served as crucial continuous features in the machine learning models, allowing the algorithms to correlate logistical delays with the eventual probability of patient mortality or loss to follow-up.
 
-\begin{figure}[htbp]
-    \caption{Distribution of Diagnostic and Treatment Intervals}
-    \label{fig:diagnostic_intervals}
-    \centering
-    \includegraphics[width=0.7\textwidth]{figures/time_interval_summary.pdf}
-\end{figure}
+\input{tables/time_interval_summary.tex}
 
 \subsection{Validation Set Performance and Generalization}
 
