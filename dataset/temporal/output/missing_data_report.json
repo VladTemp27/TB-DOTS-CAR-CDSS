@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-08T04:11:14.463456",
+  "generated_at": "2026-05-08T14:54:24.219059",
   "pipeline": "TB-DOTS CAR CDSS \u2014 Missing Data Handling",
   "dataset_info": {
     "n_rows": 599,
@@ -17,9 +17,9 @@
     "note": "p=0.0000 \u2014 reject MCAR; data is at least MAR. Avoid listwise deletion."
   },
   "pathway_summary": {
-    "ALPHA_DROP": 9,
+    "ALPHA_DROP": 8,
     "BETA_LISTWISE": 0,
-    "GAMMA_INDICATOR": 28,
+    "GAMMA_INDICATOR": 29,
     "DELTA_MICE": 1
   },
   "column_decisions": {
@@ -76,8 +76,8 @@
       "missing_rate_pct": 83.81,
       "mechanism": "MNAR",
       "temporal_pattern": "N/A",
-      "pathway": "ALPHA_DROP",
-      "pathway_rationale": "Dropped: 83.8% missing (exceeds hard threshold)."
+      "pathway": "GAMMA_INDICATOR",
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (83.8%)."
     },
     "date_of_diagnosis": {
       "missing_rate_pct": 20.37,
@@ -292,7 +292,7 @@
   },
   "post_imputation": {
     "n_rows": 599,
-    "n_static_cols": 46,
+    "n_static_cols": 48,
     "n_temporal_cols": 18,
     "remaining_static_nulls": 0,
     "remaining_temporal_nulls": 0

@@ -58,7 +58,7 @@ X_temporal.npy
   Usage: X = np.load('X_temporal.npy')
 
 X_static.npy
-  Shape: (599, 69)
+  Shape: (599, 71)
   2D NumPy array: (n_patients, n_static_features).
   Contains baseline demographics, diagnostics, and clinical
   indicators — all encoded and scaled.
@@ -67,7 +67,7 @@ X_static.npy
   Usage: X = np.load('X_static.npy')
 
 X_combined_flat.npy
-  Shape: (599, 277)
+  Shape: (599, 279)
   2D NumPy array: static features + flattened temporal features
   concatenated side by side. Each patient is one row.
   Designed for tabular ML models (XGBoost, LightGBM, etc.)

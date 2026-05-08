@@ -4,14 +4,15 @@ TB-DOTS CAR CDSS - Preprocessing Pipeline Summary
 Patients:              599
 Time steps:            13 (M0–M12)
 Temporal features:     16
-Static features:       69
+Static features:       71
 X_temporal shape:      (599, 13, 16)
-X_static shape:        (599, 69)
-X_combined_flat shape: (599, 277)
+X_static shape:        (599, 71)
+X_combined_flat shape: (599, 279)
 
 Static feature names:
   - age
   - xpert_mtb_rif
+  - smear_microscopy
   - heart_rate
   - o2_sat
   - data_year
@@ -24,6 +25,7 @@ Static feature names:
   - is_missing_nationality
   - is_missing_chest_x_ray_at_case_notification
   - is_missing_xpert_mtb_rif
+  - is_missing_smear_microscopy
   - is_missing_diagnosis
   - is_missing_bacteriologic_status
   - is_missing_case_registration_group

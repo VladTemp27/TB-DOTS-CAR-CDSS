@@ -1700,7 +1700,13 @@ def run_pipeline():
     #   Alpha (drop) → Beta (listwise) → Gamma (indicator+fill) → Delta (MICE/missForest)
     # Audit report written to dataset/temporal/output/missing_data_report.json
     from missing_data import handle_missing_data
-    df_static, df_temporal = handle_missing_data(df_static, df_temporal)
+    # alpha_hard_threshold raised to 0.90 so smear_microscopy (83.8% missing)
+    # is routed to Gamma (indicator + fill) rather than dropped — clinically
+    # important test; its absence is itself a predictive signal.
+    df_static, df_temporal = handle_missing_data(
+        df_static, df_temporal,
+        config={"alpha_hard_threshold": 0.90},
+    )
 
     # Stage 7B: Export human-readable cleaned dataset
     df_cleaned = export_cleaned_dataset(df_static, df_temporal, OUTPUT_DIR)
