@@ -1,8 +1,4 @@
-export interface ContributionItem {
-  feature: string
-  delta: number
-  direction: 'risk' | 'protective'
-}
+import type { ContributionItem } from './inference'
 
 export interface InterpretRequest {
   patient_name: string
@@ -45,7 +41,8 @@ export function streamInterpretation(
     }
 
     if (!response.ok) {
-      onError(new Error(response.statusText))
+      const body = await response.text().catch(() => '')
+      onError(new Error(body || response.statusText || `HTTP ${response.status}`))
       return
     }
 
@@ -57,6 +54,7 @@ export function streamInterpretation(
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
+    let settled = false
 
     try {
       while (true) {
@@ -82,11 +80,14 @@ export function streamInterpretation(
           }
 
           if (parsed.error) {
+            settled = true
+            await reader.cancel()
             onError(new Error(parsed.error))
             return
           }
 
           if (parsed.done === true) {
+            settled = true
             onDone()
             return
           }
@@ -99,8 +100,12 @@ export function streamInterpretation(
     } catch (err) {
       // Ignore abort errors
       if (err instanceof Error && err.name === 'AbortError') return
+      settled = true
       onError(err instanceof Error ? err : new Error(String(err)))
+      return
     }
+
+    if (!settled) onDone()
   })()
 
   return controller

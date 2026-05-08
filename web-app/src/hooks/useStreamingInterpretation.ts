@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import type { Patient } from '../lib/storage'
 import type { ContributionResult } from '../lib/inference'
 import { streamInterpretation } from '../lib/medgemma'
+import type { InterpretRequest } from '../lib/medgemma'
 
 interface UseStreamingResult {
   text: string
@@ -29,7 +30,10 @@ export function useStreamingInterpretation(
     setError(null)
     setText('')
 
-    const req = {
+    // Note: year, province, cityMunicipality, treatmentHealthFacility, screeningDiagnosingHealthFacility
+    // are intentionally omitted — the backend prompt only needs the clinically relevant fields
+    // for the narrative interpretation.
+    const req: InterpretRequest = {
       patient_name: patient.name,
       age: patient.features.age,
       sex: patient.features.sex,
