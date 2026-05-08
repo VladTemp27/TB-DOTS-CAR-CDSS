@@ -25,7 +25,7 @@ export function DiagnosticResult() {
   return (
     <div className="min-h-screen bg-bg flex flex-col">
       <AppHeader />
-      <StepProgress steps={4} current={3} />
+      <StepProgress steps={5} current={4} />
 
       <div className="flex-1 flex flex-col">
         <div className="flex-1 px-4 lg:px-8 pb-6 pt-4 w-full max-w-4xl mx-auto">

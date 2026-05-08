@@ -88,7 +88,7 @@ export function PatientIntakeStep2() {
         monthlyRecords: [],
       })
       sessionStorage.removeItem(DRAFT_KEY)
-      navigate(`/patient/${id}/result`, { state: { result, fresh: true } })
+      navigate('/patient/new/xray', { state: { id, result } })
     } catch (err) {
       console.error(err)
       alert('Inference failed. Check the browser console for details.')
@@ -100,7 +100,7 @@ export function PatientIntakeStep2() {
   return (
     <div className="min-h-screen bg-bg flex flex-col">
       <AppHeader />
-      <StepProgress steps={4} current={2} />
+      <StepProgress steps={5} current={2} />
 
       <div className="flex-1 flex flex-col">
         <div className="flex-1 px-4 lg:px-8 pb-6 pt-4 w-full max-w-3xl mx-auto space-y-4">

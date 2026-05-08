@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Home } from './pages/Home'
 import { PatientIntakeStep1 } from './pages/PatientIntakeStep1'
 import { PatientIntakeStep2 } from './pages/PatientIntakeStep2'
+import { PatientIntakeXray } from './pages/PatientIntakeXray'
 import { DiagnosticResult } from './pages/DiagnosticResult'
 import { TreatmentSelection } from './pages/TreatmentSelection'
 import { PatientProfile } from './pages/PatientProfile'
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/patient/new" element={<PatientIntakeStep1 />} />
           <Route path="/patient/new/lab" element={<PatientIntakeStep2 />} />
+          <Route path="/patient/new/xray" element={<PatientIntakeXray />} />
           <Route path="/patient/:id" element={<PatientProfile />} />
           <Route path="/patient/:id/chart" element={<PatientChart />} />
           <Route path="/patient/:id/result" element={<DiagnosticResult />} />
