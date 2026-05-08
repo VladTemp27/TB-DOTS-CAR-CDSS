@@ -61,7 +61,7 @@ class TBAnalysisPipeline:
             "Percent": (counts.values / total * 100).round(2),
         })
 
-    def save_table_svg(self, df: pd.DataFrame, name: str, width: float = 8.0) -> Path:
+    def save_table_pdf(self, df: pd.DataFrame, name: str, width: float = 8.0) -> Path:
         fig, ax = plt.subplots(figsize=(width, max(1.6, 0.32 * len(df) + 1)))
         ax.axis("off")
         table = ax.table(
@@ -75,7 +75,7 @@ class TBAnalysisPipeline:
         table.scale(1, 1.2)
         return self._save_fig(fig, name)
 
-    def save_bar_svg(self, df: pd.DataFrame, x: str, y: str, name: str, title: str) -> Path:
+    def save_bar_pdf(self, df: pd.DataFrame, x: str, y: str, name: str, title: str) -> Path:
         fig, ax = plt.subplots(figsize=(8, 5))
         ax.bar(df[x].fillna("").astype(str).tolist(), df[y].tolist(), color="steelblue", edgecolor="black")
         ax.set_title(title)
@@ -84,7 +84,7 @@ class TBAnalysisPipeline:
         fig.tight_layout()
         return self._save_fig(fig, name)
 
-    def save_barh_svg(self, df: pd.DataFrame, y: str, x: str, name: str, title: str) -> Path:
+    def save_barh_pdf(self, df: pd.DataFrame, y: str, x: str, name: str, title: str) -> Path:
         fig, ax = plt.subplots(figsize=(8, 5))
         ax.barh(df[y].fillna("").astype(str).tolist(), df[x].tolist(), color="coral", edgecolor="black")
         ax.set_title(title)
@@ -93,7 +93,7 @@ class TBAnalysisPipeline:
         fig.tight_layout()
         return self._save_fig(fig, name)
 
-    def save_line_svg(self, df: pd.DataFrame, name: str, title: str, xlabel: str, ylabel: str) -> Path:
+    def save_line_pdf(self, df: pd.DataFrame, name: str, title: str, xlabel: str, ylabel: str) -> Path:
         fig, ax = plt.subplots(figsize=(8, 5))
         for col in df.columns:
             ax.plot(df.index, df[col], marker="o", label=col)
@@ -104,7 +104,7 @@ class TBAnalysisPipeline:
         fig.tight_layout()
         return self._save_fig(fig, name)
 
-    def save_pie_svg(self, df: pd.DataFrame, labels: str, values: str, name: str, title: str, use_legend: bool = False) -> Path:
+    def save_pie_pdf(self, df: pd.DataFrame, labels: str, values: str, name: str, title: str, use_legend: bool = False) -> Path:
         fig, ax = plt.subplots(figsize=(8, 6) if use_legend else (6, 6))
         if use_legend:
             wedges, texts, autotexts = ax.pie(df[values], autopct="%1.1f%%", startangle=90)
@@ -115,7 +115,7 @@ class TBAnalysisPipeline:
         fig.tight_layout()
         return self._save_fig(fig, name)
 
-    def save_hist_svg(self, series: pd.Series, name: str, title: str, xlabel: str) -> Path:
+    def save_hist_pdf(self, series: pd.Series, name: str, title: str, xlabel: str) -> Path:
         fig, ax = plt.subplots(figsize=(8, 5))
         ax.hist(series.dropna(), bins=30, color="steelblue", edgecolor="black")
         ax.set_title(title)
@@ -124,7 +124,7 @@ class TBAnalysisPipeline:
         fig.tight_layout()
         return self._save_fig(fig, name)
 
-    def save_box_svg(self, series: pd.Series, name: str, title: str, ylabel: str) -> Path:
+    def save_box_pdf(self, series: pd.Series, name: str, title: str, ylabel: str) -> Path:
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.boxplot(series.dropna(), vert=True)
         ax.set_title(title)
@@ -132,9 +132,9 @@ class TBAnalysisPipeline:
         fig.tight_layout()
         return self._save_fig(fig, name)
 
-    def save_age_sex_pyramid_svg(self, df: pd.DataFrame, name: str, title: str) -> Path:
+    def save_age_sex_pyramid_pdf(self, df: pd.DataFrame, name: str, title: str) -> Path:
         if "Age" not in df.columns or "Sex" not in df.columns:
-            return self.output_dir / f"{name}.svg"
+            return self.output_dir / f"{name}.pdf"
 
         df = df.copy()
         df["Age"] = pd.to_numeric(df["Age"], errors="coerce")
@@ -145,7 +145,7 @@ class TBAnalysisPipeline:
 
         pivot = df.groupby(["Age_Group", "Sex"]).size().unstack(fill_value=0)
         if "M" not in pivot.columns or "F" not in pivot.columns:
-            return self.output_dir / f"{name}.svg"
+            return self.output_dir / f"{name}.pdf"
 
         fig, ax = plt.subplots(figsize=(8, 6))
         ax.barh(pivot.index, -pivot["M"], color="steelblue", edgecolor="black", label="Male")
@@ -203,7 +203,7 @@ class TBAnalysisPipeline:
         outputs: dict[str, Path] = {}
 
         missing_summary = self.compute_missing_summary(df)
-        outputs["missing_data_summary"] = self.save_table_svg(missing_summary, "missing_data_summary", width=11.0)
+        outputs["missing_data_summary"] = self.save_table_pdf(missing_summary, "missing_data_summary", width=11.0)
 
         key_columns = [
             "Days_Screening_To_Diagnosis",
@@ -216,12 +216,12 @@ class TBAnalysisPipeline:
         ]
         missing_by_year = self.compute_missing_by_year(df, key_columns)
         if not missing_by_year.empty:
-            outputs["missing_data_by_year"] = self.save_table_svg(
+            outputs["missing_data_by_year"] = self.save_table_pdf(
                 missing_by_year.reset_index(),
                 "missing_data_by_year",
                 width=14.0
             )
-            outputs["missing_data_trends"] = self.save_line_svg(
+            outputs["missing_data_trends"] = self.save_line_pdf(
                 missing_by_year,
                 "missing_data_trends",
                 "Missing Data Trends Over Time",
@@ -231,7 +231,7 @@ class TBAnalysisPipeline:
 
         yearly_counts = self.compute_yearly_case_counts(df)
         if not yearly_counts.empty:
-            outputs["yearly_case_counts"] = self.save_bar_svg(
+            outputs["yearly_case_counts"] = self.save_bar_pdf(
                 yearly_counts,
                 "Year",
                 "Case_Count",
@@ -241,12 +241,12 @@ class TBAnalysisPipeline:
 
         if "Type" in df.columns and "Year" in df.columns:
             type_by_year = pd.crosstab(df["Year"], df["Type"], normalize="index") * 100
-            outputs["type_by_year_table"] = self.save_table_svg(type_by_year.reset_index(), "type_by_year_table", width=10.0)
+            outputs["type_by_year_table"] = self.save_table_pdf(type_by_year.reset_index(), "type_by_year_table", width=10.0)
 
         if "Diagnosis_Month" in df.columns:
             month_counts = df["Diagnosis_Month"].value_counts().sort_index().reset_index()
             month_counts.columns = ["Month", "Count"]
-            outputs["monthly_notifications"] = self.save_bar_svg(
+            outputs["monthly_notifications"] = self.save_bar_pdf(
                 month_counts,
                 "Month",
                 "Count",
@@ -256,13 +256,13 @@ class TBAnalysisPipeline:
 
         if "Age" in df.columns:
             age_series = pd.to_numeric(df["Age"], errors="coerce")
-            outputs["age_distribution_hist"] = self.save_hist_svg(
+            outputs["age_distribution_hist"] = self.save_hist_pdf(
                 age_series,
                 "age_distribution_hist",
                 "Age Distribution of TB Cases",
                 "Age",
             )
-            outputs["age_distribution_box"] = self.save_box_svg(
+            outputs["age_distribution_box"] = self.save_box_pdf(
                 age_series,
                 "age_distribution_box",
                 "Age Distribution (Box Plot)",
@@ -271,14 +271,14 @@ class TBAnalysisPipeline:
 
         if "Sex" in df.columns:
             sex_counts = self.compute_value_counts(df, "Sex")
-            outputs["sex_distribution"] = self.save_bar_svg(
+            outputs["sex_distribution"] = self.save_bar_pdf(
                 sex_counts,
                 "Sex",
                 "Count",
                 "sex_distribution",
                 "TB Cases by Sex",
             )
-            outputs["sex_distribution_pie"] = self.save_pie_svg(
+            outputs["sex_distribution_pie"] = self.save_pie_pdf(
                 sex_counts,
                 "Sex",
                 "Count",
@@ -286,7 +286,7 @@ class TBAnalysisPipeline:
                 "Sex Distribution",
             )
 
-        outputs["age_sex_pyramid"] = self.save_age_sex_pyramid_svg(
+        outputs["age_sex_pyramid"] = self.save_age_sex_pyramid_pdf(
             df,
             "age_sex_pyramid",
             "Age-Sex Pyramid of TB Cases",
@@ -294,7 +294,7 @@ class TBAnalysisPipeline:
 
         if "City/Municipality" in df.columns:
             city_counts = self.compute_value_counts(df, "City/Municipality", top_n=15)
-            outputs["top_cities"] = self.save_barh_svg(
+            outputs["top_cities"] = self.save_barh_pdf(
                 city_counts,
                 "City/Municipality",
                 "Count",
@@ -304,7 +304,7 @@ class TBAnalysisPipeline:
 
         if "Anatomical Site" in df.columns:
             anatomical_counts = self.compute_value_counts(df, "Anatomical Site")
-            outputs["anatomical_site"] = self.save_bar_svg(
+            outputs["anatomical_site"] = self.save_bar_pdf(
                 anatomical_counts,
                 "Anatomical Site",
                 "Count",
@@ -315,7 +315,7 @@ class TBAnalysisPipeline:
         if "Bacteriologic Status" in df.columns:
             bact_counts = self.compute_value_counts(df, "Bacteriologic Status")
             # FIX Issue 1: Converted to horizontal bar chart
-            outputs["bacteriologic_status"] = self.save_barh_svg(
+            outputs["bacteriologic_status"] = self.save_barh_pdf(
                 bact_counts,
                 "Bacteriologic Status",
                 "Count",
@@ -325,7 +325,7 @@ class TBAnalysisPipeline:
 
         if "Registration Group" in df.columns:
             reg_counts = self.compute_value_counts(df, "Registration Group", top_n=10)
-            outputs["registration_group"] = self.save_barh_svg(
+            outputs["registration_group"] = self.save_barh_pdf(
                 reg_counts,
                 "Registration Group",
                 "Count",
@@ -335,7 +335,7 @@ class TBAnalysisPipeline:
 
         if "Source of Patient" in df.columns:
             source_counts = self.compute_value_counts(df, "Source of Patient")
-            outputs["source_of_patient"] = self.save_barh_svg(
+            outputs["source_of_patient"] = self.save_barh_pdf(
                 source_counts,
                 "Source of Patient",
                 "Count",
@@ -345,14 +345,14 @@ class TBAnalysisPipeline:
 
         if "Outcome/Status" in df.columns:
             outcome_counts = self.compute_value_counts(df, "Outcome/Status")
-            outputs["treatment_outcomes"] = self.save_barh_svg(
+            outputs["treatment_outcomes"] = self.save_barh_pdf(
                 outcome_counts,
                 "Outcome/Status",
                 "Count",
                 "treatment_outcomes",
                 "Treatment Outcomes",
             )
-            outputs["treatment_outcomes_pie"] = self.save_pie_svg(
+            outputs["treatment_outcomes_pie"] = self.save_pie_pdf(
                 outcome_counts,
                 "Outcome/Status",
                 "Count",
@@ -369,7 +369,7 @@ class TBAnalysisPipeline:
             )
             if "Year" in df.columns:
                 outcome_by_year = pd.crosstab(df["Year"], outcome_category, normalize="index") * 100
-                outputs["outcome_trends_by_year"] = self.save_table_svg(
+                outputs["outcome_trends_by_year"] = self.save_table_pdf(
                     outcome_by_year.reset_index(),
                     "outcome_trends_by_year",
                     width=10.0
@@ -385,7 +385,7 @@ class TBAnalysisPipeline:
         for col in interval_cols:
             if col in df.columns:
                 series = pd.to_numeric(df[col], errors="coerce")
-                outputs[f"{col}_hist"] = self.save_hist_svg(
+                outputs[f"{col}_hist"] = self.save_hist_pdf(
                     series,
                     f"{col}_hist",
                     f"{col.replace('_', ' ')} Distribution",
@@ -401,22 +401,22 @@ class TBAnalysisPipeline:
 
         if interval_stats:
             interval_df = pd.DataFrame(interval_stats)
-            outputs["time_interval_summary"] = self.save_table_svg(
+            outputs["time_interval_summary"] = self.save_table_pdf(
                 interval_df,
                 "time_interval_summary",
                 width=10.0
             )
 
         summary_df = self.build_summary_table(df)
-        outputs["summary_statistics"] = self.save_table_svg(summary_df, "summary_statistics")
+        outputs["summary_statistics"] = self.save_table_pdf(summary_df, "summary_statistics")
 
         quality_df = self.build_quality_table(df)
-        outputs["data_quality"] = self.save_table_svg(quality_df, "data_quality", width=9.0)
+        outputs["data_quality"] = self.save_table_pdf(quality_df, "data_quality", width=9.0)
 
         return outputs
 
     def _save_fig(self, fig: plt.Figure, name: str) -> Path:
-        output_path = self.output_dir / f"{name}.svg"
-        fig.savefig(output_path, format="svg", bbox_inches="tight")
+        output_path = self.output_dir / f"{name}.pdf"
+        fig.savefig(output_path, format="pdf", bbox_inches="tight")
         plt.close(fig)
         return output_path
