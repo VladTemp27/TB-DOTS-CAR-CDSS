@@ -1,68 +1,94 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { Users, LayoutDashboard, UserPlus, LogOut } from 'lucide-react'
+import { BottomNav } from './BottomNav'
+import { logout } from '../lib/auth'
 
 interface Props {
   children: React.ReactNode
 }
 
 const NAV_ITEMS = [
-  { path: '/', label: 'Patient Overview', icon: '🫁' },
-  { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { path: '/patient/new', label: 'New Patient', icon: '➕' },
+  { path: '/', label: 'Patient Overview', Icon: Users },
+  { path: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+  { path: '/patient/new', label: 'New Patient', Icon: UserPlus },
 ]
 
 export function DesktopLayout({ children }: Props) {
   const navigate = useNavigate()
   const location = useLocation()
 
+  function handleLogout() {
+    logout()
+    navigate('/login', { replace: true })
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 flex">
-      {/* Sidebar — only visible on lg+ */}
-      <aside className="hidden lg:flex flex-col w-64 min-h-screen bg-white border-r border-gray-200 fixed top-0 left-0">
+    <div className="min-h-screen bg-bg flex">
+      {/* Skip link for keyboard/screen-reader users */}
+      <a href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-lg focus:text-sm focus:font-medium">
+        Skip to main content
+      </a>
+
+      {/* Sidebar — desktop only */}
+      <aside className="hidden lg:flex flex-col w-64 min-h-screen bg-surface border-r border-border fixed top-0 left-0 z-20">
         {/* Brand */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
-          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-sm font-bold">TB</span>
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-border">
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-sm font-bold font-display">TB</span>
           </div>
           <div>
-            <p className="font-bold text-gray-900 text-sm leading-tight">TB-DOTS CDSS</p>
-            <p className="text-xs text-gray-400">CAR Region</p>
+            <p className="font-bold text-ink-base text-sm leading-tight font-display">TB-DOTS CDSS</p>
+            <p className="text-xs text-ink-muted">CAR Region</p>
           </div>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {NAV_ITEMS.map(item => {
-            const active = location.pathname === item.path
+        <nav className="flex-1 px-3 py-4 space-y-1" aria-label="Main navigation">
+          {NAV_ITEMS.map(({ path, label, Icon }) => {
+            const active = location.pathname === path
             return (
               <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left
+                key={path}
+                onClick={() => navigate(path)}
+                aria-current={active ? 'page' : undefined}
+                className={`w-full flex items-center gap-3 pl-[10px] pr-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left border-l-2
                   ${active
-                    ? 'bg-primary text-white'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-primary/10 text-primary border-primary'
+                    : 'text-ink-secondary hover:bg-gray-50 hover:text-ink-base border-transparent'
                   }`}
               >
-                <span className="text-base">{item.icon}</span>
-                {item.label}
+                <Icon size={18} />
+                {label}
               </button>
             )
           })}
         </nav>
 
-        {/* Footer info */}
-        <div className="px-6 py-4 border-t border-gray-100">
-          <p className="text-xs text-gray-400">AI-assisted diagnostic tool</p>
-          <p className="text-xs text-gray-400 mt-0.5">v1.0 — For clinical use only</p>
+        {/* Footer info + Logout */}
+        <div className="px-3 py-4 border-t border-border space-y-3">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 pl-[10px] pr-3 py-2.5 rounded-xl text-sm font-medium text-ink-secondary hover:bg-risk-high/5 hover:text-risk-high border-l-2 border-transparent hover:border-risk-high transition-colors text-left"
+          >
+            <LogOut size={18} />
+            Log Out
+          </button>
+          <div className="px-3">
+            <p className="text-xs text-ink-muted">AI-assisted diagnostic tool</p>
+            <p className="text-xs text-ink-muted mt-0.5">v1.0 — For clinical use only</p>
+          </div>
         </div>
       </aside>
 
-      {/* Main content area */}
-      <div className="flex-1 lg:ml-64 flex justify-center items-start min-h-screen">
-        {/* Mobile phone column — max 430 px on mobile, full panel width on desktop */}
-        <div className="w-full max-w-[430px] lg:max-w-2xl min-h-screen bg-gray-50 flex flex-col shadow-none lg:shadow-sm">
+      {/* Main content */}
+      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+        <main id="main" className="flex-1 w-full">
           {children}
-        </div>
+        </main>
+
+        {/* Mobile bottom navigation */}
+        <BottomNav />
       </div>
     </div>
   )

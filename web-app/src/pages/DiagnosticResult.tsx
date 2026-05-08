@@ -1,4 +1,5 @@
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import { BarChart3, Info } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { StepProgress } from '../components/StepProgress'
 import { RiskBadge } from '../components/RiskBadge'
@@ -14,76 +15,115 @@ export function DiagnosticResult() {
   const patient = id ? getPatient(id) : null
   const result: ContributionResult | null = location.state?.result ?? null
   const prob = result?.failureProbability ?? patient?.predictions.at(-1)?.failureProbability ?? 0
-  const isHighRisk = prob >= 0.5
+  const isHighRisk = prob >= 0.6  // matches riskLabel() HIGH threshold in RiskBadge.tsx
+
+  const riskGradient = isHighRisk
+    ? 'bg-gradient-to-br from-risk-high/5 to-risk-high/15 border-risk-high/30'
+    : 'bg-gradient-to-br from-risk-low/5 to-risk-low/15 border-risk-low/30'
+  const riskText = isHighRisk ? 'text-risk-high' : 'text-risk-low'
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-bg flex flex-col">
       <AppHeader />
-      <StepProgress steps={4} current={3} />
+      <StepProgress steps={5} current={4} />
 
-      <main className="flex-1 px-4 pb-6 space-y-4 pt-2">
-        <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
-          <p className="text-xs font-semibold text-gray-500 mb-2">Patient Summary</p>
-          <p className="text-sm text-gray-800">
-            Name: {patient?.name ?? 'Unknown'} | Medical ID: {patient?.medicalId ?? id}
-          </p>
-          <p className="text-sm text-gray-800">
-            Age: {patient?.features.age} years | Gender: {patient?.features.sex === 'M' ? 'Male' : 'Female'}
-          </p>
-        </div>
+      <div className="flex-1 flex flex-col">
+        <div className="flex-1 px-4 lg:px-8 pb-6 pt-4 w-full max-w-4xl mx-auto">
+          <div className="lg:grid lg:grid-cols-[2fr_3fr] gap-6">
 
-        <div className={`rounded-xl border-2 p-4 ${isHighRisk ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
-          <div className="flex items-center gap-2 mb-2">
-            <p className={`font-bold text-base ${isHighRisk ? 'text-red-700' : 'text-green-700'}`}>
-              {isHighRisk ? 'POSITIVE — High probability of treatment failure.' : 'LOW RISK — Favorable treatment outlook.'}
-            </p>
+            {/* Left column: patient summary + clinical findings */}
+            <div className="space-y-4 mb-4 lg:mb-0">
+              <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
+                <p className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">Patient Summary</p>
+                <p className="text-sm text-ink-base font-medium">{patient?.name ?? 'Unknown'}</p>
+                <p className="text-xs text-ink-secondary mt-1">ID: {patient?.medicalId ?? id}</p>
+                <p className="text-xs text-ink-secondary">Age: {patient?.features.age} yrs | {patient?.features.sex === 'M' ? 'Male' : 'Female'}</p>
+              </div>
+
+              <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
+                <p className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-3">Clinical Summary</p>
+                <ul className="space-y-1.5">
+                  <li className="text-sm text-ink-secondary">
+                    <span className="font-medium text-ink-base">Bacteriologic: </span>
+                    {patient?.features.bacteriologicStatus}
+                  </li>
+                  <li className="text-sm text-ink-secondary">
+                    <span className="font-medium text-ink-base">Microscopy: </span>
+                    {patient?.features.microscopyResult}
+                  </li>
+                  <li className="text-sm text-ink-secondary">
+                    <span className="font-medium text-ink-base">Site: </span>
+                    {patient?.features.anatomicalSite === 'P' ? 'PTB (Pulmonary)' : 'EPTB'}
+                  </li>
+                  <li className="text-sm text-ink-secondary">
+                    <span className="font-medium text-ink-base">Source: </span>
+                    {patient?.features.sourceOfPatient}
+                  </li>
+                </ul>
+                {id && (
+                  <button
+                    onClick={() => navigate(`/patient/${id}/features`)}
+                    className="mt-3 text-primary text-sm font-medium flex items-center gap-1.5"
+                  >
+                    <BarChart3 size={14} aria-hidden="true" />
+                    View feature contributions
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Right column: risk callout + CTA */}
+            <div className="space-y-4">
+              <div className={`rounded-2xl border-2 p-5 ${riskGradient}`}>
+                <p className={`font-bold text-base ${riskText} mb-3`}>
+                  {isHighRisk
+                    ? 'HIGH RISK — Elevated treatment failure probability'
+                    : 'LOW RISK — Favorable treatment outlook'}
+                </p>
+                <div className="flex items-baseline gap-3 mb-2">
+                  <span className={`text-5xl font-extrabold font-display tabular-nums ${riskText}`}>
+                    {Math.round(prob * 100)}%
+                  </span>
+                  <RiskBadge probability={prob} size="lg" />
+                </div>
+                <p className="text-sm text-ink-secondary mt-2">Predicted treatment failure probability</p>
+                {isHighRisk && (
+                  <p className="text-sm text-risk-high mt-2 font-medium">
+                    Recommend immediate treatment initiation and enhanced monitoring.
+                  </p>
+                )}
+              </div>
+
+              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 flex gap-2.5 items-start">
+                <Info size={16} className="text-blue-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                <p className="text-xs text-blue-700">
+                  This tool provides diagnostic assistance only. Final diagnosis must be made by qualified healthcare professionals considering all clinical findings.
+                </p>
+              </div>
+
+              {/* CTA visible inline on desktop */}
+              <button
+                onClick={() => navigate(`/patient/${id}/treatment`)}
+                className="hidden lg:block w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm active:bg-primary-dark hover:bg-primary-mid transition-colors"
+              >
+                Select Treatment Regimen →
+              </button>
+            </div>
           </div>
-          <div className="flex items-baseline gap-2 mb-1">
-            <span className={`text-4xl font-extrabold ${isHighRisk ? 'text-red-600' : 'text-green-600'}`}>
-              {Math.round(prob * 100)}%
-            </span>
-            <RiskBadge probability={prob} size="lg" />
-          </div>
-          <p className="text-sm text-gray-600 mt-2">Predicted treatment failure probability</p>
-          {isHighRisk && (
-            <p className="text-sm text-red-700 mt-1 font-medium">
-              Recommend immediate treatment initiation and enhanced monitoring.
-            </p>
-          )}
         </div>
+      </div>
 
-        <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
-          <p className="text-sm font-semibold text-gray-800 mb-2">Clinical Summary:</p>
-          <ul className="space-y-1">
-            <li className="text-sm text-gray-700">• Bacteriologic Status: {patient?.features.bacteriologicStatus}</li>
-            <li className="text-sm text-gray-700">• Microscopy Result: {patient?.features.microscopyResult}</li>
-            <li className="text-sm text-gray-700">• Anatomical Site: {patient?.features.anatomicalSite === 'P' ? 'PTB (Pulmonary)' : 'EPTB'}</li>
-            <li className="text-sm text-gray-700">• Source: {patient?.features.sourceOfPatient}</li>
-          </ul>
-          {id && (
-            <button onClick={() => navigate(`/patient/${id}/features`)}
-              className="mt-3 text-primary text-sm font-medium flex items-center gap-1">
-              📊 View feature contributions →
-            </button>
-          )}
-        </div>
-
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex gap-2">
-          <span className="text-blue-500 text-lg">ℹ</span>
-          <p className="text-xs text-blue-700">
-            This tool provides diagnostic assistance only. Final diagnosis must be made by qualified healthcare professionals considering all clinical findings.
-          </p>
-        </div>
-      </main>
-
-      <PageFooter>
-        <button
-          onClick={() => navigate(`/patient/${id}/treatment`)}
-          className="w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm active:bg-primary-dark"
-        >
-          Select Treatment Regimen →
-        </button>
-      </PageFooter>
+      {/* Mobile footer CTA */}
+      <div className="lg:hidden">
+        <PageFooter>
+          <button
+            onClick={() => navigate(`/patient/${id}/treatment`)}
+            className="w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm active:bg-primary-dark"
+          >
+            Select Treatment Regimen →
+          </button>
+        </PageFooter>
+      </div>
     </div>
   )
 }
