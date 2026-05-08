@@ -107,8 +107,10 @@ export function PatientIntakeStep1() {
               </div>
               <div>
                 <label className={labelCls} htmlFor="city">City / Municipality</label>
-                <select id="city" value={city} onChange={e => setCity(e.target.value)} className={selectCls}>
-                  <option value="">Select city/municipality</option>
+                <select id="city" value={city} onChange={e => setCity(e.target.value)}
+                  disabled={!province}
+                  className={`${selectCls} disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-bg`}>
+                  <option value="">{province ? 'Select city/municipality' : 'Select province first'}</option>
                   {cityChoices.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
