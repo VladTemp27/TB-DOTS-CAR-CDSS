@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Users, LayoutDashboard, UserPlus } from 'lucide-react'
+import { Users, LayoutDashboard, UserPlus, LogOut } from 'lucide-react'
 import { BottomNav } from './BottomNav'
+import { logout } from '../lib/auth'
 
 interface Props {
   children: React.ReactNode
@@ -15,6 +16,11 @@ const NAV_ITEMS = [
 export function DesktopLayout({ children }: Props) {
   const navigate = useNavigate()
   const location = useLocation()
+
+  function handleLogout() {
+    logout()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -59,10 +65,19 @@ export function DesktopLayout({ children }: Props) {
           })}
         </nav>
 
-        {/* Footer info */}
-        <div className="px-6 py-4 border-t border-border">
-          <p className="text-xs text-ink-muted">AI-assisted diagnostic tool</p>
-          <p className="text-xs text-ink-muted mt-0.5">v1.0 — For clinical use only</p>
+        {/* Footer info + Logout */}
+        <div className="px-3 py-4 border-t border-border space-y-3">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 pl-[10px] pr-3 py-2.5 rounded-xl text-sm font-medium text-ink-secondary hover:bg-risk-high/5 hover:text-risk-high border-l-2 border-transparent hover:border-risk-high transition-colors text-left"
+          >
+            <LogOut size={18} />
+            Log Out
+          </button>
+          <div className="px-3">
+            <p className="text-xs text-ink-muted">AI-assisted diagnostic tool</p>
+            <p className="text-xs text-ink-muted mt-0.5">v1.0 — For clinical use only</p>
+          </div>
         </div>
       </aside>
 
