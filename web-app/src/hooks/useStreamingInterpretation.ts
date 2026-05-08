@@ -22,9 +22,6 @@ export function useStreamingInterpretation(
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
 
-  // Fix 1: Use scalar IDs as deps to prevent re-firing on parent re-render
-  // patient.id is unique per patient; failureProbability is the prediction result.
-  // On DiagnosticResult page both are set once from route state, so this is stable.
   useEffect(() => {
     if (patient === null || result === null) return
 
@@ -51,22 +48,28 @@ export function useStreamingInterpretation(
       contributions: result.contributions,
     }
 
-    const controller = streamInterpretation(
-      req,
-      (token) => setText((prev) => prev + token),
-      () => {
-        setIsStreaming(false)
-        setIsComplete(true)
-      },
-      (err) => {
-        setIsStreaming(false)
-        setError(err.message)
-      },
-    )
+    // Debounce the actual fetch by 50ms. React StrictMode fires cleanup in <1ms,
+    // which cancels this timer before it fires — preventing the phantom first request.
+    // The second (real) invocation's timer completes normally and sends exactly one request.
+    let controller: AbortController | null = null
+    const timerId = setTimeout(() => {
+      controller = streamInterpretation(
+        req,
+        (token) => setText((prev) => prev + token),
+        () => {
+          setIsStreaming(false)
+          setIsComplete(true)
+        },
+        (err) => {
+          setIsStreaming(false)
+          setError(err.message)
+        },
+      )
+    }, 50)
 
-    // Fix 4: Set isStreaming=false in cleanup so AbortError path clears streaming state
     return () => {
-      controller.abort()
+      clearTimeout(timerId)
+      controller?.abort()
       setIsStreaming(false)
     }
   }, [patient?.id, result?.failureProbability, retryCount])

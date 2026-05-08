@@ -150,7 +150,6 @@ async def _generate(prompt: str, lock: asyncio.Lock, patient_name: str, request:
     log.debug(
         "Inference queued for %r — prompt length: %d chars", patient_name, len(prompt)
     )
-    _stats["requests_served"] += 1
     _stats["requests_active"] += 1
     async with lock:
         log.info("Inference started for %r", patient_name)
@@ -195,10 +194,14 @@ async def _generate(prompt: str, lock: asyncio.Lock, patient_name: str, request:
                 if await request.is_disconnected():
                     log.info("Client disconnected for %r — stopping inference", patient_name)
                     break
-                kind, value = await queue.get()
+                try:
+                    kind, value = await asyncio.wait_for(queue.get(), timeout=0.5)
+                except asyncio.TimeoutError:
+                    continue  # re-poll is_disconnected during long prefill phase
                 if kind == "token":
                     yield {"data": json.dumps({"token": value})}
                 elif kind == "done":
+                    _stats["requests_served"] += 1
                     elapsed = time.monotonic() - t0
                     log.info(
                         "Inference done for %r — %d tokens in %.1fs (%.1f tok/s)",
