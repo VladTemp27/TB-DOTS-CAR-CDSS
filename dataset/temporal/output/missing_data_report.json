@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-08T18:17:42.969982",
+  "generated_at": "2026-05-08T18:29:46.312116",
   "pipeline": "TB-DOTS CAR CDSS \u2014 Missing Data Handling",
   "dataset_info": {
     "n_rows": 599,
@@ -19,8 +19,8 @@
   "pathway_summary": {
     "ALPHA_DROP": 15,
     "BETA_LISTWISE": 0,
-    "GAMMA_INDICATOR": 28,
-    "DELTA_MICE": 1
+    "GAMMA_INDICATOR": 25,
+    "DELTA_MICE": 4
   },
   "column_decisions": {
     "name_of_diagnosing_facility": {
@@ -132,8 +132,8 @@
       "missing_rate_pct": 76.46,
       "mechanism": "MAR",
       "temporal_pattern": "N/A",
-      "pathway": "GAMMA_INDICATOR",
-      "pathway_rationale": "Missing indicator + fill: mechanism=MAR, moderate-to-high missingness (76.5%)."
+      "pathway": "DELTA_MICE",
+      "pathway_rationale": "MICE (missForest): 76.5% missing, mechanism=MAR \u2014 missingness is explainable by observed variables; stochastic imputation preserves variance."
     },
     "respiratory_rate": {
       "missing_rate_pct": 87.81,
@@ -286,15 +286,15 @@
       "missing_rate_pct": 69.28,
       "mechanism": "MAR",
       "temporal_pattern": "N/A",
-      "pathway": "GAMMA_INDICATOR",
-      "pathway_rationale": "Missing indicator + fill: mechanism=MAR, moderate-to-high missingness (69.3%)."
+      "pathway": "DELTA_MICE",
+      "pathway_rationale": "MICE (missForest): 69.3% missing, mechanism=MAR \u2014 missingness is explainable by observed variables; stochastic imputation preserves variance."
     },
     "bp_diastolic": {
       "missing_rate_pct": 69.28,
       "mechanism": "MAR",
       "temporal_pattern": "N/A",
-      "pathway": "GAMMA_INDICATOR",
-      "pathway_rationale": "Missing indicator + fill: mechanism=MAR, moderate-to-high missingness (69.3%)."
+      "pathway": "DELTA_MICE",
+      "pathway_rationale": "MICE (missForest): 69.3% missing, mechanism=MAR \u2014 missingness is explainable by observed variables; stochastic imputation preserves variance."
     },
     "cumulative_doses_taken": {
       "missing_rate_pct": 59.98,
@@ -334,7 +334,7 @@
   },
   "post_imputation": {
     "n_rows": 599,
-    "n_static_cols": 61,
+    "n_static_cols": 58,
     "n_temporal_cols": 18,
     "remaining_static_nulls": 0,
     "remaining_temporal_nulls": 0

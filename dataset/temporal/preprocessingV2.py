@@ -1646,12 +1646,29 @@ def run_pipeline():
 
     # Stage 7: Missing data handling (diagnostic-first pipeline)
     # Routes each column to Alpha/Beta/Gamma/Delta based on MCAR/MAR/MNAR
-    # diagnosis + feature importance.  alpha_hard_threshold raised to 0.90
-    # so smear_microscopy (83.8% missing) is preserved as Gamma indicator.
+    # diagnosis + feature importance.
+    #
+    # Config rationale:
+    #   alpha_hard_threshold=0.90  — raises the drop threshold from the default
+    #     0.80 so that smear_microscopy (83.8%) and height_cm (82.1%) are
+    #     preserved as Gamma indicators rather than dropped.  Both have
+    #     clinical relevance; their absence is itself a predictive signal.
+    #
+    #   delta_min_importance_pct=30 — routes all four MAR cardiovascular/
+    #     respiratory vitals (o2_sat, bp_systolic, bp_diastolic, heart_rate)
+    #     to MICE instead of Gamma.  All four have confirmed MAR mechanism and
+    #     are measured together on the same clinical visit; splitting them by
+    #     sub-noise importance differences is a threshold artifact.
+    #     The lowest-ranking of the four (bp_diastolic) sits at the 36.4th
+    #     percentile; threshold=30 captures all four without affecting any
+    #     MNAR columns (Delta gate fires only for MAR).
     from missing_data import handle_missing_data
     df_static, df_temporal = handle_missing_data(
         df_static, df_temporal,
-        config={"alpha_hard_threshold": 0.90},
+        config={
+            "alpha_hard_threshold":     0.90,
+            "delta_min_importance_pct": 30,
+        },
     )
     # Stage 7B: Clinical bounds clipping + cumulative dose monotonicity repair
     # (domain constraints kept outside the missing_data package for reusability)

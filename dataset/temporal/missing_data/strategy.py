@@ -71,17 +71,21 @@ def route_columns(
     missing_rates  = diagnostics_result.get("missing_rates", {})
     mechanisms     = diagnostics_result.get("mechanisms", {})
 
-    # Pre-compute importance quartile threshold.
+    # Pre-compute importance thresholds from the config.
     # If importance_scores is empty (RF couldn't fit on available complete cases),
     # disable importance-gated Alpha entirely — we must not drop clinical features
     # solely because we lacked sufficient complete-case data to rank them.
     has_importance = bool(importance_scores)
     if has_importance:
         imp_values = np.array(list(importance_scores.values()))
-        q25 = float(np.percentile(imp_values, 25))
-        q50 = float(np.percentile(imp_values, 50))
+        q25        = float(np.percentile(imp_values, 25))
+        # Delta threshold: configurable via delta_min_importance_pct.
+        # A column must score ABOVE this percentile to qualify for MICE.
+        # Default is 50 (median); lower values route more MAR columns to Delta.
+        delta_pct  = float(cfg.get("delta_min_importance_pct", 50))
+        q_delta    = float(np.percentile(imp_values, delta_pct))
     else:
-        q25 = q50 = 0.0
+        q25 = q_delta = 0.0
 
     _temporal_cols: set[str] = temporal_cols or set()
     routing: dict[str, Pathway] = {}
@@ -93,7 +97,9 @@ def route_columns(
         importance  = importance_scores.get(col, 0.0)
         mechanism   = mechanisms.get(col, "MNAR")   # conservative default
         is_low_imp  = importance <= q25
-        is_mid_imp  = importance <= q50
+        # is_mid_imp: True means importance is AT OR BELOW the Delta threshold
+        # (i.e. not important enough to justify MICE).
+        is_mid_imp  = importance <= q_delta
 
         # ------------------------------------------------------------------
         # ALPHA: Drop column
