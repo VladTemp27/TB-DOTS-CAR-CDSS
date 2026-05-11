@@ -91,7 +91,6 @@ Actual F    5        1
 **Key Weaknesses:**
 - ⚠️ Slightly lower test accuracy (90%) vs XGBoost (91.67%)
 - ⚠️ Requires more memory for large datasets
-- ⚠️ No ONNX export (saved as joblib checkpoint)
 
 **Best Use Case:**  
 When **risk ranking is critical** (e.g., for patient prioritization in resource-constrained settings). The highest ROC-AUC means it best distinguishes high-risk vs low-risk patients across all thresholds.
