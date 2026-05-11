@@ -119,3 +119,7 @@ docs/superpowers/
 
 .worktrees/
 ./workspaces/
+
+workflow.md
+start.sh
+.env
