@@ -1,0 +1,24 @@
+\begin{table}[htbp]
+
+\caption{Date Column Parsing Anomalies in the Raw Dataset (Justifying Stage 3 Date Correction Logic)}
+\label{tab:date_anomaly_summary}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lccccc}
+
+\toprule
+
+Date Column & Parsed OK & Unparseable & Future Dates & Pre-1920 Dates & Notes \\
+
+\midrule
+
+date\_of\_diagnosis & 391 & 208 & 0 & 0 & Clean \\
+treatment\_start\_date & 510 & 89 & 1 & 0 & 32 pre-diagnosis starts corrected \\
+date\_of\_outcome & 347 & 252 & 0 & 0 & Clean \\
+date\_of\_birth & 395 & 204 & 1 & 0 & Century-swap fix applied \\
+
+\bottomrule
+
+\end{tabular}
+}% end resizebox
+
+\end{table}
