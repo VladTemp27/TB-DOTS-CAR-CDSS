@@ -115,3 +115,7 @@ docs/superpowers/
 *.tmp
 *.temp
 .cache/
+
+
+.worktrees/
+./workspaces/
