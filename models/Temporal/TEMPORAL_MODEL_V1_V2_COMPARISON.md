@@ -1,6 +1,6 @@
 # TB-DOTS CAR CDSS — Temporal Model v1 vs v2 Comparison
 
-This document compares the earlier temporal pipeline in [TEMPORAL_MODEL_RESULTS.md](TEMPORAL_MODEL_RESULTS.md) and the v1 notebooks ([Hybrid_Bi-LSTM_temporal.ipynb](Hybrid_Bi-LSTM_temporal.ipynb), [lightgbm_temporal.ipynb](lightgbm_temporal.ipynb), [random_forest_temporal.ipynb](random_forest_temporal.ipynb), [xgboost_model_temporal.ipynb](xgboost_model_temporal.ipynb)) against the later v2 pipeline summarized in [models/Temporal/results.md](models/Temporal/results.md) and implemented in the v2 notebooks under [models/Temporal](models/Temporal).
+This document compares the earlier temporal pipeline in [v1/TEMPORAL_MODEL_RESULTS.md](v1/TEMPORAL_MODEL_RESULTS.md) and the v1 notebooks ([v1/Hybrid_Bi-LSTM_temporal.ipynb](v1/Hybrid_Bi-LSTM_temporal.ipynb), [v1/lightgbm_temporal.ipynb](v1/lightgbm_temporal.ipynb), [v1/random_forest_temporal.ipynb](v1/random_forest_temporal.ipynb), [v1/xgboost_model_temporal.ipynb](v1/xgboost_model_temporal.ipynb)) against the later v2 pipeline summarized in [v2/results.md](v2/results.md) and implemented in the v2 notebooks under [v2](v2).
 
 ## Executive Summary
 
