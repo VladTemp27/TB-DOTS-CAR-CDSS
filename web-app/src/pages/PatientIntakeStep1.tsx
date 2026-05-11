@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { StepProgress } from '../components/StepProgress'
-import { getChoices } from '../lib/inference'
+import { getChoices, getCitiesForProvince } from '../lib/inference'
 import { PageFooter } from '../components/PageFooter'
 
 const DRAFT_KEY = 'tb_intake_draft'
@@ -27,10 +27,10 @@ export function PatientIntakeStep1() {
   const [city, setCity] = useState(draft.city ?? '')
   const [registrationGroup, setRegistrationGroup] = useState(draft.registrationGroup ?? '')
 
-  const sexChoices       = getChoices('Sex')
-  const provinceChoices  = getChoices('Province')
-  const cityChoices      = getChoices('City_Municipality')
-  const regGroupChoices  = getChoices('Registration_Group')
+  const sexChoices = getChoices('Sex')
+  const provinceChoices = getChoices('Province')
+  const cityChoices = getCitiesForProvince(province)
+  const regGroupChoices = getChoices('Registration_Group')
 
   const valid = name && age && sex && province && registrationGroup
 
@@ -107,8 +107,10 @@ export function PatientIntakeStep1() {
               </div>
               <div>
                 <label className={labelCls} htmlFor="city">City / Municipality</label>
-                <select id="city" value={city} onChange={e => setCity(e.target.value)} className={selectCls}>
-                  <option value="">Select city/municipality</option>
+                <select id="city" value={city} onChange={e => setCity(e.target.value)}
+                  disabled={!province}
+                  className={`${selectCls} disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-bg`}>
+                  <option value="">{province ? 'Select city/municipality' : 'Select province first'}</option>
                   {cityChoices.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
