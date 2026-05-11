@@ -271,20 +271,19 @@ def export_tree_model_to_onnx(
     output_dir,
     X_dummy_sample=None,
 ):
-    """Export a fitted sklearn pipeline (tree-based model) to ONNX and ORT formats.
+    """Export a fitted tree-based model to ONNX and ORT formats.
     
-    This function is used by temporal model notebooks (Random Forest, XGBoost, LightGBM)
-    to export their trained pipelines for web deployment.
+    Supports LightGBM, XGBoost, and scikit-learn Random Forest models.
+    Uses model-specific converters for best compatibility.
     
     Parameters
     ----------
-    fitted_pipeline : sklearn.pipeline.Pipeline or estimator
-        A fitted sklearn pipeline or model that supports skl2onnx conversion.
-        Typically includes a scaler + tree-based classifier.
+    fitted_pipeline : LGBMClassifier, XGBClassifier, RandomForestClassifier, or Pipeline
+        A fitted tree-based model or pipeline.
     feature_names : list of str
         List of input feature names for the model.
     model_name : str
-        Name for the exported model (e.g., "random_forest_temporal").
+        Name for the exported model (e.g., "lightgbm_temporal").
     output_dir : str or Path
         Directory to save ONNX and ORT model files.
     X_dummy_sample : ndarray, optional
@@ -300,16 +299,10 @@ def export_tree_model_to_onnx(
         - "feature_names": Feature names used during export
         - "model_name": Model name used during export
     """
-    try:
-        from skl2onnx import convert_sklearn
-        from skl2onnx.common.data_types import FloatTensorType
-        import onnxruntime as ort
-        import numpy as np
-    except ImportError as e:
-        raise ImportError(
-            f"Required package missing: {e}. "
-            "Install with: pip install skl2onnx onnxruntime"
-        )
+    import shutil
+    import numpy as np
+    import onnxruntime as ort
+    from pathlib import Path
     
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -322,49 +315,200 @@ def export_tree_model_to_onnx(
         if X_dummy_sample.shape[0] != 1:
             X_dummy_sample = X_dummy_sample[:1]
     
-    # Define ONNX input specification
-    initial_type = [("float_input", FloatTensorType([None, len(feature_names)]))]
-    
-    # Convert to ONNX
-    print(f"Converting {model_name} to ONNX...")
-    try:
-        onnx_model = convert_sklearn(
-            fitted_pipeline,
-            initial_types=initial_type,
-            target_opset=12,
-            options={},
-        )
-    except Exception as e:
-        print(f"⚠ Conversion failed: {e}")
-        raise
-    
-    # Save ONNX
     onnx_path = output_dir / f"{model_name}.onnx"
-    onnx_model.SerializeToString()
-    with open(str(onnx_path), "wb") as f:
-        f.write(onnx_model.SerializeToString())
-    print(f"✓ ONNX model saved: {onnx_path.name}")
-    
-    # Verify ONNX model
-    print(f"Verifying ONNX model...")
-    try:
-        sess = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
-        ort_inputs = {"float_input": X_dummy_sample}
-        ort_outputs = sess.run(None, ort_inputs)
-        print(f"✓ ONNX model verified (output shape: {ort_outputs[0].shape})")
-    except Exception as e:
-        print(f"⚠ ONNX verification failed: {e}")
-        raise
-    
-    # Save ORT (copy ONNX for now, optimized via runtime)
-    import shutil
     ort_path = output_dir / f"{model_name}.ort"
-    shutil.copy(str(onnx_path), str(ort_path))
-    print(f"✓ ORT model saved: {ort_path.name}")
+    onnx_model = None
+    
+    # Detect model type and use appropriate converter
+    model_type_name = type(fitted_pipeline).__name__
+    model_type_module = type(fitted_pipeline).__module__
+    
+    is_lightgbm = ("LGBM" in model_type_name) or ("lightgbm" in model_type_module.lower())
+    is_xgboost = ("XGB" in model_type_name) or ("xgboost" in model_type_module.lower())
+    is_random_forest = ("RandomForest" in model_type_name) or ("sklearn.ensemble" in model_type_module)
+    
+    print(f"Converting {model_name} to ONNX (detected: {model_type_name} from {model_type_module})...")
+    
+    # ── LightGBM Export ──────────────────────────────────────────
+    if is_lightgbm:
+        try:
+            import onnxmltools
+            from onnxmltools.convert.common.data_types import FloatTensorType
+            
+            print(f"  Using onnxmltools for LightGBM conversion...")
+            initial_type = [("float_input", FloatTensorType([None, len(feature_names)]))]
+            
+            onnx_model = onnxmltools.convert_lightgbm(
+                fitted_pipeline,
+                initial_types=initial_type,
+                target_opset=12,
+            )
+        except Exception as e:
+            print(f"  ⚠ onnxmltools approach failed: {type(e).__name__}: {str(e)[:100]}")
+            print(f"  Attempting fallback with skl2onnx...")
+            
+            try:
+                from skl2onnx import convert_sklearn
+                from skl2onnx.common.data_types import FloatTensorType
+                
+                initial_type = [("float_input", FloatTensorType([None, len(feature_names)]))]
+                onnx_model = convert_sklearn(fitted_pipeline, initial_types=initial_type, target_opset=12)
+            except Exception as e2:
+                print(f"  ✗ Both LightGBM converters failed. Saving PyTorch checkpoint instead...")
+                checkpoint_path = output_dir / f"{model_name}_checkpoint.joblib"
+                joblib.dump(fitted_pipeline, checkpoint_path)
+                print(f"  ✓ Model checkpoint saved: {checkpoint_path.name}")
+                print(f"  Note: Use joblib.load() for inference instead of ONNX Runtime")
+                return {
+                    "onnx_path": None,
+                    "ort_path": None,
+                    "feature_names": feature_names,
+                    "model_name": model_name,
+                    "checkpoint_path": str(checkpoint_path),
+                }
+    
+    # ── XGBoost (convert via binary with proper handling) ─────────
+    elif is_xgboost:
+        try:
+            import xgboost as xgb_module
+            import onnxmltools
+            from skl2onnx.common.data_types import FloatTensorType
+            
+            print(f"  Using onnxmltools for {model_type_name} conversion...")
+            
+            # Step 1: Save to binary format, then reload as pure Booster
+            import tempfile
+            import os
+            with tempfile.TemporaryDirectory() as tmpdir:
+                temp_model_path = os.path.join(tmpdir, "temp_model.bin")
+                
+                # Save classifier's underlying model to binary
+                if hasattr(fitted_pipeline, 'get_booster'):
+                    fitted_pipeline.get_booster().save_model(temp_model_path)
+                else:
+                    fitted_pipeline.save_model(temp_model_path)
+                
+                # Reload as pure Booster from binary
+                booster = xgb_module.Booster(model_file=temp_model_path)
+                
+                # Now convert the Booster - onnxmltools should handle Booster objects
+                initial_type = [("float_input", FloatTensorType([None, len(feature_names)]))]
+                onnx_model = onnxmltools.convert_xgboost(
+                    booster,
+                    initial_types=initial_type,
+                    target_opset=12
+                )
+        except Exception as e:
+            print(f"  ⚠ onnxmltools failed: {type(e).__name__}: {str(e)[:100]}")
+            print(f"  Attempting alternative: use sklearn wrapper directly on dummy data...")
+            
+            try:
+                # Try wrapping the model to make it sklearn-compatible
+                from skl2onnx import convert_sklearn
+                from skl2onnx.common.data_types import FloatTensorType
+                
+                # Test if we can convert the classifier directly with better type hints
+                initial_type = [("float_input", FloatTensorType([None, len(feature_names)]))]
+                
+                # Create a simple wrapper to avoid sklearn-specific issues
+                class XGBONNXWrapper:
+                    def __init__(self, model):
+                        self.model = model
+                    def predict(self, X):
+                        return self.model.predict(X)
+                    def predict_proba(self, X):
+                        return self.model.predict_proba(X)
+                
+                wrapper = XGBONNXWrapper(fitted_pipeline)
+                onnx_model = convert_sklearn(wrapper, initial_types=initial_type, target_opset=12)
+            except Exception as e2:
+                print(f"  ⚠ Wrapper approach failed: {type(e2).__name__}: {str(e2)[:100]}")
+                print(f"  Saving checkpoint instead...")
+                checkpoint_path = output_dir / f"{model_name}_checkpoint.joblib"
+                joblib.dump(fitted_pipeline, checkpoint_path)
+                print(f"  ✓ Model checkpoint saved: {checkpoint_path.name}")
+                print(f"  Note: Use joblib.load() for inference instead of ONNX Runtime")
+                return {
+                    "onnx_path": None,
+                    "ort_path": None,
+                    "feature_names": feature_names,
+                    "model_name": model_name,
+                    "checkpoint_path": str(checkpoint_path),
+                }
+    
+    # ── Random Forest (skl2onnx) ────────────────────────────────────
+    elif is_random_forest:
+        try:
+            from skl2onnx import convert_sklearn
+            from skl2onnx.common.data_types import FloatTensorType
+            
+            print(f"  Using skl2onnx for {model_type_name} conversion...")
+            initial_type = [("float_input", FloatTensorType([None, len(feature_names)]))]
+            
+            onnx_model = convert_sklearn(
+                fitted_pipeline,
+                initial_types=initial_type,
+                target_opset=12,
+            )
+        except Exception as e:
+            print(f"  ⚠ skl2onnx conversion failed: {type(e).__name__}: {str(e)[:100]}")
+            print(f"  Saving model checkpoint for Python inference...")
+            checkpoint_path = output_dir / f"{model_name}_checkpoint.joblib"
+            joblib.dump(fitted_pipeline, checkpoint_path)
+            print(f"  ✓ Model checkpoint saved: {checkpoint_path.name}")
+            print(f"  Note: Use joblib.load() for inference instead of ONNX Runtime")
+            return {
+                "onnx_path": None,
+                "ort_path": None,
+                "feature_names": feature_names,
+                "model_name": model_name,
+                "checkpoint_path": str(checkpoint_path),
+            }
+    
+    else:
+        print(f"  ⚠ Unknown model type: {model_type_name}")
+        print(f"  Saving model checkpoint instead...")
+        checkpoint_path = output_dir / f"{model_name}_checkpoint.joblib"
+        joblib.dump(fitted_pipeline, checkpoint_path)
+        return {
+            "onnx_path": None,
+            "ort_path": None,
+            "feature_names": feature_names,
+            "model_name": model_name,
+            "checkpoint_path": str(checkpoint_path),
+        }
+    
+    # ── Save ONNX ────────────────────────────────────────────────
+    if onnx_model is not None:
+        try:
+            with open(str(onnx_path), "wb") as f:
+                f.write(onnx_model.SerializeToString())
+            print(f"✓ ONNX model saved: {onnx_path.name}")
+        except Exception as e:
+            print(f"✗ Failed to save ONNX: {e}")
+            raise
+        
+        # ── Verify ONNX ──────────────────────────────────────────
+        print(f"Verifying ONNX model...")
+        try:
+            sess = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
+            ort_inputs = {sess.get_inputs()[0].name: X_dummy_sample}
+            ort_outputs = sess.run(None, ort_inputs)
+            print(f"✓ ONNX model verified (output shape: {ort_outputs[0].shape})")
+        except Exception as e:
+            print(f"⚠ ONNX verification failed: {e}")
+            raise
+        
+        # ── Save ORT ─────────────────────────────────────────────
+        try:
+            shutil.copy(str(onnx_path), str(ort_path))
+            print(f"✓ ORT model saved: {ort_path.name}")
+        except Exception as e:
+            print(f"⚠ ORT save failed: {e}")
     
     return {
-        "onnx_path": str(onnx_path),
-        "ort_path": str(ort_path),
+        "onnx_path": str(onnx_path) if onnx_model is not None else None,
+        "ort_path": str(ort_path) if onnx_model is not None else None,
         "feature_names": feature_names,
         "model_name": model_name,
     }

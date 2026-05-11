@@ -1,7 +1,7 @@
 TB-DOTS CAR CDSS — Bi-LSTM Evaluation Report
 (Baseline vs Augmented Comparison)
 =================================================================
-Date: 2026-05-09 20:55:46
+Date: 2026-05-11 22:43:37
 Device: cpu
 Dataset: 599 patients, split 70/20/10 (patient-level)
 Training mode: Progressive temporal — 13 samples/patient (M0..M12)

@@ -1,7 +1,7 @@
 TB-DOTS CAR CDSS — XGBoost Evaluation Report
 (Baseline vs SMOTE-ENN Augmented)
 ============================================================
-Date: 2026-05-09 21:00:38
+Date: 2026-05-11 23:02:51
 Dataset: 599 patients, split 70/20/10 (patient-level, stratified)
 Training mode: Progressive temporal — 13 samples/patient (M0..M12)
 Features: 407 (static + engineered temporal + aggregates + trends)
