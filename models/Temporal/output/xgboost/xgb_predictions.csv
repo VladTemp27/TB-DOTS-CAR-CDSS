@@ -1,0 +1,600 @@
+patient_idx,treatment_regimen,actual_outcome,predicted_outcome,prob_success,prob_failure,confidence_pct,risk_level,months_used
+0,Regimen 1,Treatment Completed,Success,0.9051,0.0949,90.51,LOW RISK,M0-M12
+1,Regimen 1,Treatment Completed,Failure,0.0259,0.9741,97.41,HIGH RISK,M0-M12
+2,Regimen 1,Treatment Completed,Success,0.9809,0.0191,98.09,LOW RISK,M0-M12
+3,Regimen 1,Treatment Completed,Success,0.9739,0.0261,97.39,LOW RISK,M0-M12
+4,Regimen 1,Treatment Completed,Success,0.8817,0.1183,88.17,LOW RISK,M0-M12
+5,Regimen 1,Cured,Success,0.9914,0.0086,99.14,LOW RISK,M0-M12
+6,Regimen 1,Treatment Completed,Success,0.9522,0.0478,95.22,LOW RISK,M0-M12
+7,Regimen 1,Treatment Completed,Success,0.9904,0.0096,99.04,LOW RISK,M0-M12
+8,Regimen 1,Treatment Completed,Failure,0.032,0.968,96.8,HIGH RISK,M0-M12
+9,Regimen 1,Treatment Completed,Success,0.9521,0.0479,95.21,LOW RISK,M0-M12
+10,Regimen 1,Treatment Completed,Success,0.9933,0.0067,99.33,LOW RISK,M0-M12
+11,Regimen 1,Treatment Completed,Success,0.9946,0.0054,99.46,LOW RISK,M0-M12
+12,Regimen 1,Cured,Success,0.9842,0.0158,98.42,LOW RISK,M0-M12
+13,Regimen 1,Treatment Completed,Success,0.9778,0.0222,97.78,LOW RISK,M0-M12
+14,Regimen 1,Treatment Completed,Success,0.9918,0.0082,99.18,LOW RISK,M0-M12
+15,Regimen 1,Treatment Completed,Success,0.9944,0.0056,99.44,LOW RISK,M0-M12
+16,Regimen 1,Treatment Completed,Success,0.9942,0.0058,99.42,LOW RISK,M0-M12
+17,Regimen 1,Treatment Completed,Success,0.997,0.003,99.7,LOW RISK,M0-M12
+18,Regimen 1,Treatment Completed,Failure,0.681,0.319,68.1,LOW RISK,M0-M12
+19,Regimen 1,Treatment Completed,Success,0.9865,0.0135,98.65,LOW RISK,M0-M12
+20,Regimen 1,Treatment Completed,Success,0.9887,0.0113,98.87,LOW RISK,M0-M12
+21,Regimen 1,Treatment Completed,Success,0.9795,0.0205,97.95,LOW RISK,M0-M12
+22,Regimen 1,Treatment Completed,Success,0.943,0.057,94.3,LOW RISK,M0-M12
+23,Regimen 1,Treatment Completed,Success,0.9516,0.0484,95.16,LOW RISK,M0-M12
+24,Regimen 1,Treatment Completed,Success,0.9877,0.0123,98.77,LOW RISK,M0-M12
+25,Regimen 1,Treatment Completed,Success,0.974,0.026,97.4,LOW RISK,M0-M12
+26,Regimen 1,Treatment Completed,Success,0.9618,0.0382,96.18,LOW RISK,M0-M12
+27,Regimen 1,Treatment Completed,Success,0.9743,0.0257,97.43,LOW RISK,M0-M12
+28,Regimen 1,Treatment Completed,Failure,0.6391,0.3609,63.91,LOW RISK,M0-M12
+29,Regimen 1,Treatment Completed,Success,0.9891,0.0109,98.91,LOW RISK,M0-M12
+30,Regimen 1,Treatment Completed,Success,0.9772,0.0228,97.72,LOW RISK,M0-M12
+31,Regimen 1,Treatment Completed,Success,0.9914,0.0086,99.14,LOW RISK,M0-M12
+32,Regimen 1,Treatment Completed,Success,0.9552,0.0448,95.52,LOW RISK,M0-M12
+33,Regimen 1,Treatment Completed,Failure,0.547,0.453,54.7,MODERATE RISK,M0-M12
+34,Regimen 1,Treatment Completed,Failure,0.8086,0.1914,80.86,LOW RISK,M0-M12
+35,Regimen 1,Treatment Completed,Success,0.9882,0.0118,98.82,LOW RISK,M0-M12
+36,Regimen 1,Treatment Completed,Success,0.9927,0.0073,99.27,LOW RISK,M0-M12
+37,Regimen 1,Treatment Completed,Success,0.9692,0.0308,96.92,LOW RISK,M0-M12
+38,Regimen 1,Treatment Completed,Success,0.9948,0.0052,99.48,LOW RISK,M0-M12
+39,Regimen 1,Treatment Completed,Success,0.9458,0.0542,94.58,LOW RISK,M0-M12
+40,Regimen 1,Treatment Completed,Success,0.9873,0.0127,98.73,LOW RISK,M0-M12
+41,Regimen 1,Treatment Completed,Failure,0.4166,0.5834,58.34,MODERATE RISK,M0-M12
+42,Regimen 1,Treatment Completed,Success,0.9904,0.0096,99.04,LOW RISK,M0-M12
+43,Regimen 1,Treatment Completed,Success,0.8701,0.1299,87.01,LOW RISK,M0-M12
+44,Regimen 1,Treatment Completed,Failure,0.6144,0.3856,61.44,LOW RISK,M0-M12
+45,Regimen 1,Lost to Follow-Up,Failure,0.061,0.939,93.9,HIGH RISK,M0-M12
+46,Regimen 1,Treatment Completed,Success,0.9938,0.0062,99.38,LOW RISK,M0-M12
+47,Regimen 1,Treatment Completed,Success,0.965,0.035,96.5,LOW RISK,M0-M12
+48,Regimen 1,Lost to Follow-Up,Failure,0.4192,0.5808,58.08,MODERATE RISK,M0-M12
+49,Regimen 1,Cured,Success,0.9917,0.0083,99.17,LOW RISK,M0-M12
+50,Regimen 1,Treatment Completed,Success,0.9917,0.0083,99.17,LOW RISK,M0-M12
+51,Regimen 1,Treatment Completed,Failure,0.2086,0.7914,79.14,HIGH RISK,M0-M12
+52,Regimen 1,Treatment Completed,Success,0.9941,0.0059,99.41,LOW RISK,M0-M12
+53,Regimen 1,Treatment Completed,Success,0.9989,0.0011,99.89,LOW RISK,M0-M12
+54,Regimen 1,Lost to Follow-Up,Failure,0.0023,0.9977,99.77,HIGH RISK,M0-M12
+55,Regimen 1,Treatment Completed,Success,0.996,0.004,99.6,LOW RISK,M0-M12
+56,Regimen 1,Treatment Completed,Success,0.983,0.017,98.3,LOW RISK,M0-M12
+57,Regimen 1,Lost to Follow-Up,Failure,0.0036,0.9964,99.64,HIGH RISK,M0-M12
+58,Regimen 1,Treatment Completed,Success,0.9876,0.0124,98.76,LOW RISK,M0-M12
+59,Regimen 1,Treatment Completed,Success,0.9885,0.0115,98.85,LOW RISK,M0-M12
+60,Regimen 1,Treatment Completed,Success,0.95,0.05,95.0,LOW RISK,M0-M12
+61,Regimen 1,Lost to Follow-Up,Failure,0.0589,0.9411,94.11,HIGH RISK,M0-M12
+62,Regimen 1,Treatment Completed,Success,0.9528,0.0472,95.28,LOW RISK,M0-M12
+63,Regimen 1,Treatment Completed,Success,0.9343,0.0657,93.43,LOW RISK,M0-M12
+64,Regimen 1,Treatment Completed,Success,0.9877,0.0123,98.77,LOW RISK,M0-M12
+65,Regimen 1,Lost to Follow-Up,Failure,0.0066,0.9934,99.34,HIGH RISK,M0-M12
+66,Regimen 1,Treatment Completed,Success,0.987,0.013,98.7,LOW RISK,M0-M12
+67,Regimen 1,Treatment Completed,Success,0.9173,0.0827,91.73,LOW RISK,M0-M12
+68,Regimen 1,Treatment Completed,Success,0.9893,0.0107,98.93,LOW RISK,M0-M12
+69,Regimen 1,Treatment Completed,Success,0.9698,0.0302,96.98,LOW RISK,M0-M12
+70,Regimen 1,Treatment Completed,Success,0.9929,0.0071,99.29,LOW RISK,M0-M12
+71,Regimen 1,Treatment Completed,Success,0.9913,0.0087,99.13,LOW RISK,M0-M12
+72,Regimen 1,Treatment Completed,Success,0.9805,0.0195,98.05,LOW RISK,M0-M12
+73,Regimen 1,Treatment Completed,Success,0.9672,0.0328,96.72,LOW RISK,M0-M12
+74,Regimen 1,Treatment Completed,Success,0.9977,0.0023,99.77,LOW RISK,M0-M12
+75,Regimen 1,Treatment Completed,Success,0.9461,0.0539,94.61,LOW RISK,M0-M12
+76,Regimen 1,Treatment Completed,Success,0.9835,0.0165,98.35,LOW RISK,M0-M12
+77,Regimen 1,Treatment Completed,Success,0.9946,0.0054,99.46,LOW RISK,M0-M12
+78,Regimen 1,Treatment Completed,Success,0.9985,0.0015,99.85,LOW RISK,M0-M12
+79,Regimen 1,Treatment Completed,Success,0.9984,0.0016,99.84,LOW RISK,M0-M12
+80,Regimen 1,Treatment Completed,Success,0.9988,0.0012,99.88,LOW RISK,M0-M12
+81,Regimen 1,Treatment Completed,Success,0.9728,0.0272,97.28,LOW RISK,M0-M12
+82,Regimen 1,Treatment Completed,Success,0.9707,0.0293,97.07,LOW RISK,M0-M12
+83,Regimen 1,Treatment Completed,Success,0.9997,0.0003,99.97,LOW RISK,M0-M12
+84,Regimen 1,Treatment Completed,Success,0.9983,0.0017,99.83,LOW RISK,M0-M12
+85,Regimen 1,Treatment Completed,Success,0.9994,0.0006,99.94,LOW RISK,M0-M12
+86,Regimen 1,Treatment Completed,Success,0.9988,0.0012,99.88,LOW RISK,M0-M12
+87,Regimen 1,Cured,Success,0.9935,0.0065,99.35,LOW RISK,M0-M12
+88,Regimen 1,Treatment Completed,Success,0.984,0.016,98.4,LOW RISK,M0-M12
+89,Regimen 1,Treatment Completed,Success,0.999,0.001,99.9,LOW RISK,M0-M12
+90,Regimen 1,Treatment Completed,Success,0.9992,0.0008,99.92,LOW RISK,M0-M12
+91,Regimen 1,Treatment Completed,Success,0.9993,0.0007,99.93,LOW RISK,M0-M12
+92,Regimen 1,Treatment Completed,Success,0.9984,0.0016,99.84,LOW RISK,M0-M12
+93,Regimen 1,Treatment Completed,Success,0.9978,0.0022,99.78,LOW RISK,M0-M12
+94,Regimen 1,Cured,Success,0.9953,0.0047,99.53,LOW RISK,M0-M12
+95,Regimen 1,Treatment Completed,Success,0.9973,0.0027,99.73,LOW RISK,M0-M12
+96,Regimen 1,Treatment Completed,Success,0.9923,0.0077,99.23,LOW RISK,M0-M12
+97,Regimen 1,Treatment Completed,Success,0.9995,0.0005,99.95,LOW RISK,M0-M12
+98,Regimen 1,Treatment Completed,Success,0.999,0.001,99.9,LOW RISK,M0-M12
+99,Regimen 1,Treatment Completed,Success,0.9813,0.0187,98.13,LOW RISK,M0-M12
+100,Regimen 1,Treatment Completed,Success,0.9973,0.0027,99.73,LOW RISK,M0-M12
+101,Regimen 1,Treatment Completed,Success,0.9744,0.0256,97.44,LOW RISK,M0-M12
+102,Regimen 1,Treatment Completed,Success,0.9985,0.0015,99.85,LOW RISK,M0-M12
+103,Regimen 1,Treatment Completed,Success,0.9296,0.0704,92.96,LOW RISK,M0-M12
+104,Regimen 1,Lost to Follow-Up,Failure,0.1617,0.8383,83.83,HIGH RISK,M0-M12
+105,Regimen 1,Treatment Completed,Success,0.9938,0.0062,99.38,LOW RISK,M0-M12
+106,Regimen 1,Treatment Completed,Success,0.9738,0.0262,97.38,LOW RISK,M0-M12
+107,Regimen 1,Treatment Completed,Success,0.9913,0.0087,99.13,LOW RISK,M0-M12
+108,Regimen 1,Treatment Completed,Success,0.9621,0.0379,96.21,LOW RISK,M0-M12
+109,Regimen 1,Lost to Follow-Up,Failure,0.003,0.997,99.7,HIGH RISK,M0-M12
+110,Regimen 1,Lost to Follow-Up,Failure,0.0022,0.9978,99.78,HIGH RISK,M0-M12
+111,Regimen 1,Treatment Completed,Success,0.9806,0.0194,98.06,LOW RISK,M0-M12
+112,Regimen 1,Treatment Completed,Success,0.9961,0.0039,99.61,LOW RISK,M0-M12
+113,Regimen 1,Treatment Completed,Success,0.9907,0.0093,99.07,LOW RISK,M0-M12
+114,Regimen 1,Treatment Completed,Success,0.9912,0.0088,99.12,LOW RISK,M0-M12
+115,Regimen 1,Lost to Follow-Up,Failure,0.0036,0.9964,99.64,HIGH RISK,M0-M12
+116,Regimen 1,Treatment Completed,Success,0.9669,0.0331,96.69,LOW RISK,M0-M12
+117,Regimen 1,Treatment Completed,Success,0.9736,0.0264,97.36,LOW RISK,M0-M12
+118,Regimen 1,Treatment Completed,Success,0.985,0.015,98.5,LOW RISK,M0-M12
+119,Regimen 1,Treatment Completed,Success,0.9843,0.0157,98.43,LOW RISK,M0-M12
+120,Regimen 1,Treatment Completed,Success,0.9282,0.0718,92.82,LOW RISK,M0-M12
+121,Regimen 1,Lost to Follow-Up,Failure,0.0026,0.9974,99.74,HIGH RISK,M0-M12
+122,Regimen 1,Lost to Follow-Up,Failure,0.0023,0.9977,99.77,HIGH RISK,M0-M12
+123,Regimen 1,Treatment Completed,Success,0.9943,0.0057,99.43,LOW RISK,M0-M12
+124,Regimen 1,Treatment Completed,Success,0.9968,0.0032,99.68,LOW RISK,M0-M12
+125,Regimen 1,Treatment Completed,Success,0.9791,0.0209,97.91,LOW RISK,M0-M12
+126,Regimen 1,Treatment Completed,Success,0.9263,0.0737,92.63,LOW RISK,M0-M12
+127,Regimen 1,Treatment Completed,Success,0.9113,0.0887,91.13,LOW RISK,M0-M12
+128,Regimen 1,Treatment Completed,Failure,0.4598,0.5402,54.02,MODERATE RISK,M0-M12
+129,Regimen 1,Lost to Follow-Up,Failure,0.0043,0.9957,99.57,HIGH RISK,M0-M12
+130,Regimen 1,Treatment Completed,Success,0.9903,0.0097,99.03,LOW RISK,M0-M12
+131,Regimen 1,Lost to Follow-Up,Failure,0.0054,0.9946,99.46,HIGH RISK,M0-M12
+132,Regimen 1,Treatment Completed,Success,0.9905,0.0095,99.05,LOW RISK,M0-M12
+133,Regimen 1,Lost to Follow-Up,Failure,0.0146,0.9854,98.54,HIGH RISK,M0-M12
+134,Regimen 1,Treatment Completed,Success,0.9775,0.0225,97.75,LOW RISK,M0-M12
+135,Regimen 1,Treatment Completed,Success,0.9831,0.0169,98.31,LOW RISK,M0-M12
+136,Regimen 1,Treatment Completed,Success,0.997,0.003,99.7,LOW RISK,M0-M12
+137,Regimen 1,Treatment Completed,Success,0.979,0.021,97.9,LOW RISK,M0-M12
+138,Regimen 1,Treatment Completed,Success,0.9989,0.0011,99.89,LOW RISK,M0-M12
+139,Regimen 1,Treatment Completed,Success,0.9989,0.0011,99.89,LOW RISK,M0-M12
+140,Regimen 1,Treatment Completed,Success,0.9967,0.0033,99.67,LOW RISK,M0-M12
+141,Regimen 1,Treatment Completed,Success,0.9056,0.0944,90.56,LOW RISK,M0-M12
+142,Regimen 1,Treatment Completed,Success,0.9859,0.0141,98.59,LOW RISK,M0-M12
+143,Regimen 1,Lost to Follow-Up,Failure,0.0521,0.9479,94.79,HIGH RISK,M0-M12
+144,Regimen 1,Treatment Completed,Success,0.8673,0.1327,86.73,LOW RISK,M0-M12
+145,Regimen 1,Lost to Follow-Up,Failure,0.0021,0.9979,99.79,HIGH RISK,M0-M12
+146,Regimen 1,Lost to Follow-Up,Failure,0.0018,0.9982,99.82,HIGH RISK,M0-M12
+147,Regimen 1,Lost to Follow-Up,Failure,0.0018,0.9982,99.82,HIGH RISK,M0-M12
+148,Regimen 1,Treatment Completed,Success,0.939,0.061,93.9,LOW RISK,M0-M12
+149,Regimen 1,Lost to Follow-Up,Failure,0.083,0.917,91.7,HIGH RISK,M0-M12
+150,Regimen 1,Treatment Completed,Success,0.9617,0.0383,96.17,LOW RISK,M0-M12
+151,Regimen 1,Treatment Completed,Success,0.9531,0.0469,95.31,LOW RISK,M0-M12
+152,Regimen 1,Treatment Completed,Success,0.9898,0.0102,98.98,LOW RISK,M0-M12
+153,Regimen 1,Treatment Completed,Success,0.9943,0.0057,99.43,LOW RISK,M0-M12
+154,Regimen 1,Treatment Completed,Failure,0.7922,0.2078,79.22,LOW RISK,M0-M12
+155,Regimen 1,Treatment Completed,Success,0.9582,0.0418,95.82,LOW RISK,M0-M12
+156,Regimen 1,Treatment Completed,Failure,0.8031,0.1969,80.31,LOW RISK,M0-M12
+157,Regimen 1,Treatment Completed,Success,0.9765,0.0235,97.65,LOW RISK,M0-M12
+158,Regimen 1,Treatment Completed,Success,0.9788,0.0212,97.88,LOW RISK,M0-M12
+159,Regimen 1,Lost to Follow-Up,Failure,0.7164,0.2836,71.64,LOW RISK,M0-M12
+160,Regimen 1,Treatment Completed,Success,0.9856,0.0144,98.56,LOW RISK,M0-M12
+161,Regimen 1,Treatment Completed,Success,0.9879,0.0121,98.79,LOW RISK,M0-M12
+162,Regimen 1,Treatment Completed,Success,0.982,0.018,98.2,LOW RISK,M0-M12
+163,Regimen 1,Lost to Follow-Up,Failure,0.0038,0.9962,99.62,HIGH RISK,M0-M12
+164,Regimen 1,Treatment Completed,Success,0.9364,0.0636,93.64,LOW RISK,M0-M12
+165,Regimen 1,Treatment Completed,Success,0.9885,0.0115,98.85,LOW RISK,M0-M12
+166,Regimen 1,Treatment Completed,Success,0.9819,0.0181,98.19,LOW RISK,M0-M12
+167,Regimen 1,Lost to Follow-Up,Failure,0.0029,0.9971,99.71,HIGH RISK,M0-M12
+168,Regimen 1,Lost to Follow-Up,Failure,0.2527,0.7473,74.73,HIGH RISK,M0-M12
+169,Regimen 1,Lost to Follow-Up,Failure,0.0167,0.9833,98.33,HIGH RISK,M0-M12
+170,Regimen 1,Treatment Completed,Success,0.9714,0.0286,97.14,LOW RISK,M0-M12
+171,Regimen 1,Lost to Follow-Up,Failure,0.0207,0.9793,97.93,HIGH RISK,M0-M12
+172,Regimen 1,Treatment Completed,Success,0.9913,0.0087,99.13,LOW RISK,M0-M12
+173,Regimen 1,Lost to Follow-Up,Failure,0.002,0.998,99.8,HIGH RISK,M0-M12
+174,Regimen 1,Treatment Completed,Success,0.9958,0.0042,99.58,LOW RISK,M0-M12
+175,Regimen 1,Lost to Follow-Up,Failure,0.0013,0.9987,99.87,HIGH RISK,M0-M12
+176,Regimen 1,Treatment Completed,Success,0.997,0.003,99.7,LOW RISK,M0-M12
+177,Regimen 1,Treatment Completed,Success,0.9839,0.0161,98.39,LOW RISK,M0-M12
+178,Regimen 1,Treatment Completed,Success,0.9966,0.0034,99.66,LOW RISK,M0-M12
+179,Regimen 1,Treatment Completed,Success,0.9553,0.0447,95.53,LOW RISK,M0-M12
+180,Regimen 1,Treatment Completed,Failure,0.4489,0.5511,55.11,MODERATE RISK,M0-M12
+181,Regimen 1,Treatment Completed,Success,0.9948,0.0052,99.48,LOW RISK,M0-M12
+182,Regimen 1,Treatment Completed,Success,0.8885,0.1115,88.85,LOW RISK,M0-M12
+183,Regimen 1,Lost to Follow-Up,Failure,0.5658,0.4342,56.58,MODERATE RISK,M0-M12
+184,Regimen 1,Treatment Completed,Success,0.9761,0.0239,97.61,LOW RISK,M0-M12
+185,Regimen 1,Lost to Follow-Up,Failure,0.0217,0.9783,97.83,HIGH RISK,M0-M12
+186,Regimen 1,Treatment Completed,Success,0.9911,0.0089,99.11,LOW RISK,M0-M12
+187,Regimen 1,Treatment Completed,Success,0.9951,0.0049,99.51,LOW RISK,M0-M12
+188,Regimen 1,Treatment Completed,Success,0.9714,0.0286,97.14,LOW RISK,M0-M12
+189,Regimen 1,Lost to Follow-Up,Failure,0.0019,0.9981,99.81,HIGH RISK,M0-M12
+190,Regimen 1,Lost to Follow-Up,Failure,0.0018,0.9982,99.82,HIGH RISK,M0-M12
+191,Regimen 1,Treatment Completed,Failure,0.4126,0.5874,58.74,MODERATE RISK,M0-M12
+192,Regimen 1,Lost to Follow-Up,Failure,0.0033,0.9967,99.67,HIGH RISK,M0-M12
+193,Regimen 1,Treatment Completed,Success,0.9962,0.0038,99.62,LOW RISK,M0-M12
+194,Regimen 1,Treatment Completed,Success,0.9812,0.0188,98.12,LOW RISK,M0-M12
+195,Regimen 1,Cured,Success,0.9262,0.0738,92.62,LOW RISK,M0-M12
+196,Regimen 1,Died,Failure,0.0028,0.9972,99.72,HIGH RISK,M0-M12
+197,Regimen 1,Treatment Completed,Success,0.9779,0.0221,97.79,LOW RISK,M0-M12
+198,Regimen 1,Treatment Completed,Success,0.9894,0.0106,98.94,LOW RISK,M0-M12
+199,Regimen 1,Lost to Follow-Up,Failure,0.0058,0.9942,99.42,HIGH RISK,M0-M12
+200,Regimen 1,Lost to Follow-Up,Failure,0.0086,0.9914,99.14,HIGH RISK,M0-M12
+201,Regimen 1,Treatment Completed,Success,0.9662,0.0338,96.62,LOW RISK,M0-M12
+202,Regimen 1,Treatment Completed,Success,0.8964,0.1036,89.64,LOW RISK,M0-M12
+203,Regimen 1,Treatment Completed,Success,0.9879,0.0121,98.79,LOW RISK,M0-M12
+204,Regimen 1,Treatment Completed,Success,0.9917,0.0083,99.17,LOW RISK,M0-M12
+205,Regimen 1,Treatment Completed,Failure,0.3979,0.6021,60.21,MODERATE RISK,M0-M12
+206,Regimen 1,Treatment Completed,Failure,0.3635,0.6365,63.65,MODERATE RISK,M0-M12
+207,Regimen 1,Lost to Follow-Up,Failure,0.0196,0.9804,98.04,HIGH RISK,M0-M12
+208,Regimen 1,Treatment Completed,Success,0.9501,0.0499,95.01,LOW RISK,M0-M12
+209,Regimen 1,Treatment Completed,Success,0.9211,0.0789,92.11,LOW RISK,M0-M12
+210,Regimen 1,Treatment Completed,Success,0.9149,0.0851,91.49,LOW RISK,M0-M12
+211,Regimen 1,Lost to Follow-Up,Failure,0.0181,0.9819,98.19,HIGH RISK,M0-M12
+212,Regimen 1,Treatment Completed,Success,0.9962,0.0038,99.62,LOW RISK,M0-M12
+213,Regimen 2,Treatment Completed,Success,0.9568,0.0432,95.68,LOW RISK,M0-M12
+214,Regimen 1,Treatment Completed,Success,0.9861,0.0139,98.61,LOW RISK,M0-M12
+215,Regimen 1,Cured,Success,0.9704,0.0296,97.04,LOW RISK,M0-M12
+216,Regimen 1,Treatment Completed,Success,0.9997,0.0003,99.97,LOW RISK,M0-M12
+217,Regimen 1,Treatment Completed,Success,0.9921,0.0079,99.21,LOW RISK,M0-M12
+218,Regimen 1,Died,Failure,0.0077,0.9923,99.23,HIGH RISK,M0-M12
+219,Regimen 1,Treatment Completed,Success,0.9987,0.0013,99.87,LOW RISK,M0-M12
+220,Regimen 1,Treatment Completed,Success,0.9988,0.0012,99.88,LOW RISK,M0-M12
+221,Regimen 1,Treatment Completed,Success,0.999,0.001,99.9,LOW RISK,M0-M12
+222,Regimen 1,Treatment Completed,Success,0.995,0.005,99.5,LOW RISK,M0-M12
+223,Regimen 1,Cured,Success,0.9931,0.0069,99.31,LOW RISK,M0-M12
+224,Regimen 1,Treatment Completed,Success,0.9982,0.0018,99.82,LOW RISK,M0-M12
+225,Regimen 1,Treatment Completed,Success,0.9989,0.0011,99.89,LOW RISK,M0-M12
+226,Regimen 1,Treatment Completed,Success,0.9992,0.0008,99.92,LOW RISK,M0-M12
+227,Regimen 1,Treatment Completed,Success,0.9879,0.0121,98.79,LOW RISK,M0-M12
+228,Regimen 1,Treatment Completed,Success,0.9982,0.0018,99.82,LOW RISK,M0-M12
+229,Regimen 1,Treatment Completed,Success,0.9995,0.0005,99.95,LOW RISK,M0-M12
+230,Regimen 1,Treatment Completed,Success,0.9995,0.0005,99.95,LOW RISK,M0-M12
+231,Regimen 1,Treatment Completed,Success,0.9989,0.0011,99.89,LOW RISK,M0-M12
+232,Regimen 1,Treatment Completed,Success,0.9985,0.0015,99.85,LOW RISK,M0-M12
+233,Regimen 1,Cured,Success,0.9916,0.0084,99.16,LOW RISK,M0-M12
+234,Regimen 1,Cured,Success,0.9963,0.0037,99.63,LOW RISK,M0-M12
+235,Regimen 1,Treatment Completed,Success,0.9997,0.0003,99.97,LOW RISK,M0-M12
+236,Regimen 1,Lost to Follow-Up,Failure,0.8447,0.1553,84.47,LOW RISK,M0-M12
+237,Regimen 1,Treatment Completed,Success,0.9987,0.0013,99.87,LOW RISK,M0-M12
+238,Regimen 1,Treatment Completed,Success,0.9992,0.0008,99.92,LOW RISK,M0-M12
+239,Regimen 1,Treatment Completed,Success,0.9939,0.0061,99.39,LOW RISK,M0-M12
+240,Regimen 1,Cured,Success,0.9884,0.0116,98.84,LOW RISK,M0-M12
+241,Regimen 1,Treatment Completed,Success,0.9903,0.0097,99.03,LOW RISK,M0-M12
+242,Regimen 1,Treatment Completed,Success,0.9905,0.0095,99.05,LOW RISK,M0-M12
+243,Regimen 1,Treatment Completed,Success,0.9938,0.0062,99.38,LOW RISK,M0-M12
+244,Regimen 1,Treatment Completed,Success,0.9787,0.0213,97.87,LOW RISK,M0-M12
+245,Regimen 1,Treatment Completed,Success,0.9875,0.0125,98.75,LOW RISK,M0-M12
+246,Regimen 1,Cured,Success,0.8954,0.1046,89.54,LOW RISK,M0-M12
+247,Regimen 1,Cured,Success,0.9868,0.0132,98.68,LOW RISK,M0-M12
+248,Regimen 1,Treatment Completed,Success,0.987,0.013,98.7,LOW RISK,M0-M12
+249,Regimen 1,Treatment Completed,Success,0.9908,0.0092,99.08,LOW RISK,M0-M12
+250,Regimen 1,Died,Failure,0.0366,0.9634,96.34,HIGH RISK,M0-M12
+251,Regimen 1,Treatment Completed,Success,0.9981,0.0019,99.81,LOW RISK,M0-M12
+252,Regimen 1,Treatment Completed,Success,0.9973,0.0027,99.73,LOW RISK,M0-M12
+253,Regimen 1,Treatment Completed,Success,0.9909,0.0091,99.09,LOW RISK,M0-M12
+254,Regimen 1,Treatment Completed,Success,0.988,0.012,98.8,LOW RISK,M0-M12
+255,Regimen 1,Cured,Success,0.9906,0.0094,99.06,LOW RISK,M0-M12
+256,Regimen 1,Treatment Completed,Failure,0.6525,0.3475,65.25,LOW RISK,M0-M12
+257,Regimen 1,Treatment Completed,Success,0.9757,0.0243,97.57,LOW RISK,M0-M12
+258,Regimen 1,Treatment Completed,Success,0.9756,0.0244,97.56,LOW RISK,M0-M12
+259,Regimen 1,Treatment Completed,Success,0.9962,0.0038,99.62,LOW RISK,M0-M12
+260,Regimen 1,Treatment Completed,Success,0.9965,0.0035,99.65,LOW RISK,M0-M12
+261,Regimen 1,Treatment Completed,Success,0.9989,0.0011,99.89,LOW RISK,M0-M12
+262,Regimen 1,Cured,Success,0.9925,0.0075,99.25,LOW RISK,M0-M12
+263,Regimen 1,Treatment Completed,Success,0.9968,0.0032,99.68,LOW RISK,M0-M12
+264,Regimen 1,Treatment Completed,Success,0.9946,0.0054,99.46,LOW RISK,M0-M12
+265,Regimen 1,Treatment Completed,Success,0.9982,0.0018,99.82,LOW RISK,M0-M12
+266,Regimen 1,Treatment Completed,Success,0.9966,0.0034,99.66,LOW RISK,M0-M12
+267,Regimen 1,Treatment Completed,Success,0.9514,0.0486,95.14,LOW RISK,M0-M12
+268,Regimen 1,Treatment Completed,Success,0.9884,0.0116,98.84,LOW RISK,M0-M12
+269,Regimen 1,Treatment Completed,Success,0.9991,0.0009,99.91,LOW RISK,M0-M12
+270,Regimen 1,Treatment Completed,Success,0.9972,0.0028,99.72,LOW RISK,M0-M12
+271,Regimen 1,Lost to Follow-Up,Failure,0.004,0.996,99.6,HIGH RISK,M0-M12
+272,Regimen 1,Treatment Completed,Success,0.9934,0.0066,99.34,LOW RISK,M0-M12
+273,Regimen 1,Treatment Completed,Success,0.9979,0.0021,99.79,LOW RISK,M0-M12
+274,Regimen 1,Treatment Completed,Success,0.9902,0.0098,99.02,LOW RISK,M0-M12
+275,Regimen 1,Cured,Success,0.9963,0.0037,99.63,LOW RISK,M0-M12
+276,Regimen 1,Cured,Success,0.9885,0.0115,98.85,LOW RISK,M0-M12
+277,Regimen 1,Treatment Completed,Success,0.9985,0.0015,99.85,LOW RISK,M0-M12
+278,Regimen 1,Lost to Follow-Up,Failure,0.2853,0.7147,71.47,HIGH RISK,M0-M12
+279,Regimen 1,Cured,Success,0.9974,0.0026,99.74,LOW RISK,M0-M12
+280,Regimen 1,Treatment Completed,Success,0.9699,0.0301,96.99,LOW RISK,M0-M12
+281,Regimen 1,Cured,Success,0.998,0.002,99.8,LOW RISK,M0-M12
+282,Regimen 1,Cured,Success,0.9976,0.0024,99.76,LOW RISK,M0-M12
+283,Regimen 1,Treatment Completed,Success,0.9771,0.0229,97.71,LOW RISK,M0-M12
+284,Regimen 1,Cured,Success,0.9766,0.0234,97.66,LOW RISK,M0-M12
+285,Regimen 1,Treatment Completed,Success,0.957,0.043,95.7,LOW RISK,M0-M12
+286,Regimen 1,Treatment Completed,Success,0.9965,0.0035,99.65,LOW RISK,M0-M12
+287,Regimen 1,Treatment Completed,Success,0.9967,0.0033,99.67,LOW RISK,M0-M12
+288,Regimen 1,Treatment Completed,Success,0.9978,0.0022,99.78,LOW RISK,M0-M12
+289,Regimen 1,Treatment Completed,Success,0.9985,0.0015,99.85,LOW RISK,M0-M12
+290,Regimen 1,Cured,Success,0.9981,0.0019,99.81,LOW RISK,M0-M12
+291,Regimen 1,Treatment Completed,Failure,0.6042,0.3958,60.42,LOW RISK,M0-M12
+292,Regimen 1,Treatment Completed,Success,0.9982,0.0018,99.82,LOW RISK,M0-M12
+293,Regimen 1,Treatment Completed,Success,0.9889,0.0111,98.89,LOW RISK,M0-M12
+294,Regimen 1,Treatment Completed,Success,0.9984,0.0016,99.84,LOW RISK,M0-M12
+295,Regimen 1,Treatment Completed,Success,0.9955,0.0045,99.55,LOW RISK,M0-M12
+296,Regimen 1,Cured,Success,0.9857,0.0143,98.57,LOW RISK,M0-M12
+297,Regimen 1,Cured,Success,0.9982,0.0018,99.82,LOW RISK,M0-M12
+298,Regimen 1,Treatment Completed,Success,0.9966,0.0034,99.66,LOW RISK,M0-M12
+299,Regimen 1,Treatment Completed,Success,0.9936,0.0064,99.36,LOW RISK,M0-M12
+300,Regimen 1,Lost to Follow-Up,Failure,0.0031,0.9969,99.69,HIGH RISK,M0-M12
+301,Regimen 1,Lost to Follow-Up,Failure,0.0026,0.9974,99.74,HIGH RISK,M0-M12
+302,Regimen 1,Treatment Completed,Success,0.9346,0.0654,93.46,LOW RISK,M0-M12
+303,Regimen 1,Treatment Completed,Success,0.9898,0.0102,98.98,LOW RISK,M0-M12
+304,Regimen 1,Lost to Follow-Up,Failure,0.0072,0.9928,99.28,HIGH RISK,M0-M12
+305,Regimen 1,Cured,Success,0.9952,0.0048,99.52,LOW RISK,M0-M12
+306,Regimen 1,Lost to Follow-Up,Failure,0.0013,0.9987,99.87,HIGH RISK,M0-M12
+307,Regimen 1,Treatment Completed,Success,0.999,0.001,99.9,LOW RISK,M0-M12
+308,Regimen 1,Treatment Completed,Failure,0.8486,0.1514,84.86,LOW RISK,M0-M12
+309,Regimen 1,Treatment Completed,Success,0.9921,0.0079,99.21,LOW RISK,M0-M12
+310,Regimen 1,Cured,Success,0.9949,0.0051,99.49,LOW RISK,M0-M12
+311,Regimen 1,Treatment Completed,Success,0.998,0.002,99.8,LOW RISK,M0-M12
+312,Regimen 1,Lost to Follow-Up,Failure,0.0047,0.9953,99.53,HIGH RISK,M0-M12
+313,Regimen 1,Lost to Follow-Up,Failure,0.0041,0.9959,99.59,HIGH RISK,M0-M12
+314,Regimen 1,Lost to Follow-Up,Failure,0.0022,0.9978,99.78,HIGH RISK,M0-M12
+315,Regimen 1,Treatment Completed,Success,0.9579,0.0421,95.79,LOW RISK,M0-M12
+316,Regimen 1,Lost to Follow-Up,Failure,0.1415,0.8585,85.85,HIGH RISK,M0-M12
+317,Regimen 1,Treatment Completed,Success,0.986,0.014,98.6,LOW RISK,M0-M12
+318,Regimen 1,Treatment Completed,Success,0.9868,0.0132,98.68,LOW RISK,M0-M12
+319,Regimen 1,Treatment Completed,Success,0.9921,0.0079,99.21,LOW RISK,M0-M12
+320,Regimen 1,Treatment Completed,Success,0.9981,0.0019,99.81,LOW RISK,M0-M12
+321,Regimen 1,Treatment Completed,Success,0.9985,0.0015,99.85,LOW RISK,M0-M12
+322,Regimen 1,Treatment Completed,Success,0.9993,0.0007,99.93,LOW RISK,M0-M12
+323,Regimen 1,Treatment Completed,Success,0.9993,0.0007,99.93,LOW RISK,M0-M12
+324,Regimen 1,Treatment Completed,Success,0.9989,0.0011,99.89,LOW RISK,M0-M12
+325,Regimen 1,Treatment Completed,Success,0.9996,0.0004,99.96,LOW RISK,M0-M12
+326,Regimen 1,Treatment Completed,Success,0.9994,0.0006,99.94,LOW RISK,M0-M12
+327,Regimen 1,Treatment Completed,Success,0.99,0.01,99.0,LOW RISK,M0-M12
+328,Regimen 1,Treatment Completed,Success,0.9997,0.0003,99.97,LOW RISK,M0-M12
+329,Regimen 1,Treatment Completed,Success,0.9995,0.0005,99.95,LOW RISK,M0-M12
+330,Regimen 1,Cured,Success,0.9965,0.0035,99.65,LOW RISK,M0-M12
+331,Regimen 1,Treatment Completed,Success,0.9997,0.0003,99.97,LOW RISK,M0-M12
+332,Regimen 1,Treatment Completed,Success,0.9996,0.0004,99.96,LOW RISK,M0-M12
+333,Regimen 1,Treatment Completed,Success,0.9997,0.0003,99.97,LOW RISK,M0-M12
+334,Regimen 1,Treatment Completed,Success,0.9997,0.0003,99.97,LOW RISK,M0-M12
+335,Regimen 1,Treatment Completed,Success,0.9992,0.0008,99.92,LOW RISK,M0-M12
+336,Regimen 1,Treatment Completed,Success,0.9996,0.0004,99.96,LOW RISK,M0-M12
+337,Regimen 1,Treatment Completed,Success,0.9993,0.0007,99.93,LOW RISK,M0-M12
+338,Regimen 1,Treatment Completed,Success,0.9994,0.0006,99.94,LOW RISK,M0-M12
+339,Regimen 1,Treatment Completed,Success,0.9996,0.0004,99.96,LOW RISK,M0-M12
+340,Regimen 1,Treatment Completed,Success,0.9994,0.0006,99.94,LOW RISK,M0-M12
+341,Regimen 1,Treatment Completed,Success,0.9992,0.0008,99.92,LOW RISK,M0-M12
+342,Regimen 1,Treatment Completed,Success,0.9989,0.0011,99.89,LOW RISK,M0-M12
+343,Regimen 1,Treatment Completed,Success,0.9998,0.0002,99.98,LOW RISK,M0-M12
+344,Regimen 1,Treatment Completed,Success,0.9988,0.0012,99.88,LOW RISK,M0-M12
+345,Regimen 1,Not Evaluated,Success,0.9861,0.0139,98.61,LOW RISK,M0-M12
+346,Regimen 1,Treatment Completed,Success,0.9778,0.0222,97.78,LOW RISK,M0-M12
+347,Regimen 1,Treatment Completed,Success,0.9828,0.0172,98.28,LOW RISK,M0-M12
+348,Regimen 1,Treatment Completed,Success,0.9926,0.0074,99.26,LOW RISK,M0-M12
+349,Regimen 1,Lost to Follow-Up,Failure,0.5408,0.4592,54.08,MODERATE RISK,M0-M12
+350,Regimen 1,Not Evaluated,Failure,0.106,0.894,89.4,HIGH RISK,M0-M12
+351,Regimen 1,Cured,Success,0.9874,0.0126,98.74,LOW RISK,M0-M12
+352,Regimen 1,Treatment Completed,Success,0.9946,0.0054,99.46,LOW RISK,M0-M12
+353,Regimen 1,Treatment Completed,Success,0.9572,0.0428,95.72,LOW RISK,M0-M12
+354,Regimen 1,Treatment Completed,Success,0.9894,0.0106,98.94,LOW RISK,M0-M12
+355,Regimen 1,Treatment Completed,Success,0.9344,0.0656,93.44,LOW RISK,M0-M12
+356,Regimen 1,Treatment Completed,Success,0.9968,0.0032,99.68,LOW RISK,M0-M12
+357,Regimen 1,Cured,Success,0.9831,0.0169,98.31,LOW RISK,M0-M12
+358,Regimen 1,Treatment Completed,Success,0.9917,0.0083,99.17,LOW RISK,M0-M12
+359,Regimen 1,Died,Failure,0.0065,0.9935,99.35,HIGH RISK,M0-M12
+360,Regimen 1a,Treatment Completed,Success,0.9984,0.0016,99.84,LOW RISK,M0-M12
+361,Regimen 1,Cured,Success,0.9952,0.0048,99.52,LOW RISK,M0-M12
+362,Regimen 1,Treatment Completed,Success,0.9963,0.0037,99.63,LOW RISK,M0-M12
+363,Regimen 2,Treatment Completed,Success,0.9931,0.0069,99.31,LOW RISK,M0-M12
+364,Regimen 1,Cured,Success,0.9904,0.0096,99.04,LOW RISK,M0-M12
+365,Regimen 2,Treatment Completed,Success,0.9786,0.0214,97.86,LOW RISK,M0-M12
+366,Regimen 1,Treatment Completed,Success,0.9973,0.0027,99.73,LOW RISK,M0-M12
+367,Regimen 1,Treatment Completed,Success,0.9874,0.0126,98.74,LOW RISK,M0-M12
+368,Regimen 2,Treatment Completed,Success,0.9957,0.0043,99.57,LOW RISK,M0-M12
+369,Regimen 1,Treatment Completed,Success,0.998,0.002,99.8,LOW RISK,M0-M12
+370,Regimen 1,Treatment Completed,Success,0.9977,0.0023,99.77,LOW RISK,M0-M12
+371,Regimen 1,Treatment Completed,Success,0.9955,0.0045,99.55,LOW RISK,M0-M12
+372,Regimen 2,Treatment Completed,Success,0.9383,0.0617,93.83,LOW RISK,M0-M12
+373,Regimen 1,Treatment Completed,Success,0.9923,0.0077,99.23,LOW RISK,M0-M12
+374,Regimen 2,Cured,Success,0.9968,0.0032,99.68,LOW RISK,M0-M12
+375,Regimen 2,Treatment Completed,Success,0.9911,0.0089,99.11,LOW RISK,M0-M12
+376,Regimen 1,Treatment Completed,Success,0.9991,0.0009,99.91,LOW RISK,M0-M12
+377,Regimen 1,Treatment Completed,Success,0.9981,0.0019,99.81,LOW RISK,M0-M12
+378,Regimen 1,Treatment Completed,Failure,0.2728,0.7272,72.72,HIGH RISK,M0-M12
+379,Regimen 1,Treatment Completed,Success,0.9948,0.0052,99.48,LOW RISK,M0-M12
+380,Regimen 1,Treatment Completed,Success,0.9992,0.0008,99.92,LOW RISK,M0-M12
+381,Regimen 1,Treatment Completed,Success,0.9935,0.0065,99.35,LOW RISK,M0-M12
+382,Regimen 1,Cured,Success,0.9715,0.0285,97.15,LOW RISK,M0-M12
+383,Regimen 1,Treatment Completed,Success,0.971,0.029,97.1,LOW RISK,M0-M12
+384,Regimen 1,Treatment Completed,Success,0.9929,0.0071,99.29,LOW RISK,M0-M12
+385,Regimen 1,Treatment Completed,Success,0.9843,0.0157,98.43,LOW RISK,M0-M12
+386,Regimen 1,Lost to Follow-Up,Failure,0.1107,0.8893,88.93,HIGH RISK,M0-M12
+387,Regimen 1,Treatment Completed,Success,0.9878,0.0122,98.78,LOW RISK,M0-M12
+388,Regimen 1,Treatment Completed,Success,0.9984,0.0016,99.84,LOW RISK,M0-M12
+389,Regimen 1,Treatment Completed,Success,0.9977,0.0023,99.77,LOW RISK,M0-M12
+390,Regimen 1,Treatment Completed,Success,0.9995,0.0005,99.95,LOW RISK,M0-M12
+391,Regimen 1,Cured,Success,0.9779,0.0221,97.79,LOW RISK,M0-M12
+392,Regimen 1,Treatment Completed,Success,0.9351,0.0649,93.51,LOW RISK,M0-M12
+393,Regimen 1,Treatment Completed,Success,0.9719,0.0281,97.19,LOW RISK,M0-M12
+394,Regimen 1,Treatment Completed,Success,0.9704,0.0296,97.04,LOW RISK,M0-M12
+395,Regimen 1,Treatment Completed,Success,0.9979,0.0021,99.79,LOW RISK,M0-M12
+396,Regimen 1,Treatment Completed,Success,0.9933,0.0067,99.33,LOW RISK,M0-M12
+397,Regimen 1,Treatment Completed,Success,0.9656,0.0344,96.56,LOW RISK,M0-M12
+398,Regimen 1,Treatment Completed,Success,0.9253,0.0747,92.53,LOW RISK,M0-M12
+399,Regimen 1,Treatment Completed,Success,0.9993,0.0007,99.93,LOW RISK,M0-M12
+400,Regimen 1,Treatment Completed,Success,0.9996,0.0004,99.96,LOW RISK,M0-M12
+401,Regimen 1,Treatment Completed,Success,0.9994,0.0006,99.94,LOW RISK,M0-M12
+402,Regimen 1,Treatment Completed,Success,0.998,0.002,99.8,LOW RISK,M0-M12
+403,Regimen 1,Treatment Completed,Success,0.9855,0.0145,98.55,LOW RISK,M0-M12
+404,Regimen 1,Treatment Completed,Success,0.9977,0.0023,99.77,LOW RISK,M0-M12
+405,Regimen 1,Treatment Completed,Success,0.9976,0.0024,99.76,LOW RISK,M0-M12
+406,Regimen 1,Treatment Completed,Success,0.9943,0.0057,99.43,LOW RISK,M0-M12
+407,Regimen 1,Treatment Completed,Success,0.9991,0.0009,99.91,LOW RISK,M0-M12
+408,Regimen 1,Treatment Completed,Success,0.9788,0.0212,97.88,LOW RISK,M0-M12
+409,Regimen 1,Treatment Completed,Success,0.9997,0.0003,99.97,LOW RISK,M0-M12
+410,Regimen 1,Treatment Completed,Success,0.9986,0.0014,99.86,LOW RISK,M0-M12
+411,Regimen 1,Treatment Completed,Success,0.9986,0.0014,99.86,LOW RISK,M0-M12
+412,Regimen 1,Treatment Completed,Success,0.9826,0.0174,98.26,LOW RISK,M0-M12
+413,Regimen 1,Cured,Success,0.9965,0.0035,99.65,LOW RISK,M0-M12
+414,Regimen 1,Treatment Completed,Success,0.9983,0.0017,99.83,LOW RISK,M0-M12
+415,Regimen 1,Treatment Completed,Success,0.9993,0.0007,99.93,LOW RISK,M0-M12
+416,Regimen 1,Treatment Completed,Success,0.9996,0.0004,99.96,LOW RISK,M0-M12
+417,Regimen 1,Treatment Completed,Success,0.9961,0.0039,99.61,LOW RISK,M0-M12
+418,Regimen 1,Treatment Completed,Success,0.9969,0.0031,99.69,LOW RISK,M0-M12
+419,Regimen 1,Treatment Completed,Success,0.9893,0.0107,98.93,LOW RISK,M0-M12
+420,Regimen 1,Treatment Completed,Success,0.9726,0.0274,97.26,LOW RISK,M0-M12
+421,Regimen 1,Treatment Completed,Success,0.9806,0.0194,98.06,LOW RISK,M0-M12
+422,Regimen 1,Died,Failure,0.0036,0.9964,99.64,HIGH RISK,M0-M12
+423,Regimen 1,Treatment Completed,Success,0.9925,0.0075,99.25,LOW RISK,M0-M12
+424,Regimen 1,Cured,Success,0.9651,0.0349,96.51,LOW RISK,M0-M12
+425,Regimen 1,Treatment Completed,Success,0.9984,0.0016,99.84,LOW RISK,M0-M12
+426,Regimen 1,Treatment Completed,Success,0.9995,0.0005,99.95,LOW RISK,M0-M12
+427,Regimen 1,Treatment Completed,Success,0.9993,0.0007,99.93,LOW RISK,M0-M12
+428,Regimen 1,Treatment Completed,Success,0.9994,0.0006,99.94,LOW RISK,M0-M12
+429,Regimen 1,Treatment Completed,Success,0.9996,0.0004,99.96,LOW RISK,M0-M12
+430,Regimen 1,Treatment Completed,Success,0.9941,0.0059,99.41,LOW RISK,M0-M12
+431,Regimen 1,Treatment Completed,Success,0.9946,0.0054,99.46,LOW RISK,M0-M12
+432,Regimen 1,Treatment Completed,Success,0.9965,0.0035,99.65,LOW RISK,M0-M12
+433,Regimen 1,Treatment Completed,Success,0.9946,0.0054,99.46,LOW RISK,M0-M12
+434,Regimen 1,Treatment Completed,Success,0.9984,0.0016,99.84,LOW RISK,M0-M12
+435,Regimen 1,Treatment Completed,Success,0.9995,0.0005,99.95,LOW RISK,M0-M12
+436,Regimen 1,Cured,Success,0.9957,0.0043,99.57,LOW RISK,M0-M12
+437,Regimen 1,Treatment Completed,Success,0.9986,0.0014,99.86,LOW RISK,M0-M12
+438,Regimen 1,Treatment Completed,Success,0.9988,0.0012,99.88,LOW RISK,M0-M12
+439,Regimen 1,Treatment Completed,Success,0.9973,0.0027,99.73,LOW RISK,M0-M12
+440,Regimen 1,Treatment Completed,Success,0.9993,0.0007,99.93,LOW RISK,M0-M12
+441,Regimen 1,Treatment Completed,Success,0.9986,0.0014,99.86,LOW RISK,M0-M12
+442,Regimen 1,Treatment Completed,Success,0.9971,0.0029,99.71,LOW RISK,M0-M12
+443,Regimen 1,Cured,Success,0.995,0.005,99.5,LOW RISK,M0-M12
+444,Regimen 1,Treatment Completed,Success,0.9986,0.0014,99.86,LOW RISK,M0-M12
+445,Regimen 1,Treatment Completed,Success,0.9984,0.0016,99.84,LOW RISK,M0-M12
+446,Regimen 1,Cured,Success,0.9985,0.0015,99.85,LOW RISK,M0-M12
+447,Regimen 1,Cured,Success,0.9964,0.0036,99.64,LOW RISK,M0-M12
+448,Regimen 1,Treatment Completed,Success,0.9921,0.0079,99.21,LOW RISK,M0-M12
+449,Regimen 1,Cured,Success,0.998,0.002,99.8,LOW RISK,M0-M12
+450,Regimen 1,Treatment Completed,Success,0.9993,0.0007,99.93,LOW RISK,M0-M12
+451,Regimen 1,Treatment Completed,Success,0.9985,0.0015,99.85,LOW RISK,M0-M12
+452,Regimen 1,Treatment Completed,Success,0.9977,0.0023,99.77,LOW RISK,M0-M12
+453,Regimen 1,Treatment Completed,Success,0.9994,0.0006,99.94,LOW RISK,M0-M12
+454,Regimen 1,Treatment Completed,Success,0.9973,0.0027,99.73,LOW RISK,M0-M12
+455,Regimen 1,Treatment Completed,Success,0.9994,0.0006,99.94,LOW RISK,M0-M12
+456,Regimen 1,Treatment Completed,Success,0.9946,0.0054,99.46,LOW RISK,M0-M12
+457,Regimen 1,Treatment Completed,Success,0.9721,0.0279,97.21,LOW RISK,M0-M12
+458,Regimen 1,Cured,Success,0.9799,0.0201,97.99,LOW RISK,M0-M12
+459,Regimen 1,Cured,Success,0.9955,0.0045,99.55,LOW RISK,M0-M12
+460,Regimen 1,Treatment Completed,Success,0.9976,0.0024,99.76,LOW RISK,M0-M12
+461,Regimen 1,Treatment Completed,Success,0.998,0.002,99.8,LOW RISK,M0-M12
+462,Regimen 1,Treatment Completed,Success,0.9825,0.0175,98.25,LOW RISK,M0-M12
+463,Regimen 1,Treatment Completed,Success,0.9952,0.0048,99.52,LOW RISK,M0-M12
+464,Regimen 1,Treatment Completed,Success,0.9973,0.0027,99.73,LOW RISK,M0-M12
+465,Regimen 1,Treatment Completed,Success,0.991,0.009,99.1,LOW RISK,M0-M12
+466,Regimen 1,Treatment Completed,Success,0.9965,0.0035,99.65,LOW RISK,M0-M12
+467,Regimen 1,Treatment Completed,Success,0.9978,0.0022,99.78,LOW RISK,M0-M12
+468,Regimen 1,Treatment Completed,Success,0.9936,0.0064,99.36,LOW RISK,M0-M12
+469,Regimen 1,Treatment Completed,Success,0.9952,0.0048,99.52,LOW RISK,M0-M12
+470,Regimen 1,Treatment Completed,Success,0.9913,0.0087,99.13,LOW RISK,M0-M12
+471,Regimen 1,Treatment Completed,Success,0.9969,0.0031,99.69,LOW RISK,M0-M12
+472,Regimen 1,Died,Failure,0.0071,0.9929,99.29,HIGH RISK,M0-M12
+473,Regimen 1,Treatment Completed,Success,0.9978,0.0022,99.78,LOW RISK,M0-M12
+474,Regimen 1,Treatment Completed,Success,0.9996,0.0004,99.96,LOW RISK,M0-M12
+475,Regimen 1,Died,Failure,0.0067,0.9933,99.33,HIGH RISK,M0-M12
+476,Regimen 1,Treatment Completed,Failure,0.014,0.986,98.6,HIGH RISK,M0-M12
+477,Regimen 1,Treatment Completed,Success,0.9947,0.0053,99.47,LOW RISK,M0-M12
+478,Regimen 1,Treatment Completed,Failure,0.822,0.178,82.2,LOW RISK,M0-M12
+479,Regimen 1,Treatment Completed,Success,0.9971,0.0029,99.71,LOW RISK,M0-M12
+480,Regimen 1,Treatment Completed,Success,0.9889,0.0111,98.89,LOW RISK,M0-M12
+481,Regimen 1,Treatment Completed,Success,0.9993,0.0007,99.93,LOW RISK,M0-M12
+482,Regimen 1,Treatment Completed,Success,0.9999,0.0001,99.99,LOW RISK,M0-M12
+483,Regimen 1,Treatment Completed,Success,0.9997,0.0003,99.97,LOW RISK,M0-M12
+484,Regimen 1,Treatment Completed,Success,0.9998,0.0002,99.98,LOW RISK,M0-M12
+485,Regimen 1,Treatment Completed,Success,0.9966,0.0034,99.66,LOW RISK,M0-M12
+486,Regimen 1,Treatment Completed,Success,0.9978,0.0022,99.78,LOW RISK,M0-M12
+487,Regimen 1,Treatment Completed,Success,0.9962,0.0038,99.62,LOW RISK,M0-M12
+488,Regimen 1,Treatment Completed,Success,0.9987,0.0013,99.87,LOW RISK,M0-M12
+489,Regimen 1,Treatment Completed,Success,0.999,0.001,99.9,LOW RISK,M0-M12
+490,Regimen 1,Treatment Completed,Success,0.9991,0.0009,99.91,LOW RISK,M0-M12
+491,Regimen 1,Treatment Completed,Success,0.9796,0.0204,97.96,LOW RISK,M0-M12
+492,Regimen 1,Treatment Completed,Success,0.9737,0.0263,97.37,LOW RISK,M0-M12
+493,Regimen 1,Treatment Completed,Success,0.9844,0.0156,98.44,LOW RISK,M0-M12
+494,Regimen 1,Treatment Completed,Success,0.8999,0.1001,89.99,LOW RISK,M0-M12
+495,Regimen 1,Treatment Completed,Success,0.9928,0.0072,99.28,LOW RISK,M0-M12
+496,Regimen 1,Treatment Completed,Success,0.9958,0.0042,99.58,LOW RISK,M0-M12
+497,Regimen 1,Treatment Completed,Success,0.9913,0.0087,99.13,LOW RISK,M0-M12
+498,Regimen 1,Treatment Completed,Success,0.9945,0.0055,99.45,LOW RISK,M0-M12
+499,Regimen 1,Treatment Completed,Success,0.9979,0.0021,99.79,LOW RISK,M0-M12
+500,Regimen 1,Treatment Completed,Success,0.9978,0.0022,99.78,LOW RISK,M0-M12
+501,Regimen 1,Lost to Follow-Up,Failure,0.0565,0.9435,94.35,HIGH RISK,M0-M12
+502,Regimen 1,Cured,Success,0.9988,0.0012,99.88,LOW RISK,M0-M12
+503,Regimen 1,Treatment Completed,Success,0.9962,0.0038,99.62,LOW RISK,M0-M12
+504,Regimen 1,Lost to Follow-Up,Failure,0.0275,0.9725,97.25,HIGH RISK,M0-M12
+505,Regimen 1,Treatment Completed,Success,0.9838,0.0162,98.38,LOW RISK,M0-M12
+506,Regimen 1,Treatment Completed,Failure,0.6681,0.3319,66.81,LOW RISK,M0-M12
+507,Regimen 1,Treatment Completed,Success,0.9977,0.0023,99.77,LOW RISK,M0-M12
+508,Regimen 1,Treatment Completed,Success,0.9958,0.0042,99.58,LOW RISK,M0-M12
+509,Regimen 1,Treatment Completed,Success,0.9992,0.0008,99.92,LOW RISK,M0-M12
+510,Regimen 1,Treatment Completed,Success,0.9957,0.0043,99.57,LOW RISK,M0-M12
+511,Regimen 1,Treatment Completed,Success,0.996,0.004,99.6,LOW RISK,M0-M12
+512,Regimen 1,Treatment Completed,Success,0.9991,0.0009,99.91,LOW RISK,M0-M12
+513,Regimen 1,Treatment Completed,Success,0.9922,0.0078,99.22,LOW RISK,M0-M12
+514,Regimen 1,Treatment Completed,Success,0.9998,0.0002,99.98,LOW RISK,M0-M12
+515,Regimen 1,Treatment Completed,Success,0.9989,0.0011,99.89,LOW RISK,M0-M12
+516,Regimen 1,Treatment Completed,Success,0.9929,0.0071,99.29,LOW RISK,M0-M12
+517,Regimen 1,Treatment Completed,Success,0.9959,0.0041,99.59,LOW RISK,M0-M12
+518,Regimen 1,Treatment Completed,Success,0.9924,0.0076,99.24,LOW RISK,M0-M12
+519,Regimen 1,Treatment Completed,Success,0.9983,0.0017,99.83,LOW RISK,M0-M12
+520,Regimen 1,Treatment Completed,Success,0.9995,0.0005,99.95,LOW RISK,M0-M12
+521,Regimen 1,Treatment Completed,Success,0.9991,0.0009,99.91,LOW RISK,M0-M12
+522,Regimen 1,Treatment Completed,Success,0.9978,0.0022,99.78,LOW RISK,M0-M12
+523,Regimen 1,Treatment Completed,Success,0.9973,0.0027,99.73,LOW RISK,M0-M12
+524,Regimen 1,Treatment Completed,Success,0.9885,0.0115,98.85,LOW RISK,M0-M12
+525,Regimen 1,Cured,Success,0.998,0.002,99.8,LOW RISK,M0-M12
+526,Regimen 1,Treatment Completed,Success,0.9989,0.0011,99.89,LOW RISK,M0-M12
+527,Regimen 1,Treatment Completed,Success,0.8921,0.1079,89.21,LOW RISK,M0-M12
+528,Regimen 1,Treatment Completed,Success,0.9975,0.0025,99.75,LOW RISK,M0-M12
+529,Regimen 1,Treatment Completed,Success,0.9944,0.0056,99.44,LOW RISK,M0-M12
+530,Regimen 1,Treatment Completed,Success,0.9917,0.0083,99.17,LOW RISK,M0-M12
+531,Regimen 1,Treatment Completed,Success,0.9978,0.0022,99.78,LOW RISK,M0-M12
+532,Regimen 1,Treatment Completed,Success,0.9987,0.0013,99.87,LOW RISK,M0-M12
+533,Regimen 1,Treatment Completed,Success,0.9928,0.0072,99.28,LOW RISK,M0-M12
+534,Regimen 1,Treatment Completed,Success,0.9594,0.0406,95.94,LOW RISK,M0-M12
+535,Regimen 1,Treatment Completed,Success,0.9651,0.0349,96.51,LOW RISK,M0-M12
+536,Regimen 1,Treatment Completed,Success,0.9953,0.0047,99.53,LOW RISK,M0-M12
+537,Regimen 1,Treatment Completed,Success,0.981,0.019,98.1,LOW RISK,M0-M12
+538,Regimen 1,Treatment Completed,Success,0.9982,0.0018,99.82,LOW RISK,M0-M12
+539,Regimen 1,Treatment Completed,Success,0.9757,0.0243,97.57,LOW RISK,M0-M12
+540,Regimen 1,Treatment Completed,Success,0.9925,0.0075,99.25,LOW RISK,M0-M12
+541,Regimen 1,Treatment Completed,Success,0.9763,0.0237,97.63,LOW RISK,M0-M12
+542,Regimen 1,Treatment Completed,Success,0.9965,0.0035,99.65,LOW RISK,M0-M12
+543,Regimen 1,Treatment Completed,Success,0.9748,0.0252,97.48,LOW RISK,M0-M12
+544,Regimen 1,Treatment Completed,Success,0.9556,0.0444,95.56,LOW RISK,M0-M12
+545,Regimen 1,Treatment Completed,Success,0.9912,0.0088,99.12,LOW RISK,M0-M12
+546,Regimen 1,Treatment Completed,Success,0.9974,0.0026,99.74,LOW RISK,M0-M12
+547,Regimen 1,Treatment Completed,Success,0.9987,0.0013,99.87,LOW RISK,M0-M12
+548,Regimen 1,Treatment Completed,Success,0.9962,0.0038,99.62,LOW RISK,M0-M12
+549,Regimen 1,Cured,Success,0.9989,0.0011,99.89,LOW RISK,M0-M12
+550,Regimen 1,Treatment Completed,Success,0.9931,0.0069,99.31,LOW RISK,M0-M12
+551,Regimen 1,Treatment Completed,Success,0.9898,0.0102,98.98,LOW RISK,M0-M12
+552,Regimen 1,Treatment Completed,Success,0.9992,0.0008,99.92,LOW RISK,M0-M12
+553,Regimen 1,Treatment Completed,Success,0.9954,0.0046,99.54,LOW RISK,M0-M12
+554,Regimen 1,Treatment Completed,Success,0.9962,0.0038,99.62,LOW RISK,M0-M12
+555,Regimen 1,Treatment Completed,Success,0.995,0.005,99.5,LOW RISK,M0-M12
+556,Regimen 1,Treatment Completed,Success,0.9926,0.0074,99.26,LOW RISK,M0-M12
+557,Regimen 1,Treatment Completed,Success,0.9975,0.0025,99.75,LOW RISK,M0-M12
+558,Regimen 1,Treatment Completed,Success,0.9983,0.0017,99.83,LOW RISK,M0-M12
+559,Regimen 1,Treatment Completed,Success,0.9912,0.0088,99.12,LOW RISK,M0-M12
+560,Regimen 1,Treatment Completed,Success,0.9544,0.0456,95.44,LOW RISK,M0-M12
+561,Regimen 1,Died,Failure,0.0038,0.9962,99.62,HIGH RISK,M0-M12
+562,Regimen 1,Treatment Completed,Success,0.9976,0.0024,99.76,LOW RISK,M0-M12
+563,Regimen 1,Treatment Completed,Success,0.9983,0.0017,99.83,LOW RISK,M0-M12
+564,Regimen 1,Treatment Completed,Success,0.9982,0.0018,99.82,LOW RISK,M0-M12
+565,Regimen 1,Died,Failure,0.5852,0.4148,58.52,MODERATE RISK,M0-M12
+566,Regimen 1,Treatment Completed,Success,0.9952,0.0048,99.52,LOW RISK,M0-M12
+567,Regimen 1,Treatment Completed,Success,0.996,0.004,99.6,LOW RISK,M0-M12
+568,Regimen 1,Treatment Completed,Success,0.9531,0.0469,95.31,LOW RISK,M0-M12
+569,Regimen 1,Treatment Completed,Success,0.9892,0.0108,98.92,LOW RISK,M0-M12
+570,Regimen 1,Treatment Completed,Success,0.9954,0.0046,99.54,LOW RISK,M0-M12
+571,Regimen 1,Treatment Completed,Success,0.9962,0.0038,99.62,LOW RISK,M0-M12
+572,Regimen 1,Treatment Completed,Success,0.995,0.005,99.5,LOW RISK,M0-M12
+573,Regimen 1,Treatment Completed,Success,0.9926,0.0074,99.26,LOW RISK,M0-M12
+574,Regimen 1,Treatment Completed,Success,0.9978,0.0022,99.78,LOW RISK,M0-M12
+575,Regimen 1,Treatment Completed,Success,0.9975,0.0025,99.75,LOW RISK,M0-M12
+576,Regimen 1,Treatment Completed,Success,0.999,0.001,99.9,LOW RISK,M0-M12
+577,Regimen 1,Treatment Completed,Success,0.998,0.002,99.8,LOW RISK,M0-M12
+578,Regimen 1,Treatment Completed,Success,0.9991,0.0009,99.91,LOW RISK,M0-M12
+579,Regimen 1,Treatment Completed,Success,0.9989,0.0011,99.89,LOW RISK,M0-M12
+580,Regimen 1,Treatment Completed,Success,0.9979,0.0021,99.79,LOW RISK,M0-M12
+581,Regimen 1,Treatment Completed,Success,0.9979,0.0021,99.79,LOW RISK,M0-M12
+582,Regimen 1,Treatment Completed,Success,0.9534,0.0466,95.34,LOW RISK,M0-M12
+583,Regimen 1,Treatment Completed,Success,0.9863,0.0137,98.63,LOW RISK,M0-M12
+584,Regimen 1,Treatment Completed,Success,0.9498,0.0502,94.98,LOW RISK,M0-M12
+585,Regimen 1,Treatment Completed,Success,0.999,0.001,99.9,LOW RISK,M0-M12
+586,Regimen 1,Treatment Completed,Success,0.9976,0.0024,99.76,LOW RISK,M0-M12
+587,Regimen 1,Treatment Completed,Success,0.9823,0.0177,98.23,LOW RISK,M0-M12
+588,Regimen 1,Treatment Completed,Success,0.9944,0.0056,99.44,LOW RISK,M0-M12
+589,Regimen 1,Treatment Completed,Success,0.9981,0.0019,99.81,LOW RISK,M0-M12
+590,Regimen 1,Cured,Success,0.951,0.049,95.1,LOW RISK,M0-M12
+591,Regimen 1,Treatment Completed,Success,0.9981,0.0019,99.81,LOW RISK,M0-M12
+592,Regimen 1,Treatment Completed,Success,0.9715,0.0285,97.15,LOW RISK,M0-M12
+593,Regimen 1,Treatment Completed,Success,0.9971,0.0029,99.71,LOW RISK,M0-M12
+594,Regimen 1,Treatment Completed,Success,0.9025,0.0975,90.25,LOW RISK,M0-M12
+595,Regimen 1,Treatment Completed,Success,0.9763,0.0237,97.63,LOW RISK,M0-M12
+596,Regimen 1,Treatment Completed,Success,0.9986,0.0014,99.86,LOW RISK,M0-M12
+597,Regimen 1,Treatment Completed,Success,0.9765,0.0235,97.65,LOW RISK,M0-M12
+598,Regimen 1,Treatment Completed,Success,0.9973,0.0027,99.73,LOW RISK,M0-M12
