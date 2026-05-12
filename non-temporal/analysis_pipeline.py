@@ -229,7 +229,9 @@ class TBAnalysisPipeline:
         # Data rows
         for _, row in df.iterrows():
             cells = " & ".join(
-                str(v).replace("_", r"\_") if pd.notna(v) else ""
+                str(int(v)).replace("_", r"\_")
+                if pd.notna(v) and isinstance(v, (float, np.floating)) and v == v and v == int(v)
+                else (str(v).replace("_", r"\_") if pd.notna(v) else "")
                 for v in row
             )
             lines.append(cells + r" \\")
@@ -584,7 +586,7 @@ class TBAnalysisPipeline:
         missing_by_year = self.compute_missing_by_year(df, key_columns)
         if not missing_by_year.empty:
             outputs["missing_data_by_year"] = self.save_table_latex(
-                missing_by_year.reset_index(),
+                missing_by_year.reset_index().assign(Year=lambda x: x["Year"].astype(int)),
                 "missing_data_by_year",
                 caption="Missing Data Percentage by Year for Key Variables",
                 label="tab:missing_data_by_year",
@@ -610,7 +612,7 @@ class TBAnalysisPipeline:
         if "Type" in df.columns and "Year" in df.columns:
             type_by_year = pd.crosstab(df["Year"], df["Type"], normalize="index") * 100
             outputs["type_by_year_table"] = self.save_table_latex(
-                type_by_year.reset_index(),
+                type_by_year.reset_index().assign(Year=lambda x: x["Year"].astype(int)),
                 "type_by_year_table",
                 caption="Distribution of TB Case Types by Year (\\%)",
                 label="tab:type_by_year",
@@ -742,7 +744,7 @@ class TBAnalysisPipeline:
             if "Year" in df.columns:
                 outcome_by_year = (pd.crosstab(df["Year"], outcome_category, normalize="index") * 100).round(2)
                 outputs["outcome_trends_by_year"] = self.save_table_latex(
-                    outcome_by_year.reset_index(),
+                    outcome_by_year.reset_index().assign(Year=lambda x: x["Year"].astype(int)),
                     "outcome_trends_by_year",
                     caption="Treatment Outcome Distribution by Year (\\%)",
                     label="tab:outcome_trends_by_year",
