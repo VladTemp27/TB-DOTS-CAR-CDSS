@@ -254,6 +254,8 @@ Pairwise correlations among vital signs in the temporal monitoring dataset were 
 
 For categorical variables within the temporal dataset, pairwise association strength was quantified using Cram\'{e}r's V, a chi-square-based measure normalized to the [0, 1] interval. A mixed Pearson-Cram\'{e}r's matrix was not used, as Pearson's r assumes interval-level measurement and produces misleading values when applied to nominal or ordinal categories with unequal category spacing \citep{ref27}. Computing Cram\'{e}r's V separately on categorical features avoids this assumption violation and produces interpretable association estimates. Columns with fewer than two unique non-null values or fewer than ten non-null observations were excluded from the matrix, as association cannot be meaningfully estimated under those conditions.
 
+To evaluate the impact of the preprocessing pipeline on categorical association structure, a second Cram\'{e}r's V matrix was computed from the cleaned dataset for comparison with the raw matrix. Both matrices were restricted to columns that satisfied the quality thresholds so that only reliable associations are reported. Three columns present in the raw matrix were absent from the cleaned matrix: \texttt{prior\_history\_of\_tb} and \texttt{dat\_supported} were excluded because their approximately 90\% missing rate left too few complete observation pairs for a meaningful association estimate, while \texttt{nationality} was excluded because harmonization collapsed all patient entries to a single value (Filipino), eliminating the categorical variance required by Cram\'{e}r's V. This comparison isolates the effect of categorical harmonization and imputation on the measured associations.
+
 Finally, the temporal stability of adherence behavior across the treatment course was examined through lag-1 Pearson correlations of percentage adherence across consecutive month pairs (M0--M1 through M7--M8). Month-to-month correlation strength determines whether a recurrent architecture, which assumes sequential dependence between time steps, is warranted. If consecutive months are weakly correlated, a static model operating on aggregated patient means would be equally informative; if strongly correlated, the temporal structure justifies the additional complexity of an RNN or LSTM \citep{ref10, ref12}.
 
 \subsection{Missing Data Handling}
@@ -413,6 +415,15 @@ Pairwise correlations among vital signs within the temporal monitoring dataset c
 \end{figure}
 
 Cram\'{e}r's V associations among raw categorical variables in the temporal dataset reveal widespread strong associations, with numerous pairwise values exceeding 0.80. These inflated coefficients are driven primarily by \texttt{chest\_x\_ray\_at\_case\_notification}, which contains over 300 unique free-text entries in the raw data, rather than by genuine clinical association. Similarly, \texttt{co\_morbidities} contributed artificially elevated associations due to inconsistent coding across facilities. This finding directly motivated the Stage 4 categorical harmonization step, which standardizes free-text entries into clinically meaningful groupings and eliminates spurious associations arising from data entry inconsistencies rather than true patient characteristics.
+
+\begin{figure}[htbp]
+\caption{Cram\'{e}r's V Correlation Matrix of Imputed Categorical Variables}
+\label{fig:cramers_imputed}
+\centering
+\includegraphics[width=\columnwidth]{temporal/figures/categorical_cramersv_imputed.pdf}
+\end{figure}
+
+The imputed Cram\'{e}r's V matrix (Figure~\ref{fig:cramers_imputed}) confirms that the preprocessing pipeline reduced spurious categorical associations, with median off-diagonal V dropping from approximately 0.46 to 0.07. Three columns from the raw matrix — \texttt{prior\_history\_of\_tb}, \texttt{dat\_supported}, and \texttt{nationality} — are absent because they lacked sufficient variance or non-missing pairs in the cleaned data to compute reliable associations.
 
 \begin{figure}[htbp]
 \caption{Temporal Lag Correlation of Percentage Adherence Across Consecutive Treatment Months}
