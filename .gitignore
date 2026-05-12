@@ -102,6 +102,10 @@ yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
 
+## ─── ML models ────────────────────────────────────────────────────────────────
+# GGUF model weights — too large for git (fetch separately)
+models/*.gguf
+
 ## ─── Superpowers / AI tooling ────────────────────────────────────────────────
 .superpowers/
 docs/superpowers/
@@ -111,3 +115,11 @@ docs/superpowers/
 *.tmp
 *.temp
 .cache/
+
+
+.worktrees/
+./workspaces/
+
+workflow.md
+start.sh
+.env

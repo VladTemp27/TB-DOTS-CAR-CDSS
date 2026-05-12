@@ -30,7 +30,7 @@
 % ----- References: apacite must be loaded BEFORE hyperref -----
 \usepackage[natbibapa]{apacite}
 \bibliographystyle{apacite}
-\shortcites{ref2,ref3,ref4,ref5,ref6,ref7,ref8,ref9,ref11,ref12,ref13,ref14,ref15,ref16,ref17,ref18,ref19,ref21,ref22,ref23,ref24,ref25,ref26,ref27,ref28,ref29,ref30}
+\shortcites{ref2,ref3,ref4,ref5,ref6,ref7,ref8,ref9,ref11,ref12,ref13,ref14,ref15,ref16,ref17,ref18,ref19,ref21,ref22,ref23,ref24,ref25,ref26,ref27,ref28,ref29,ref30,ref31,ref33,ref34,ref35,ref36,ref37}
 
 % ----- Hyperlinks (loaded after apacite to avoid citation link conflicts) -----
 \usepackage{hyperref}
@@ -44,9 +44,11 @@
 % ----- Figures & Tables -----
 \usepackage{placeins}
 \usepackage{graphicx}
+\usepackage{float}
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric,arrows.meta,positioning}
 \usepackage{booktabs}
+\usepackage{pdfpages}
 \usepackage{caption}
 \usepackage{subcaption}
 % APA: table/figure captions are bold label, newline, then italic title
@@ -94,7 +96,7 @@
 \vspace*{3\baselineskip}
 
 {\bfseries Treatment Success and Failure Prediction Using Machine Learning Models\\
-for Pulmonary Tuberculosis Patients Under the DOH-CAR TB-DOTS Program}
+for Pulmonary Tuberculosis Patients Under the Department of Health-Cordillera Administrative Region (DOH-CAR) Tuberculosis-Directly Observed Treatment, Short-course (TB-DOTS) Program}
 
 \vspace{2\baselineskip}
 
@@ -126,7 +128,7 @@ Department of Computing and Information Studies, Saint Louis University
 
 % APA 7th: Abstract is a single unindented paragraph
 {\setlength{\parindent}{0pt}
-Pulmonary Tuberculosis (PTB) remains a critical public health challenge in the Cordillera Administrative Region (CAR), Philippines, where complex patient profiles and programmatic gaps contribute to persistent treatment failure. This study develops machine learning models to predict treatment success or failure among PTB patients in DOH-CAR TB-DOTS facilities covering the period 2015--2025. A standardized preprocessing pipeline performs schema harmonization, patient pseudonymization, and missing data imputation via Multivariate Imputation by Chained Equations (MICE). Supervised models---Logistic Regression, Support Vector Machines (SVM), and Extreme Gradient Boosting (XGBoost)---are trained alongside Recurrent Neural Network (RNN) and Long Short-Term Memory (LSTM) temporal architectures to capture longitudinal treatment dynamics across the 6- to 12-month treatment course. Shapley Additive Explanations (SHAP) ensure model interpretability by quantifying the contribution of individual patient features to each prediction. The validated models are embedded in a Clinical Decision Support System (CDSS) that provides dynamic risk estimates and factor-level explanations to support early clinical intervention for patients at risk of treatment failure.
+Pulmonary Tuberculosis (PTB) remains a critical public health challenge in the Cordillera Administrative Region (CAR), Philippines, where complex patient profiles and programmatic gaps contribute to persistent treatment failure. This study develops machine learning models to predict treatment success or failure among PTB patients in DOH-CAR TB-DOTS facilities covering the period 2015--2025. A standardized preprocessing pipeline performs schema harmonization, patient pseudonymization, and a diagnostic-first missing data handling protocol that classifies each variable's missingness mechanism---Missing Completely at Random (MCAR), Missing at Random (MAR), or Missing Not at Random (MNAR)---before routing it to one of four targeted strategies: column exclusion, listwise deletion, missing indicator imputation, or stochastic Multivariate Imputation by Chained Equations (MICE). Supervised models---Logistic Regression, Support Vector Machines (SVM), and Extreme Gradient Boosting (XGBoost)---are trained alongside Recurrent Neural Network (RNN) and Long Short-Term Memory (LSTM) temporal architectures to capture longitudinal treatment dynamics across the 6- to 12-month treatment course. Shapley Additive Explanations (SHAP) ensure model interpretability by quantifying the contribution of individual patient features to each prediction. The validated models are embedded in a Clinical Decision Support System (CDSS) that provides dynamic risk estimates and factor-level explanations to support early clinical intervention for patients at risk of treatment failure.
 
 % APA 7th: Keywords line is NOT indented; label is italic
 \textit{Keywords:} tuberculosis, machine learning, treatment outcome prediction, clinical decision support system, explainable AI
@@ -138,7 +140,7 @@ Pulmonary Tuberculosis (PTB) remains a critical public health challenge in the C
 \newpage
 \begin{center}
 {\bfseries Treatment Success and Failure Prediction Using Machine Learning Models\\
-for Pulmonary Tuberculosis Patients Under the DOH-CAR TB-DOTS Program}
+for Pulmonary Tuberculosis Patients Under the Department of Health-Cordillera Administrative Region (DOH-CAR) Tuberculosis-Directly Observed Treatment, Short-course (TB-DOTS) Program}
 \end{center}
 
 Pulmonary Tuberculosis (PTB) is a chronic infectious disease caused by \textit{Mycobacterium tuberculosis} (MTB), a slow-growing and acid-fast bacillus that continues to challenge public health due to its gradual progression and risk of treatment failure \citep{ref20}. Despite effective therapies, PTB remains widespread due to its strong association with poverty, undernutrition, and comorbidities such as diabetes and HIV which weaken immune defenses and increase susceptibility \citep{ref20}. These factors delay diagnosis, complicate treatment, and contribute to disease progression. Globally, TB is still one of the leading causes of death, with 1.5 million deaths and 10 million new cases recorded in 2018, including half a million with rifampicin resistance.
@@ -196,12 +198,12 @@ The dataset will include PTB patients for the period 2015--2025 in the CAR exclu
 
 \subsection{Significance of the Study}
 
-The resulting models are designed to help healthcare providers identify patients at a higher risk of treatment failure thus enabling early intervention, tailored regimens, and improved patient management. Ultimately, this machine learning framework supports the broader objective of strengthening TB control efforts in the Cordillera Administrative Region (CAR) by transforming existing patient data into predictive, explainable, and actionable tools for evidence-based public health practice. The results will help improve patient management and treatment planning, strengthen program implementation, and guide public health decision-making to improve the TB treatment success rate in CAR. Furthermore, the study aims to maximize benefits for the public by informing health administrators about the model which may be further developed into a solution or application to aid the local TB-DOTS program. The processed and pseudonymized derivative of the DOH-CAR Pulmonary Tuberculosis Treatment Outcome Dataset produced by the study will also be published to support the advancement of clinical, epidemiological, and machine learning research.
+The resulting models are designed to help healthcare providers identify patients at a higher risk of treatment failure thus enabling early intervention, tailored regimens, and improved patient management. Ultimately, this machine learning framework supports the broader objective of strengthening TB control efforts in the Cordillera Administrative Region (CAR) by transforming existing patient data into predictive, explainable, and actionable tools for evidence-based public health practice. The results will help improve patient management and treatment planning, strengthen program implementation, and guide public health decision-making to improve the TB treatment success rate in CAR. Furthermore, the study aims to maximize benefits for the public by informing health administrators about the model which may be further developed into a solution or application to aid the local TB-DOTS program. The processed and pseudonymized derivative of the DOH-CAR PTB Treatment Outcome Dataset produced by the study will also be published to support the advancement of clinical, epidemiological, and machine learning research.
 
 % ======================== METHOD ========================
 \section{Method}
 
-This study uses a dataset of records of pulmonary tuberculosis (PTB) patients from the Cordillera Administrative Region (CAR), Philippines, covering 2015--2025 and consolidated by the Department of Health--CAR (DOH-CAR). After ethical approval, records are pseudonymized and processed using a standardized preprocessing pipeline, including schema harmonization, error correction, feature scaling, and missing value imputation via Multivariate Imputation by Chained Equations (MICE). Exploratory and cluster analyses are conducted to characterize the cohort and derive subgroup-level features. Supervised models, Logistic Regression, Support Vector Machines (SVM), and Extreme Gradient Boosting (XGBoost), are trained to predict treatment outcomes defined by National Tuberculosis Program criteria. To capture longitudinal treatment dynamics, temporal models using Recurrent Neural Networks (RNN) and Long Short-Term Memory (LSTM) are evaluated alongside static models, with ensemble strategies applied for improved robustness. Model performance is assessed using standard classification metrics, and Shapley Additive Explanations (SHAP) are employed to ensure interpretability. The final models are integrated into a clinical decision support framework to provide dynamic risk estimates throughout the treatment course. An overview can be found in Figure~\ref{fig:data_management}.
+This study uses a dataset of records of PTB patients from the Cordillera Administrative Region (CAR), Philippines, covering 2015--2025 and consolidated by the Department of Health--CAR (DOH-CAR). After ethical approval, records are pseudonymized and processed using a standardized preprocessing pipeline, including schema harmonization, error correction, and feature scaling, followed by a diagnostic-first missing data handling protocol described in the Missing Data Handling subsection below. Exploratory and cluster analyses are conducted to characterize the cohort and derive subgroup-level features. Supervised models, Logistic Regression, Support Vector Machines (SVM), and Extreme Gradient Boosting (XGBoost), are trained to predict treatment outcomes defined by National Tuberculosis Program criteria. To capture longitudinal treatment dynamics, temporal models using Recurrent Neural Networks (RNN) and Long Short-Term Memory (LSTM) are evaluated alongside static models, with ensemble strategies applied for improved robustness. Model performance is assessed using standard classification metrics, and Shapley Additive Explanations (SHAP) are employed to ensure interpretability. The final models are integrated into a clinical decision support framework to provide dynamic risk estimates throughout the treatment course. An overview can be found in Figure~\ref{fig:data_management}.
 
 \begin{figure}[htbp]
 \caption{Data Management and Analysis Process}
@@ -218,17 +220,17 @@ This study uses a dataset of records of pulmonary tuberculosis (PTB) patients fr
 ]
   \node[mainbox, fill=gray!25] (raw)      {Raw Records: DOH-CAR TB-DOTS (2015--2025)};
   \node[mainbox, below=of raw]  (harm)    {Pseudonymization \& Schema Harmonization};
-  \node[mainbox, below=of harm] (mice)    {Missing Data Imputation (MICE)};
-  \node[mainbox, below=of mice] (eda)     {Exploratory Analysis \& Feature Engineering};
-  \node[splitbox, below left=0.7cm and 1.4cm of eda]  (static)   {\textbf{Static Models}\\LR, SVM, XGBoost};
-  \node[splitbox, below right=0.7cm and 1.4cm of eda] (temporal)  {\textbf{Temporal Models}\\RNN, LSTM};
-  \node[mainbox, below=2.4cm of eda]  (shap)  {Ensemble Prediction \& SHAP Interpretability};
+  \node[mainbox, below=of harm] (eda)     {Exploratory Analysis \& Feature Engineering};
+  \node[mainbox, below=of eda]  (mdh)     {Diagnostic Missing Data Handling};
+  \node[splitbox, below left=0.7cm and 1.4cm of mdh]  (static)   {\textbf{Static Models}\\LR, SVM, XGBoost};
+  \node[splitbox, below right=0.7cm and 1.4cm of mdh] (temporal)  {\textbf{Temporal Models}\\RNN, LSTM};
+  \node[mainbox, below=2.4cm of mdh]  (shap)  {Ensemble Prediction \& SHAP Interpretability};
   \node[mainbox, below=of shap, fill=blue!10] (cdss) {Clinical Decision Support System (CDSS)};
   \draw[arrow] (raw)  -- (harm);
-  \draw[arrow] (harm) -- (mice);
-  \draw[arrow] (mice) -- (eda);
-  \draw[arrow] (eda.south) -- ++(0,-0.35) -| (static.north);
-  \draw[arrow] (eda.south) -- ++(0,-0.35) -| (temporal.north);
+  \draw[arrow] (harm) -- (eda);
+  \draw[arrow] (eda)  -- (mdh);
+  \draw[arrow] (mdh.south) -- ++(0,-0.35) -| (static.north);
+  \draw[arrow] (mdh.south) -- ++(0,-0.35) -| (temporal.north);
   \draw[arrow] (static.south)   |- (shap.west);
   \draw[arrow] (temporal.south) |- (shap.east);
   \draw[arrow] (shap) -- (cdss);
@@ -239,13 +241,70 @@ This study uses a dataset of records of pulmonary tuberculosis (PTB) patients fr
 
 \subsection{Data Acquisition and Preprocessing}
 
-The study utilizes a retrospective dataset of Pulmonary Tuberculosis (PTB) patients from the Cordillera Administrative Region (CAR), Philippines, covering the period from 2015 to 2025. Data is centrally consolidated by the Department of Health-CAR (DOH-CAR), which manages reports from government TB-DOTS facilities and private practitioners under the Public-Private Mix DOTS (PPMD) scheme \citep{ref6}.
+The study utilizes a retrospective dataset of PTB patients from the Cordillera Administrative Region (CAR), Philippines, covering the period from 2015 to 2025. Data is centrally consolidated by the Department of Health-CAR (DOH-CAR), which manages reports from government TB-DOTS facilities and private practitioners under the Public-Private Mix DOTS (PPMD) scheme \citep{ref6}.
 
-The raw dataset comprises demographic variables (e.g., age, sex, civil status), clinical indicators (e.g., BMI, blood pressure), and diagnostic results (e.g., GeneXpert, Smear Microscopy). To ensure data quality for machine learning applications, a reproducible preprocessing pipeline is implemented. This includes schema harmonization to standardize variable formats and units, and the removal of direct identifiers to strictly enforce patient privacy. Missing data (a common challenge in clinical registries) is handled using Multivariate Imputation by Chained Equations \citep[MICE;][]{ref1}.
+The raw dataset comprises demographic variables (e.g., age, sex, civil status), clinical indicators (e.g., BMI, blood pressure), and diagnostic results (e.g., GeneXpert, Smear Microscopy). To ensure data quality for machine learning applications, a reproducible preprocessing pipeline is implemented. This includes schema harmonization to standardize variable formats and units, and the removal of direct identifiers to strictly enforce patient privacy. Missing data, a common challenge in clinical registries, is addressed through a diagnostic-first protocol described in the Missing Data Handling subsection below.
 
 \subsection{Exploratory Data Analysis}
 
 Prior to predictive modeling, an exploratory analysis is conducted to characterize the study population and identify latent subgroups. The study employs cluster analysis on demographic, clinical, and diagnostic dimensions to detect natural groupings of patients. These clusters reveal distinguishing features such as specific comorbidity profiles, adherence behaviors, and regimen responses. Importantly, the resulting cluster assignments are not merely descriptive; they are integrated as engineered features into the subsequent supervised learning models. This approach enables the algorithms to learn both individual-level attributes and subgroup-level patterns that significantly influence treatment success or failure.
+
+\subsection{Missing Data Handling}
+
+Clinical TB registries exhibit heterogeneous missingness arising from inconsistent documentation, varying facility capacities, and the longitudinal structure of treatment monitoring. Applying a single imputation strategy uniformly across all variables is statistically inappropriate when the mechanism generating missingness differs across features. Accordingly, this study implements a diagnostic-first missing data pipeline that first classifies each variable's missingness mechanism and then routes the variable to one of four handling strategies: column exclusion, listwise deletion, missing indicator with fill, or stochastic Multiple Imputation by Chained Equations (MICE) imputation (Figure~\ref{fig:missing_data_pipeline}) \citep{ref31, ref32}.
+
+\begin{figure}[H]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[
+  node distance=0.55cm and 0.8cm,
+  mainbox/.style={rectangle, draw, rounded corners=2pt, text width=4.8cm,
+    minimum height=0.65cm, align=center, font=\small, fill=gray!10},
+  decision/.style={diamond, draw, aspect=2.5, inner sep=1pt,
+    align=center, font=\small, fill=gray!10},
+  outcome/.style={rectangle, draw, rounded corners=2pt, text width=3.2cm,
+    minimum height=0.65cm, align=center, font=\small, fill=gray!10},
+  arrow/.style={-{Stealth[scale=0.7]}, thick}
+]
+  \node[mainbox, fill=gray!25] (start) {Per Column with Missing Data};
+  \node[decision, below=of start] (d1) {miss\_rate $>$ 80\%?};
+  \node[outcome, right=2.5cm of d1] (ex1) {Column Exclusion};
+  \node[decision, below=1cm of d1] (d2) {miss\_rate $>$ 50\%\\AND low importance?\\{\scriptsize(temporal exempt)}};
+  \node[outcome, right=2.5cm of d2] (ex2) {Column Exclusion};
+  \node[decision, below=1cm of d2] (d3) {MCAR AND\\miss\_rate $<$ 15\%\\AND $N_{\text{rem}} > 500$?};
+  \node[outcome, right=2.5cm of d3] (lw) {Listwise Deletion};
+  \node[decision, below=1cm of d3] (d4) {MAR AND\\importance $\geq$ median?};
+  \node[outcome, right=2.5cm of d4] (mice) {Stochastic MICE};
+  \node[outcome, below=1cm of d4] (ind) {Missing Indicator\\with Fill};
+
+  \draw[arrow] (start) -- (d1);
+  \draw[arrow] (d1) -- node[above, font=\scriptsize]{YES} (ex1);
+  \draw[arrow] (d1) -- node[left, font=\scriptsize]{NO} (d2);
+  \draw[arrow] (d2) -- node[above, font=\scriptsize]{YES} (ex2);
+  \draw[arrow] (d2) -- node[left, font=\scriptsize]{NO} (d3);
+  \draw[arrow] (d3) -- node[above, font=\scriptsize]{YES} (lw);
+  \draw[arrow] (d3) -- node[left, font=\scriptsize]{NO} (d4);
+  \draw[arrow] (d4) -- node[above, font=\scriptsize]{YES} (mice);
+  \draw[arrow] (d4) -- node[left, font=\scriptsize, text width=2cm]{NO\\(MNAR or\\low imp.)} (ind);
+\end{tikzpicture}%
+}
+\caption{Missing Data Handling Decision Logic}
+\label{fig:missing_data_pipeline}
+\end{figure}
+
+The first diagnostic step applies Little's MCAR test at the dataset level to evaluate whether data are Missing Completely at Random (MCAR). Under the null hypothesis of MCAR, missingness is independent of all observed and unobserved values, meaning that complete cases constitute an unbiased subsample of the population and listwise deletion would be permissible. The test returned a statistically significant result ($p < 0.05$), rejecting MCAR and confirming that missingness patterns in the dataset are systematically related to the observed data, thus ruling out blanket listwise deletion \citep{ref32}.
+
+Because Little's test yields a single omnibus verdict at the dataset level, per-column mechanism classification requires a separate procedure. Following the dataset-level assessment, each variable's missingness indicator is examined against the observed data to assign a column-level mechanism. For temporal (monthly) variables, Spearman rank correlations are computed between the column's monthly missingness rate and treatment month; a monotonically increasing correlation indicates a dropout pattern classified as Missing Not at Random (MNAR). For static baseline variables, point-biserial correlations between the binary is-missing indicator and observed features are evaluated; significant associations suggest that missingness is explained by other observed variables (Missing at Random, or MAR), whereas non-significant associations indicate MNAR. This per-column classification, rather than a single dataset-level verdict, allows the pipeline to match each handling strategy to the specific statistical properties of each variable \citep{ref31, ref32}.
+
+To support the column exclusion and MICE eligibility decisions, a Random Forest classifier is trained on available cases, defined as rows where the treatment outcome is observed. Features are filled with column medians for ranking purposes only (available-case analysis), providing a coarse but sufficient signal for importance estimation. Variables in the bottom quartile of predictive importance become eligible for soft column exclusion, while variables above the median importance threshold are prioritized for stochastic imputation \citep{ref35}.
+
+Variables exceeding 80\% missingness are excluded entirely under a hard threshold, regardless of their importance ranking, because reliable imputation is statistically untenable at such sparsity levels. A soft threshold additionally excludes variables with more than 50\% missingness whose importance falls in the bottom quartile, on the grounds that the information gain from imputing a low-value sparse variable does not justify the synthetic variance introduced. Temporal variables are exempt from both thresholds, as their structural missingness reflects the longitudinal design of TB treatment monitoring rather than data quality problems \citep{ref37}.
+
+Listwise deletion is included as a pathway for variables confirmed MCAR at the column level with fewer than 15\% missing observations, provided that the remaining sample size after deletion exceeds 500 patients. Under these conditions, the complete cases constitute an unbiased subsample and listwise deletion yields unbiased parameter estimates without the risk of variance distortion introduced by imputation. On the present dataset, no variables satisfied all three conditions simultaneously, and this pathway was not activated \citep{ref32}.
+
+Variables classified as MNAR and all temporal features, regardless of mechanism, are handled through a two-part strategy: first, a binary missingness indicator (\texttt{is\_missing\_[variable]}) is added as a new feature encoding the structural absence; second, the original variable is filled with the last observed value carried forward for temporal variables, or with the column median for continuous static variables and column mode for categorical static variables. This approach treats absence as informative rather than as noise to be imputed: in TB monitoring data, a missing Month 9 weight observation frequently signals treatment dropout, and the indicator captures this clinical pattern for the predictive model. Backward-fill is explicitly excluded from temporal imputation to prevent temporal data leakage, whereby a future measurement would contaminate a prior time step that the model cannot legitimately access at inference time \citep{ref34, ref36, ref33}.
+
+The four clinical vital signs confirmed MAR and ranking above the median importance threshold (oxygen saturation, heart rate, systolic blood pressure, diastolic blood pressure) are imputed using stochastic Multiple Imputation by Chained Equations with an ExtraTreesRegressor as the conditional model---a nonparametric, tree-based estimator that captures non-linear relationships in mixed-type clinical data without requiring variable standardization, analogous to the missForest framework \citep{ref35}. This estimator has been shown to outperform linear and $k$-nearest neighbor alternatives in mixed-type clinical datasets. To address the fraction of missing information (FMI) for each variable, the number of MICE iterations is scaled as $\max(20, \min(100, \lfloor \text{miss\_rate} \times 100 \rfloor))$, ensuring sufficient convergence for high-sparsity features while bounding computational cost; this scaling follows an analogous principle to Von Hippel's recommendation that the number of imputations should approximate the percentage of missing information \citep{ref38}, applied here to iteration counts rather than the number of imputed datasets. Stochastic rather than deterministic imputation is used to preserve the natural distributional variance of the imputed variables rather than collapsing them to conditional means \citep{ref1}.
 
 \subsection{Identification of Variables Associated With Treatment Outcomes}
 
@@ -263,7 +322,7 @@ The core predictive component involves training and validating supervised learni
 
 Models are trained on the preprocessed dataset with ``Treatment Outcome'' as the target variable, defined according to National Tuberculosis Program (NTP) criteria. Performance is evaluated using confusion matrices to assess accuracy, sensitivity, and specificity \citep{ref19}. This rigorous validation ensures the models can reliably identify high-risk patients among incoming cases, facilitating early intervention.
 
-To ensure the reproducibility of these results and minimize technical inconsistencies across different resampling strategies, the experiments were conducted using a centralized machine learning pipeline. This unified architecture standardizes the training, cross-validation, and evaluation phases for all models. Furthermore, the pipeline automatically exports performance metrics into native \LaTeX\ formats, ensuring that the documented results are directly derived from the experimental outputs without manual transcription errors.
+To ensure the reproducibility of these results and minimize technical inconsistencies across different resampling strategies, the experiments were conducted using a centralized machine learning pipeline. This unified architecture standardizes the training, cross-validation, and evaluation phases for all models. Furthermore, the pipeline automatically exports performance metrics into native LaTeX formats, ensuring that the documented results are directly derived from the experimental outputs without manual transcription errors.
 
 \subsection{Development of a Clinical Decision Support Tool}
 
@@ -272,7 +331,13 @@ The validated models are embedded into a Clinical Decision Support System (CDSS)
 % ======================== RESULTS AND DISCUSSION ========================
 \section{Results and Discussion}
 
-This section presents the results of machine learning analyses aimed at predicting treatment success and failure among pulmonary tuberculosis patients under the DOH-CAR TB-DOTS program. Descriptive statistics summarize patient demographics, clinical characteristics, and treatment outcomes, while predictive model performance is evaluated using test and validation datasets. Both static (Random Forest, Gradient Boosting, LightGBM, XGBoost, Logistic Regression) and temporal models are compared, and feature importance analyses provide insights into the key factors influencing treatment outcomes. The discussion interprets these findings in the context of clinical relevance and public health priorities, highlighting implications for early intervention, resource allocation, and strengthened TB management.
+This section presents the results of machine learning analyses aimed at predicting treatment success and failure among PTB patients under the DOH-CAR TB-DOTS program. Descriptive statistics summarize patient demographics, clinical characteristics, and treatment outcomes, while predictive model performance is evaluated using test and validation datasets. Both static (Random Forest, Gradient Boosting, LightGBM, XGBoost, Logistic Regression) and temporal models are compared, and feature importance analyses provide insights into the key factors influencing treatment outcomes. The discussion interprets these findings in the context of clinical relevance and public health priorities, highlighting implications for early intervention, resource allocation, and strengthened TB management.
+
+\subsection{Missing Data Handling Outcomes}
+
+Of the 44 features identified with missing data, 15 were excluded via column exclusion. All 15 exceeded the hard missingness threshold of 80\%, including near-complete variables such as tuberculosis culture (99.8\%), other laboratory tests (99.8\%), and tuberculin skin test (93.5\%). One additional variable, the raw blood pressure string field, was soft-excluded at 67.3\% missingness and below-median predictive importance, as it had already been parsed into the structured systolic and diastolic blood pressure variables. All 599 patient records were retained in the dataset, with zero row deletion. Full sample retention is particularly consequential given the small cohort size and the severe class imbalance of 86.2\% treatment success versus 13.8\% failure; listwise deletion under these conditions would have compounded the minority class representation problem \citep{ref32}.
+
+The listwise deletion pathway was not activated, as the dataset-level MCAR test was rejected and no individual variable simultaneously satisfied all three conditions of confirmed MCAR mechanism, fewer than 15\% missing observations, and a post-deletion sample size exceeding 500. Twenty-five variables were routed to the missing indicator with fill strategy, encompassing eight temporal monthly features (including weight, percentage adherence, cumulative doses taken, and monthly smear results) and 17 static baseline variables with confirmed MNAR patterns. Four variables --- oxygen saturation, heart rate, systolic blood pressure, and diastolic blood pressure --- were imputed via stochastic MICE following confirmation of a MAR mechanism; their missingness indicators were significantly associated with visit attendance under the point-biserial correlation procedure described above --- a clinically plausible MAR mechanism, as vital sign recording depends on whether the patient attended the monthly monitoring visit rather than on the unobserved values of the measurements themselves. The concentration of stochastic imputation on this small subset of high-value features reflects the diagnostic-first design of the pipeline, which reserves computationally intensive probabilistic imputation for variables where the statistical assumptions required for its validity are met \citep{ref31, ref33}.
 
 \subsection{Dataset Characteristics and Class Distribution}
 
@@ -379,7 +444,7 @@ Table \ref{tab:temporal_performance} presents the performance metrics of all tem
 % ======================== DISCUSSION ========================
 \section{Discussion}
 
-This study investigated the use of machine learning models to predict treatment outcomes---Success or Failure---of pulmonary tuberculosis patients under the DOH-CAR TB-DOTS program, using monthly patient monitoring data alongside baseline clinical features. Both temporal models, specifically the Bi-LSTM Baseline and Augmented variants, and tree-based models, including XGBoost, LightGBM, and Random Forest with SMOTE-ENN, were evaluated on a stratified 70/20/10 patient-level split, incorporating progressive temporal samples from treatment months M0 through M12. The test set performance revealed that while Bi-LSTM and XGBoost Baseline models achieved high overall accuracy (0.9048) and F1 scores (0.9500), their ability to detect treatment failures was limited, as indicated by zero specificity for the minority Failure class. In contrast, Random Forest with SMOTE-ENN demonstrated more balanced performance, achieving a recall of 0.7895 for treatment failure and a high PR-AUC (0.9419), indicating greater reliability in identifying patients at risk of adverse outcomes. These results highlight that tree-based models augmented with SMOTE-ENN are particularly effective at handling severe class imbalance, while temporal models provide strong predictive accuracy for the majority outcome.
+This study investigated the use of machine learning models to predict treatment outcomes---Success or Failure---of PTB patients under the DOH-CAR TB-DOTS program, using monthly patient monitoring data alongside baseline clinical features. Both temporal models, specifically the Bi-LSTM Baseline and Augmented variants, and tree-based models, including XGBoost, LightGBM, and Random Forest with SMOTE-ENN, were evaluated on a stratified 70/20/10 patient-level split, incorporating progressive temporal samples from treatment months M0 through M12. The test set performance revealed that while Bi-LSTM and XGBoost Baseline models achieved high overall accuracy (0.9048) and F1 scores (0.9500), their ability to detect treatment failures was limited, as indicated by zero specificity for the minority Failure class. In contrast, Random Forest with SMOTE-ENN demonstrated more balanced performance, achieving a recall of 0.7895 for treatment failure and a high PR-AUC (0.9419), indicating greater reliability in identifying patients at risk of adverse outcomes. These results highlight that tree-based models augmented with SMOTE-ENN are particularly effective at handling severe class imbalance, while temporal models provide strong predictive accuracy for the majority outcome.
 
 The study contributes in several ways. By integrating temporal monitoring data with static baseline features, it demonstrates that patient-level longitudinal information improves predictive performance over static data alone. The application of SMOTE-ENN and advanced data augmentation techniques for Bi-LSTM effectively addresses the extreme class imbalance inherent in TB treatment outcomes, enhancing the model's capacity to detect high-risk patients. Furthermore, the findings suggest that predictive models, particularly Random Forest with SMOTE-ENN, have practical value for clinical decision support systems, enabling clinicians to identify patients at risk of treatment failure early and prioritize interventions accordingly.
 
@@ -397,5 +462,14 @@ The authors would like to express their sincere gratitude to Saint Louis Univers
 % if it appears incorrectly, uncomment the next line:
 % \section*{References}
 \bibliography{references}
+
+% ======================== APPENDICES ======================== TODO: fix spacing, there should be no space between the section heading and the pdf file
+\newpage
+\appendix
+
+\section{Appendix A: iCreate Supplementary Material}
+\label{app:supplementary}
+\includepdf[pages=-,pagecommand={\thispagestyle{fancy}}]{iCreate.pdf}
+
 
 \end{document}
