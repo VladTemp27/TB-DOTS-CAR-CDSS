@@ -1,5 +1,6 @@
 import * as ort from 'onnxruntime-web'
 import encodingsData from '../data/feature_encodings.json'
+import provinceCitiesData from '../data/province_cities.json'
 
 ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.25.1/dist/'
 
@@ -24,8 +25,14 @@ export interface PredictionResult {
   successProbability: number
 }
 
+export interface ContributionItem {
+  feature: string
+  delta: number
+  direction: 'risk' | 'protective'
+}
+
 export interface ContributionResult extends PredictionResult {
-  contributions: { feature: string; delta: number; direction: 'risk' | 'protective' }[]
+  contributions: ContributionItem[]
 }
 
 type Encodings = typeof encodingsData
@@ -146,6 +153,18 @@ const FEATURE_NAMES = [
   'Treatment Facility', 'Screening Facility',
 ]
 
+export const FEATURE_KEYS = [
+  'age', 'daysToTreatment', 'year', 'sex', 'anatomicalSite',
+  'registrationGroup', 'bacteriologicStatus', 'microscopyResult',
+  'sourceOfPatient', 'type', 'province', 'cityMunicipality',
+  'treatmentHealthFacility', 'screeningDiagnosingHealthFacility',
+] as const satisfies readonly (keyof PatientFeatures)[]
+
+export function featureKeyFor(displayName: string): keyof PatientFeatures | undefined {
+  const idx = FEATURE_NAMES.indexOf(displayName)
+  return idx >= 0 ? FEATURE_KEYS[idx] : undefined
+}
+
 export async function predictWithContributions(features: PatientFeatures): Promise<ContributionResult> {
   console.log('Predicting with contributions for features:', features)
   const sess = await getSession()
@@ -187,4 +206,11 @@ export async function predictWithContributions(features: PatientFeatures): Promi
 export function getChoices(col: CatKey): string[] {
   const map = encodingsData.__categorical[col] as Record<string, number>
   return Object.keys(map).sort()
+}
+
+// Get the cities/municipalities valid for a given province (UI-only, no effect on model encoding)
+export function getCitiesForProvince(province: string): string[] {
+  if (!province) return []
+  const map = provinceCitiesData as Record<string, string[]>
+  return map[province] ?? []
 }

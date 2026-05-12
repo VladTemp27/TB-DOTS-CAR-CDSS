@@ -7,12 +7,15 @@ export interface MonthlyRecord {
   adherence: 'full' | 'partial' | 'poor'
   failureProbability: number
   timestamp: number
+  // TODO(server): these are IndexedDB keys today; replace with server-side asset IDs
+  xrayIds?: string[]
 }
 
 export interface PredictionRecord {
   label: 0 | 1
   failureProbability: number
   contributions: ContributionResult['contributions']
+  featuresUsed?: PatientFeatures
   timestamp: number
 }
 
@@ -26,64 +29,110 @@ export interface Patient {
   createdAt: number
   predictions: PredictionRecord[]
   monthlyRecords: MonthlyRecord[]
+  // TODO(server): these are IndexedDB keys today; replace with server-side asset IDs
+  intakeXrayIds?: string[]
 }
 
-const STORAGE_KEY = 'tb_patients'
+async function json<T>(res: Response): Promise<T> {
+  const text = await res.text()
+  return text ? (JSON.parse(text) as T) : (null as T)
+}
 
-function load(): Patient[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
+async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, init)
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(body || res.statusText || `HTTP ${res.status}`)
   }
+  return json<T>(res)
 }
 
-function save(patients: Patient[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(patients))
-}
-
-export function getAllPatients(): Patient[] {
-  return load().sort((a, b) => {
+export async function getAllPatients(): Promise<Patient[]> {
+  const patients = await api<Patient[]>('/api/patients')
+  return patients.sort((a, b) => {
     const aRisk = a.predictions.at(-1)?.failureProbability ?? 0
     const bRisk = b.predictions.at(-1)?.failureProbability ?? 0
     return bRisk - aRisk
   })
 }
 
-export function getPatient(id: string): Patient | null {
-  return load().find(p => p.id === id) ?? null
-}
-
-export function savePatient(patient: Patient): void {
-  const patients = load()
-  const idx = patients.findIndex(p => p.id === patient.id)
-  if (idx >= 0) {
-    patients[idx] = patient
-  } else {
-    patients.push(patient)
-  }
-  save(patients)
-}
-
-export function addPrediction(id: string, record: PredictionRecord): void {
-  const patients = load()
-  const p = patients.find(p => p.id === id)
-  if (p) {
-    p.predictions.push(record)
-    save(patients)
+export async function getPatient(id: string): Promise<Patient | null> {
+  try {
+    return await api<Patient>(`/api/patients/${encodeURIComponent(id)}`)
+  } catch (e) {
+    if (e instanceof Error && e.message.includes('404')) return null
+    throw e
   }
 }
 
-export function addMonthlyRecord(id: string, record: MonthlyRecord): void {
-  const patients = load()
-  const p = patients.find(p => p.id === id)
-  if (p) {
-    p.monthlyRecords.push(record)
-    save(patients)
-  }
+export async function savePatient(patient: Patient): Promise<void> {
+  await api<Patient>(`/api/patients/${encodeURIComponent(patient.id)}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patient),
+    },
+  )
+}
+
+export async function addPrediction(id: string, record: PredictionRecord): Promise<void> {
+  await api<{ ok: true }>(`/api/patients/${encodeURIComponent(id)}/predictions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(record),
+  })
+}
+
+export async function addMonthlyRecord(id: string, record: MonthlyRecord): Promise<void> {
+  await api<{ ok: true }>(`/api/patients/${encodeURIComponent(id)}/monthly-records`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(record),
+  })
 }
 
 export function generateId(): string {
   return `MED-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`
+}
+
+export async function attachIntakeXrays(patientId: string, files: File[]): Promise<void> {
+  if (files.length === 0) return
+
+  // Ensure patient exists.
+  const p = await getPatient(patientId)
+  if (!p) return
+
+  await Promise.all(
+    files.map(async file => {
+      const form = new FormData()
+      form.append('file', file)
+      await api(`/api/xrays?patient_id=${encodeURIComponent(patientId)}&kind=intake`, {
+        method: 'POST',
+        body: form,
+      })
+    }),
+  )
+}
+
+export async function attachMonthlyXrays(patientId: string, month: number, files: File[]): Promise<void> {
+  if (files.length === 0) return
+
+  // Ensure patient and record exist.
+  const p = await getPatient(patientId)
+  const record = p?.monthlyRecords.find(r => r.month === month)
+  if (!p || !record) return
+
+  await Promise.all(
+    files.map(async file => {
+      const form = new FormData()
+      form.append('file', file)
+      await api(
+        `/api/xrays?patient_id=${encodeURIComponent(patientId)}&kind=monthly&month=${encodeURIComponent(String(month))}`,
+        {
+          method: 'POST',
+          body: form,
+        },
+      )
+    }),
+  )
 }
