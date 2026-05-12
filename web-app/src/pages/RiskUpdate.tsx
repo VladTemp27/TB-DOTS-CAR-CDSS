@@ -57,13 +57,17 @@ export function RiskUpdate() {
     )
   }
 
-  const prob     = result?.failureProbability ?? 0
-  const prevProb = patient?.predictions.at(-2)?.failureProbability
-  const delta    = prevProb != null ? prob - prevProb : null
+  const latestPrediction = patient?.predictions.at(-1)
+  const prob = result?.failureProbability ?? latestPrediction?.failureProbability ?? 0
+  const prevProb = patient && patient.predictions.length > 1
+    ? patient.predictions.at(-2)?.failureProbability
+    : undefined
+  const delta = prevProb != null ? prob - prevProb : null
   const isHigh   = prob >= 0.5
   const { text } = riskColor(prob)
 
-  const topContribs = result?.contributions.slice(0, 3) ?? []
+  const topContribs = (result?.contributions ?? latestPrediction?.contributions ?? []).slice(0, 3)
+  const derivedMonthNumber = monthNumber || patient?.monthlyRecords.at(-1)?.month || 1
 
   const riskGradient = isHigh
     ? 'bg-gradient-to-br from-risk-high/5 to-risk-high/15 border-risk-high/40'
@@ -77,8 +81,8 @@ export function RiskUpdate() {
         <div className="flex justify-between items-start">
           <div>
             <p className="font-bold text-ink-base font-display">{patient?.name}</p>
-            <p className="text-xs text-ink-secondary">{patient?.medicalId} · Month {monthNumber}</p>
-            <p className="text-xs text-ink-muted">{patient?.treatmentRegimen?.toUpperCase() || ''} · {monthNumber} of 6 months</p>
+            <p className="text-xs text-ink-secondary">{patient?.medicalId} · Month {derivedMonthNumber}</p>
+            <p className="text-xs text-ink-muted">{patient?.treatmentRegimen?.toUpperCase() || ''} · {derivedMonthNumber} of 6 months</p>
           </div>
           <RiskBadge probability={prob} size="md" />
         </div>
