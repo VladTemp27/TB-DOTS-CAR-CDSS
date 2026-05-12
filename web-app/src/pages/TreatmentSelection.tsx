@@ -80,9 +80,9 @@ export function TreatmentSelection() {
     navigate(`/patient/${id}`)
   }
 
-  function handleSkip() {
+  async function handleSkip() {
     if (!id) return
-    const p = getPatient(id)
+    const p = patient ?? (await getPatient(id))
     if (p) {
       p.treatmentRegimen = undefined
       p.treatmentStartDate = startDate || undefined
