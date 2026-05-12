@@ -122,6 +122,20 @@ if ! "$PYTHON" -c "import fastapi,uvicorn,sqlalchemy,alembic" &>/dev/null 2>&1; 
   ok "Backend dependencies installed"
 fi
 
+# ── NVIDIA library path (Linux only, derived dynamically) ─────────────────────
+if [[ "$(uname -s)" == "Linux" ]]; then
+  _PYVER=$("$PYTHON" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+  _EXTRA=""
+  for _pkg in cuda_runtime cublas cuda_nvrtc; do
+    _D="$VENV/lib/python${_PYVER}/site-packages/nvidia/$_pkg/lib"
+    [[ -d "$_D" ]] && _EXTRA="${_EXTRA}${_D}:"
+  done
+  _PYLIB=$("$PYTHON" -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR") or "")' 2>/dev/null || true)
+  [[ -n "$_PYLIB" && -d "$_PYLIB" ]] && _EXTRA="${_EXTRA}${_PYLIB}:"
+  [[ -n "$_EXTRA" ]] && \
+    export LD_LIBRARY_PATH="${_EXTRA%:}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+fi
+
 # ── llama-cpp-python ──────────────────────────────────────────────────────────
 # Default: prebuilt wheel (seconds). Opt-in: --from-source (minutes).
 if [[ "$MODEL_PRESENT" == "true" ]] && \
@@ -208,12 +222,12 @@ if [[ "$MODEL_PRESENT" == "true" ]] && \
       done
     elif [[ "$(uname -s)" == "Linux" ]]; then
       if "$PIP" install --prefer-binary --no-cache-dir --quiet \
-          --extra-index-url "https://abetlen.github.io/llama-cpp-python/whl/cu124" \
-          "llama-cpp-python==${LLAMA_VER_CU124}" 2>"$_PIP_ERR"; then
-        _WHEEL_OK=true
-      elif "$PIP" install --prefer-binary --no-cache-dir --quiet \
           --extra-index-url "https://abetlen.github.io/llama-cpp-python/whl/cu121" \
           "llama-cpp-python==${LLAMA_VER_CU121}" 2>"$_PIP_ERR"; then
+        _WHEEL_OK=true
+      elif "$PIP" install --prefer-binary --no-cache-dir --quiet \
+          --extra-index-url "https://abetlen.github.io/llama-cpp-python/whl/cu124" \
+          "llama-cpp-python==${LLAMA_VER_CU124}" 2>"$_PIP_ERR"; then
         _WHEEL_OK=true
       fi
     else
@@ -263,20 +277,6 @@ if [[ ! -d "$WEBAPP/node_modules" ]] \
   log "Installing frontend dependencies..."
   npm install --prefix "$WEBAPP" --silent
   ok "Frontend dependencies installed"
-fi
-
-# ── NVIDIA library path (Linux only, derived dynamically) ─────────────────────
-if [[ "$(uname -s)" == "Linux" ]]; then
-  _PYVER=$("$PYTHON" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
-  _EXTRA=""
-  for _pkg in cuda_runtime cublas cuda_nvrtc; do
-    _D="$VENV/lib/python${_PYVER}/site-packages/nvidia/$_pkg/lib"
-    [[ -d "$_D" ]] && _EXTRA="${_EXTRA}${_D}:"
-  done
-  _PYLIB=$("$PYTHON" -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR") or "")' 2>/dev/null || true)
-  [[ -n "$_PYLIB" && -d "$_PYLIB" ]] && _EXTRA="${_EXTRA}${_PYLIB}:"
-  [[ -n "$_EXTRA" ]] && \
-    export LD_LIBRARY_PATH="${_EXTRA%:}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 fi
 
 # ── start services ────────────────────────────────────────────────────────────
