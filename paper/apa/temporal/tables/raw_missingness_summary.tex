@@ -1,171 +1,170 @@
-\begin{table}[htbp]
-
-\caption{Global Feature Missingness Rates in the Raw Temporal Dataset}
-\label{tab:raw_missingness_summary}
-\begin{tabular}{lccc}
-
+\begin{longtable}{lcc}
+\caption{Global Feature Missingness Rates in the Raw Temporal Dataset} \\
+\label{tab:raw_missingness_summary} \\
 \toprule
-
-Feature & Missing Count & Missing \\% & Alpha Drop (≥80\\%) \\
-
+Feature & Missing Count & Missing \% \\
 \midrule
-
-m8\_weight & 599 & 100.0 & Yes \\
-m12\_weight & 599 & 100.0 & Yes \\
-m11\_height & 599 & 100.0 & Yes \\
-m9\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
-m9\_smear\_tb\_lamp & 599 & 100.0 & Yes \\
-m7\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
-m7\_smear\_tb\_lamp & 599 & 100.0 & Yes \\
-m10\_smear\_tb\_lamp & 599 & 100.0 & Yes \\
-m10\_weight & 599 & 100.0 & Yes \\
-risk\_factor\_s\_for\_drug\_resistance\_tuberculosis & 599 & 100.0 & Yes \\
-m12\_height & 599 & 100.0 & Yes \\
-m12\_smear\_tb\_lamp & 599 & 100.0 & Yes \\
-m12\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
-m9\_weight & 599 & 100.0 & Yes \\
-m8\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
-m8\_smear\_tb\_lamp & 599 & 100.0 & Yes \\
-m1\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
-m11\_weight & 599 & 100.0 & Yes \\
-m10\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
-m11\_smear\_tb\_lamp & 599 & 100.0 & Yes \\
-m11\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
-m3\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
-m4\_xpert\_mtb\_rif & 598 & 99.83 & Yes \\
-m10\_height & 598 & 99.83 & Yes \\
-tuberculosis\_culture & 598 & 99.83 & Yes \\
-m12\_monthly\_missed\_doses & 598 & 99.83 & Yes \\
-other\_lab\_test & 598 & 99.83 & Yes \\
-m12\_pct\_adherence & 598 & 99.83 & Yes \\
-m8\_height & 598 & 99.83 & Yes \\
-m9\_height & 598 & 99.83 & Yes \\
-m12\_monthly\_doses\_taken & 597 & 99.67 & Yes \\
-m4\_smear\_tb\_lamp & 597 & 99.67 & Yes \\
-m1\_smear\_tb\_lamp & 597 & 99.67 & Yes \\
-others & 597 & 99.67 & Yes \\
-m11\_monthly\_missed\_doses & 597 & 99.67 & Yes \\
-m11\_pct\_adherence & 597 & 99.67 & Yes \\
-m12\_cumulative\_doses\_taken & 597 & 99.67 & Yes \\
-m10\_monthly\_missed\_doses & 596 & 99.5 & Yes \\
-m9\_pct\_adherence & 596 & 99.5 & Yes \\
-m10\_pct\_adherence & 596 & 99.5 & Yes \\
-m11\_monthly\_doses\_taken & 595 & 99.33 & Yes \\
-m9\_monthly\_missed\_doses & 595 & 99.33 & Yes \\
-m11\_cumulative\_doses\_taken & 595 & 99.33 & Yes \\
-m8\_pct\_adherence & 593 & 99.0 & Yes \\
-m3\_smear\_tb\_lamp & 593 & 99.0 & Yes \\
-m8\_monthly\_missed\_doses & 592 & 98.83 & Yes \\
-m10\_monthly\_doses\_taken & 592 & 98.83 & Yes \\
-m10\_cumulative\_doses\_taken & 592 & 98.83 & Yes \\
-m6\_smear\_tb\_lamp & 590 & 98.5 & Yes \\
-m9\_cumulative\_doses\_taken & 588 & 98.16 & Yes \\
-m7\_height & 588 & 98.16 & Yes \\
-m5\_smear\_tb\_lamp & 588 & 98.16 & Yes \\
-m9\_monthly\_doses\_taken & 588 & 98.16 & Yes \\
-m6\_xpert\_mtb\_rif & 587 & 98.0 & Yes \\
-m2\_smear\_tb\_lamp & 587 & 98.0 & Yes \\
-m0\_smear\_tb\_lamp & 586 & 97.83 & Yes \\
-m7\_weight & 586 & 97.83 & Yes \\
-m5\_xpert\_mtb\_rif & 585 & 97.66 & Yes \\
-m8\_cumulative\_doses\_taken & 582 & 97.16 & Yes \\
-m8\_monthly\_doses\_taken & 581 & 96.99 & Yes \\
-dat\_supported\_dup & 576 & 96.16 & Yes \\
-m2\_xpert\_mtb\_rif & 572 & 95.49 & Yes \\
-other & 570 & 95.16 & Yes \\
-m5\_height & 563 & 93.99 & Yes \\
-m4\_height & 562 & 93.82 & Yes \\
-m6\_height & 562 & 93.82 & Yes \\
-m6\_weight & 561 & 93.66 & Yes \\
-tuberculin\_skin\_test & 559 & 93.32 & Yes \\
-m3\_height & 558 & 93.16 & Yes \\
-m5\_weight & 557 & 92.99 & Yes \\
-m2\_height & 555 & 92.65 & Yes \\
-m0\_xpert\_mtb\_rif & 554 & 92.49 & Yes \\
-m4\_weight & 554 & 92.49 & Yes \\
-m1\_height & 554 & 92.49 & Yes \\
-nationality\_raw & 551 & 91.99 & Yes \\
-m3\_weight & 550 & 91.82 & Yes \\
-dat\_supported & 549 & 91.65 & Yes \\
-prior\_history\_of\_tb & 549 & 91.65 & Yes \\
-m2\_weight & 543 & 90.65 & Yes \\
-m1\_weight & 540 & 90.15 & Yes \\
-m7\_pct\_adherence & 519 & 86.64 & Yes \\
-regimen\_type\_at\_6th\_month\_of\_treatment & 518 & 86.48 & Yes \\
-smear\_microscopy & 502 & 83.81 & Yes \\
-m7\_monthly\_missed\_doses & 502 & 83.81 & Yes \\
-respiratory\_rate & 501 & 83.64 & Yes \\
-height & 492 & 82.14 & Yes \\
-temperature & 481 & 80.3 & Yes \\
-weight & 476 & 79.47 & No \\
-m7\_cumulative\_doses\_taken & 465 & 77.63 & No \\
-o2\_sat & 462 & 77.13 & No \\
-m7\_monthly\_doses\_taken & 453 & 75.63 & No \\
-heart\_rate & 441 & 73.62 & No \\
-blood\_pressure & 403 & 67.28 & No \\
-m6\_pct\_adherence & 398 & 66.44 & No \\
-regimen\_type\_at\_end\_of\_treatment & 355 & 59.27 & No \\
-m6\_monthly\_missed\_doses & 347 & 57.93 & No \\
-m5\_pct\_adherence & 336 & 56.09 & No \\
-m4\_pct\_adherence & 319 & 53.26 & No \\
-m3\_pct\_adherence & 312 & 52.09 & No \\
-m2\_pct\_adherence & 302 & 50.42 & No \\
-m1\_pct\_adherence & 293 & 48.91 & No \\
-name\_of\_treatment\_unit & 290 & 48.41 & No \\
-m0\_pct\_adherence & 277 & 46.24 & No \\
-treatment\_regimen & 273 & 45.58 & No \\
-m6\_cumulative\_doses\_taken & 263 & 43.91 & No \\
-co\_morbidities & 253 & 42.24 & No \\
-m5\_monthly\_missed\_doses & 252 & 42.07 & No \\
-m0\_cumulative\_doses\_taken & 244 & 40.73 & No \\
-continuation\_phase\_start\_date & 239 & 39.9 & No \\
-m3\_monthly\_missed\_doses & 235 & 39.23 & No \\
-m0\_height & 235 & 39.23 & No \\
-date\_of\_outcome & 235 & 39.23 & No \\
-m4\_monthly\_missed\_doses & 233 & 38.9 & No \\
-m6\_monthly\_doses\_taken & 228 & 38.06 & No \\
-continuation\_phase\_end\_date & 228 & 38.06 & No \\
-m0\_monthly\_missed\_doses & 226 & 37.73 & No \\
-m2\_monthly\_missed\_doses & 222 & 37.06 & No \\
-intensive\_phase\_end\_date & 217 & 36.23 & No \\
-m3\_cumulative\_doses\_taken & 217 & 36.23 & No \\
-drug\_resistance\_bacteriological\_status & 217 & 36.23 & No \\
-chest\_x\_ray\_at\_case\_notification & 213 & 35.56 & No \\
-m1\_monthly\_missed\_doses & 186 & 31.05 & No \\
-m0\_weight & 185 & 30.88 & No \\
-xpert\_mtb\_rif & 182 & 30.38 & No \\
-civil\_status & 167 & 27.88 & No \\
-nationality & 166 & 27.71 & No \\
-date\_of\_notification & 159 & 26.54 & No \\
-m5\_cumulative\_doses\_taken & 157 & 26.21 & No \\
-m4\_cumulative\_doses\_taken & 152 & 25.38 & No \\
-name\_of\_diagnosing\_facility & 150 & 25.04 & No \\
-intensive\_phase\_start\_date & 136 & 22.7 & No \\
-outcome & 127 & 21.2 & No \\
-m2\_cumulative\_doses\_taken & 126 & 21.04 & No \\
-regimen\_type\_at\_start\_of\_treatment & 122 & 20.37 & No \\
-case\_registration\_group & 117 & 19.53 & No \\
-date\_of\_diagnosis & 110 & 18.36 & No \\
-m5\_monthly\_doses\_taken & 101 & 16.86 & No \\
-m1\_cumulative\_doses\_taken & 93 & 15.53 & No \\
-m4\_monthly\_doses\_taken & 90 & 15.03 & No \\
-m3\_monthly\_doses\_taken & 80 & 13.36 & No \\
-bacteriologic\_status & 79 & 13.19 & No \\
-diagnosis & 62 & 10.35 & No \\
-treatment\_start\_date & 57 & 9.52 & No \\
-m2\_monthly\_doses\_taken & 57 & 9.52 & No \\
-m1\_monthly\_doses\_taken & 39 & 6.51 & No \\
-sex & 33 & 5.51 & No \\
-no & 31 & 5.18 & No \\
-m0\_monthly\_doses\_taken & 30 & 5.01 & No \\
-date\_of\_birth & 20 & 3.34 & No \\
-age & 18 & 3.01 & No \\
-data\_year & 0 & 0.0 & No \\
-source\_file & 0 & 0.0 & No \\
-facility & 0 & 0.0 & No \\
-
+\endfirsthead
+\caption*{Table \ref{tab:raw_missingness_summary} continued} \\
+\toprule
+Feature & Missing Count & Missing \% \\
+\midrule
+\endhead
+\midrule
+\endfoot
 \bottomrule
-
-\end{tabular}
-
-\end{table}
+\endlastfoot
+m8\_weight & 599 & 100.0 \\
+m12\_weight & 599 & 100.0 \\
+m11\_height & 599 & 100.0 \\
+m9\_xpert\_mtb\_rif & 599 & 100.0 \\
+m9\_smear\_tb\_lamp & 599 & 100.0 \\
+m7\_xpert\_mtb\_rif & 599 & 100.0 \\
+m7\_smear\_tb\_lamp & 599 & 100.0 \\
+m10\_smear\_tb\_lamp & 599 & 100.0 \\
+m10\_weight & 599 & 100.0 \\
+risk\_factor\_s\_for\_drug\_resistance\_tuberculosis & 599 & 100.0 \\
+m12\_height & 599 & 100.0 \\
+m12\_smear\_tb\_lamp & 599 & 100.0 \\
+m12\_xpert\_mtb\_rif & 599 & 100.0 \\
+m9\_weight & 599 & 100.0 \\
+m8\_xpert\_mtb\_rif & 599 & 100.0 \\
+m8\_smear\_tb\_lamp & 599 & 100.0 \\
+m1\_xpert\_mtb\_rif & 599 & 100.0 \\
+m11\_weight & 599 & 100.0 \\
+m10\_xpert\_mtb\_rif & 599 & 100.0 \\
+m11\_smear\_tb\_lamp & 599 & 100.0 \\
+m11\_xpert\_mtb\_rif & 599 & 100.0 \\
+m3\_xpert\_mtb\_rif & 599 & 100.0 \\
+m4\_xpert\_mtb\_rif & 598 & 99.83 \\
+m10\_height & 598 & 99.83 \\
+tuberculosis\_culture & 598 & 99.83 \\
+m12\_monthly\_missed\_doses & 598 & 99.83 \\
+other\_lab\_test & 598 & 99.83 \\
+m12\_pct\_adherence & 598 & 99.83 \\
+m8\_height & 598 & 99.83 \\
+m9\_height & 598 & 99.83 \\
+m12\_monthly\_doses\_taken & 597 & 99.67 \\
+m4\_smear\_tb\_lamp & 597 & 99.67 \\
+m1\_smear\_tb\_lamp & 597 & 99.67 \\
+others & 597 & 99.67 \\
+m11\_monthly\_missed\_doses & 597 & 99.67 \\
+m11\_pct\_adherence & 597 & 99.67 \\
+m12\_cumulative\_doses\_taken & 597 & 99.67 \\
+m10\_monthly\_missed\_doses & 596 & 99.5 \\
+m9\_pct\_adherence & 596 & 99.5 \\
+m10\_pct\_adherence & 596 & 99.5 \\
+m11\_monthly\_doses\_taken & 595 & 99.33 \\
+m9\_monthly\_missed\_doses & 595 & 99.33 \\
+m11\_cumulative\_doses\_taken & 595 & 99.33 \\
+m8\_pct\_adherence & 593 & 99.0 \\
+m3\_smear\_tb\_lamp & 593 & 99.0 \\
+m8\_monthly\_missed\_doses & 592 & 98.83 \\
+m10\_monthly\_doses\_taken & 592 & 98.83 \\
+m10\_cumulative\_doses\_taken & 592 & 98.83 \\
+m6\_smear\_tb\_lamp & 590 & 98.5 \\
+m9\_cumulative\_doses\_taken & 588 & 98.16 \\
+m7\_height & 588 & 98.16 \\
+m5\_smear\_tb\_lamp & 588 & 98.16 \\
+m9\_monthly\_doses\_taken & 588 & 98.16 \\
+m6\_xpert\_mtb\_rif & 587 & 98.0 \\
+m2\_smear\_tb\_lamp & 587 & 98.0 \\
+m0\_smear\_tb\_lamp & 586 & 97.83 \\
+m7\_weight & 586 & 97.83 \\
+m5\_xpert\_mtb\_rif & 585 & 97.66 \\
+m8\_cumulative\_doses\_taken & 582 & 97.16 \\
+m8\_monthly\_doses\_taken & 581 & 96.99 \\
+dat\_supported\_dup & 576 & 96.16 \\
+m2\_xpert\_mtb\_rif & 572 & 95.49 \\
+other & 570 & 95.16 \\
+m5\_height & 563 & 93.99 \\
+m4\_height & 562 & 93.82 \\
+m6\_height & 562 & 93.82 \\
+m6\_weight & 561 & 93.66 \\
+tuberculin\_skin\_test & 559 & 93.32 \\
+m3\_height & 558 & 93.16 \\
+m5\_weight & 557 & 92.99 \\
+m2\_height & 555 & 92.65 \\
+m0\_xpert\_mtb\_rif & 554 & 92.49 \\
+m4\_weight & 554 & 92.49 \\
+m1\_height & 554 & 92.49 \\
+nationality\_raw & 551 & 91.99 \\
+m3\_weight & 550 & 91.82 \\
+dat\_supported & 549 & 91.65 \\
+prior\_history\_of\_tb & 549 & 91.65 \\
+m2\_weight & 543 & 90.65 \\
+m1\_weight & 540 & 90.15 \\
+m7\_pct\_adherence & 519 & 86.64 \\
+regimen\_type\_at\_6th\_month\_of\_treatment & 518 & 86.48 \\
+smear\_microscopy & 502 & 83.81 \\
+m7\_monthly\_missed\_doses & 502 & 83.81 \\
+respiratory\_rate & 501 & 83.64 \\
+height & 492 & 82.14 \\
+temperature & 481 & 80.3 \\
+weight & 476 & 79.47 \\
+m7\_cumulative\_doses\_taken & 465 & 77.63 \\
+o2\_sat & 462 & 77.13 \\
+m7\_monthly\_doses\_taken & 453 & 75.63 \\
+heart\_rate & 441 & 73.62 \\
+blood\_pressure & 403 & 67.28 \\
+m6\_pct\_adherence & 398 & 66.44 \\
+regimen\_type\_at\_end\_of\_treatment & 355 & 59.27 \\
+m6\_monthly\_missed\_doses & 347 & 57.93 \\
+m5\_pct\_adherence & 336 & 56.09 \\
+m4\_pct\_adherence & 319 & 53.26 \\
+m3\_pct\_adherence & 312 & 52.09 \\
+m2\_pct\_adherence & 302 & 50.42 \\
+m1\_pct\_adherence & 293 & 48.91 \\
+name\_of\_treatment\_unit & 290 & 48.41 \\
+m0\_pct\_adherence & 277 & 46.24 \\
+treatment\_regimen & 273 & 45.58 \\
+m6\_cumulative\_doses\_taken & 263 & 43.91 \\
+co\_morbidities & 253 & 42.24 \\
+m5\_monthly\_missed\_doses & 252 & 42.07 \\
+m0\_cumulative\_doses\_taken & 244 & 40.73 \\
+continuation\_phase\_start\_date & 239 & 39.9 \\
+m3\_monthly\_missed\_doses & 235 & 39.23 \\
+m0\_height & 235 & 39.23 \\
+date\_of\_outcome & 235 & 39.23 \\
+m4\_monthly\_missed\_doses & 233 & 38.9 \\
+m6\_monthly\_doses\_taken & 228 & 38.06 \\
+continuation\_phase\_end\_date & 228 & 38.06 \\
+m0\_monthly\_missed\_doses & 226 & 37.73 \\
+m2\_monthly\_missed\_doses & 222 & 37.06 \\
+intensive\_phase\_end\_date & 217 & 36.23 \\
+m3\_cumulative\_doses\_taken & 217 & 36.23 \\
+drug\_resistance\_bacteriological\_status & 217 & 36.23 \\
+chest\_x\_ray\_at\_case\_notification & 213 & 35.56 \\
+m1\_monthly\_missed\_doses & 186 & 31.05 \\
+m0\_weight & 185 & 30.88 \\
+xpert\_mtb\_rif & 182 & 30.38 \\
+civil\_status & 167 & 27.88 \\
+nationality & 166 & 27.71 \\
+date\_of\_notification & 159 & 26.54 \\
+m5\_cumulative\_doses\_taken & 157 & 26.21 \\
+m4\_cumulative\_doses\_taken & 152 & 25.38 \\
+name\_of\_diagnosing\_facility & 150 & 25.04 \\
+intensive\_phase\_start\_date & 136 & 22.7 \\
+outcome & 127 & 21.2 \\
+m2\_cumulative\_doses\_taken & 126 & 21.04 \\
+regimen\_type\_at\_start\_of\_treatment & 122 & 20.37 \\
+case\_registration\_group & 117 & 19.53 \\
+date\_of\_diagnosis & 110 & 18.36 \\
+m5\_monthly\_doses\_taken & 101 & 16.86 \\
+m1\_cumulative\_doses\_taken & 93 & 15.53 \\
+m4\_monthly\_doses\_taken & 90 & 15.03 \\
+m3\_monthly\_doses\_taken & 80 & 13.36 \\
+bacteriologic\_status & 79 & 13.19 \\
+diagnosis & 62 & 10.35 \\
+treatment\_start\_date & 57 & 9.52 \\
+m2\_monthly\_doses\_taken & 57 & 9.52 \\
+m1\_monthly\_doses\_taken & 39 & 6.51 \\
+sex & 33 & 5.51 \\
+no & 31 & 5.18 \\
+m0\_monthly\_doses\_taken & 30 & 5.01 \\
+date\_of\_birth & 20 & 3.34 \\
+age & 18 & 3.01 \\
+data\_year & 0 & 0.0 \\
+source\_file & 0 & 0.0 \\
+facility & 0 & 0.0 \\
+\end{longtable}

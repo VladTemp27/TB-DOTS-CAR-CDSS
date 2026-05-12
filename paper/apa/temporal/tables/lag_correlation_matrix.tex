@@ -1,15 +1,19 @@
-\begin{table}[htbp]
-
-\caption{Lag-1 Temporal Correlation of Pct Adherence Across Consecutive Treatment Months (Justifying Time-Series Model Architecture)}
-\label{tab:lag_correlation_matrix}
-\begin{tabular}{lcccc}
-
+\begin{longtable}{lcccc}
+\caption{Lag-1 Temporal Correlation of Pct Adherence Across Consecutive Treatment Months (Justifying Time-Series Model Architecture)} \\
+\label{tab:lag_correlation_matrix} \\
 \toprule
-
 Lag Pair & Pearson r & p-value & Significant? & N (pairs) \\
-
 \midrule
-
+\endfirsthead
+\caption*{Table \ref{tab:lag_correlation_matrix} continued} \\
+\toprule
+Lag Pair & Pearson r & p-value & Significant? & N (pairs) \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
 M0 → M1 & 0.9242 & 0.0000 & Yes & 300 \\
 M1 → M2 & 1.0 & 0.0000 & Yes & 285 \\
 M2 → M3 & 1.0 & 0.0000 & Yes & 275 \\
@@ -18,9 +22,4 @@ M4 → M5 & 0.9999 & 0.0000 & Yes & 254 \\
 M5 → M6 & 1.0 & 0.0000 & Yes & 197 \\
 M6 → M7 & 0.6202 & 0.0000 & Yes & 80 \\
 M7 → M8 & 0.2066 & 0.6945 & No & 6 \\
-
-\bottomrule
-
-\end{tabular}
-
-\end{table}
+\end{longtable}
