@@ -1,11 +1,62 @@
 from __future__ import annotations
 
 import os
+import json
+import sqlite3
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+
+
+REQUIRED_FORM_FIELDS = (
+    "name",
+    "medicalId",
+    "age",
+    "sex",
+    "province",
+    "registrationGroup",
+    "anatomicalSite",
+    "bacteriologicStatus",
+    "microscopyResult",
+    "sourceOfPatient",
+    "type",
+)
+
+REQUIRED_FEATURE_KEYS = (
+    "age",
+    "daysToTreatment",
+    "year",
+    "sex",
+    "anatomicalSite",
+    "registrationGroup",
+    "bacteriologicStatus",
+    "microscopyResult",
+    "sourceOfPatient",
+    "type",
+    "province",
+    "cityMunicipality",
+    "treatmentHealthFacility",
+    "screeningDiagnosingHealthFacility",
+)
+
+EXPECTED_CONTRIBUTION_FEATURES = {
+    "Age",
+    "Days to Treatment",
+    "Year",
+    "Sex",
+    "Anatomical Site",
+    "Registration Group",
+    "Bacteriologic Status",
+    "Microscopy Result",
+    "Source of Patient",
+    "Type",
+    "Province",
+    "City/Municipality",
+    "Treatment Facility",
+    "Screening Facility",
+}
 
 
 @pytest.fixture()
@@ -58,3 +109,85 @@ def test_seed_demo_seeds_and_is_repeatable_with_reset(tmp_data_dir: Path):
     # Re-run with reset should succeed again.
     r3 = _run_seed("--reset", env={"TB_ALLOW_DEV_RESET": "1"})
     assert r3.returncode == 0, r3.stdout + r3.stderr
+
+
+def test_seeded_rows_include_required_form_fields(tmp_data_dir: Path):
+    r = _run_seed("--reset", env={"TB_ALLOW_DEV_RESET": "1"})
+    assert r.returncode == 0, r.stdout + r.stderr
+
+    db_path = Path(os.environ["TB_DB_PATH"])
+    conn = sqlite3.connect(db_path)
+    try:
+        rows = conn.execute("SELECT id, name, medical_id, features FROM patients").fetchall()
+    finally:
+        conn.close()
+
+    assert rows
+    for pid, name, medical_id, features_json in rows:
+        assert str(name).strip()
+        assert str(medical_id).strip()
+        features = json.loads(features_json)
+
+        for key in REQUIRED_FEATURE_KEYS:
+            assert key in features, f"{pid}: missing feature key {key}"
+
+        for key in REQUIRED_FORM_FIELDS:
+            value = name if key == "name" else (medical_id if key == "medicalId" else features[key])
+            assert value is not None
+            if isinstance(value, str):
+                assert value.strip(), f"{pid}: empty required field {key}"
+
+
+def test_seeded_predictions_include_full_feature_contributions(tmp_data_dir: Path):
+    r = _run_seed("--reset", env={"TB_ALLOW_DEV_RESET": "1"})
+    assert r.returncode == 0, r.stdout + r.stderr
+
+    db_path = Path(os.environ["TB_DB_PATH"])
+    conn = sqlite3.connect(db_path)
+    try:
+        rows = conn.execute("SELECT patient_id, contributions FROM predictions").fetchall()
+    finally:
+        conn.close()
+
+    assert rows
+    for patient_id, contributions_json in rows:
+        contributions = json.loads(contributions_json)
+        assert len(contributions) == len(EXPECTED_CONTRIBUTION_FEATURES), (
+            f"{patient_id}: expected {len(EXPECTED_CONTRIBUTION_FEATURES)} contributions, "
+            f"got {len(contributions)}"
+        )
+
+        names = {c["feature"] for c in contributions}
+        assert names == EXPECTED_CONTRIBUTION_FEATURES, (
+            f"{patient_id}: contribution features mismatch: {names}"
+        )
+
+        assert all(c.get("direction") in {"risk", "protective"} for c in contributions), (
+            f"{patient_id}: contribution direction values must be risk/protective"
+        )
+
+        assert all(
+            isinstance(c.get("delta"), (int, float)) and float(c["delta"]) >= 0
+            for c in contributions
+        ), f"{patient_id}: contribution deltas must be non-negative numeric values"
+
+
+def test_seeded_prediction_features_used_include_required_keys(tmp_data_dir: Path):
+    r = _run_seed("--reset", env={"TB_ALLOW_DEV_RESET": "1"})
+    assert r.returncode == 0, r.stdout + r.stderr
+
+    db_path = Path(os.environ["TB_DB_PATH"])
+    conn = sqlite3.connect(db_path)
+    try:
+        rows = conn.execute("SELECT patient_id, features_used FROM predictions").fetchall()
+    finally:
+        conn.close()
+
+    assert rows
+    for patient_id, features_used_json in rows:
+        used = json.loads(features_used_json)
+        for key in REQUIRED_FEATURE_KEYS:
+            assert key in used, f"{patient_id}: features_used missing key {key}"
+
+        assert isinstance(used.get("age"), int) and used["age"] > 0
+        assert isinstance(used.get("daysToTreatment"), int) and used["daysToTreatment"] >= 0
