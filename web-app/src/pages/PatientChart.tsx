@@ -124,11 +124,18 @@ export function PatientChart() {
           <div>
             <h1 className="text-2xl font-bold text-ink-base font-display">{patient.name}</h1>
             <p className="text-sm text-ink-muted mt-1">{patient.medicalId}</p>
+            {!patient.treatmentRegimen && (
+              <span className="inline-block mt-1.5 text-xs bg-risk-med/10 text-risk-med font-semibold px-2 py-0.5 rounded-full">
+                No Regimen Selected
+              </span>
+            )}
           </div>
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => navigate(`/patient/${id}/checkin`)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-mid transition-colors"
+              disabled={!patient.treatmentRegimen}
+              title={!patient.treatmentRegimen ? 'Select a treatment regimen before logging a monthly update' : undefined}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-mid transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
             >
               Log Monthly Update
             </button>
