@@ -1,0 +1,254 @@
+{
+  "ABRA": [
+    "BANGUED (CAPITAL)",
+    "BOLINEY",
+    "BUCLOC",
+    "LANGIDEN",
+    "LICUAN-BAAY (LICUAN)",
+    "MANABO",
+    "PE\u00d1ARRUBIA",
+    "SALLAPADAN",
+    "TAYUM",
+    "TUBO"
+  ],
+  "ALBAY": [
+    "LEGAZPI CITY (CAPITAL)"
+  ],
+  "APAYAO": [
+    "CONNER",
+    "FLORA",
+    "KABUGAO (CAPITAL)"
+  ],
+  "AURORA": [
+    "DIPACULAO",
+    "MARIA AURORA"
+  ],
+  "BATAAN": [
+    "DINALUPIHAN"
+  ],
+  "BATANES": [
+    "BASCO (CAPITAL)"
+  ],
+  "BENGUET": [
+    "ATOK",
+    "BAGUIO CITY",
+    "BAKUN",
+    "BOKOD",
+    "BUGUIAS",
+    "ITOGON",
+    "KABAYAN",
+    "KAPANGAN",
+    "KIBUNGAN",
+    "LA TRINIDAD (CAPITAL)",
+    "MANKAYAN",
+    "SABLAN",
+    "TUBA",
+    "TUBLAY"
+  ],
+  "BULACAN": [
+    "CITY OF SAN JOSE DEL MONTE",
+    "HAGONOY",
+    "MARILAO"
+  ],
+  "CAGAYAN": [
+    "ABULUG",
+    "PAMPLONA",
+    "TUGUEGARAO CITY (CAPITAL)"
+  ],
+  "CAMARINES SUR": [
+    "IRIGA CITY"
+  ],
+  "CAVITE": [
+    "CAVITE CITY",
+    "GEN. MARIANO ALVAREZ",
+    "ROSARIO",
+    "TANZA"
+  ],
+  "COTABATO (NORTH COTABATO)": [
+    "ALEOSAN"
+  ],
+  "IFUGAO": [
+    "BANAUE",
+    "HINGYON",
+    "LAGAWE (CAPITAL)",
+    "LAMUT",
+    "MAYOYAO"
+  ],
+  "ILOCOS NORTE": [
+    "BANNA (ESPIRITU)",
+    "CITY OF BATAC",
+    "LAOAG CITY (CAPITAL)"
+  ],
+  "ILOCOS SUR": [
+    "CERVANTES",
+    "MAGSINGAL",
+    "NARVACAN",
+    "SALCEDO (BAUGEN)",
+    "SANTA CRUZ",
+    "SANTA MARIA",
+    "TAGUDIN"
+  ],
+  "ILOILO": [
+    "SAN JOAQUIN"
+  ],
+  "ISABELA": [
+    "ILAGAN (CAPITAL)",
+    "RAMON",
+    "ROXAS",
+    "SAN MARIANO",
+    "SAN MATEO"
+  ],
+  "KALINGA": [
+    "CITY OF TABUK (CAPITAL)",
+    "LUBUAGAN",
+    "PASIL",
+    "PINUKPUK",
+    "TINGLAYAN"
+  ],
+  "LA UNION": [
+    "AGOO",
+    "ARINGAY",
+    "BANGAR",
+    "BAUANG",
+    "BURGOS",
+    "CITY OF SAN FERNANDO (CAPITAL)",
+    "NAGUILIAN",
+    "PUGO",
+    "ROSARIO",
+    "SANTO TOMAS",
+    "SUDIPEN",
+    "TUBAO"
+  ],
+  "LAGUNA": [
+    "SAN PABLO CITY",
+    "SAN PEDRO"
+  ],
+  "LANAO DEL NORTE": [
+    "POONA PIAGAPO"
+  ],
+  "LEYTE": [
+    "BARUGO",
+    "TACLOBAN CITY (CAPITAL)"
+  ],
+  "MOUNTAIN PROVINCE": [
+    "BARLIG",
+    "BAUKO",
+    "BESAO",
+    "BONTOC (CAPITAL)",
+    "PARACELIS",
+    "SADANGA",
+    "TADIAN"
+  ],
+  "NCR CITY OF MANILA FIRST DISTRICT": [
+    "SAMPALOC",
+    "SAN MIGUEL"
+  ],
+  "NCR FOURTH DISTRICT (LPMakMunParPsyPatTag)": [
+    "LAS PI\u00d1AS CITY",
+    "TAGUIG CITY"
+  ],
+  "NCR THIRD DISTRICT (CaMaNaVa)": [
+    "CALOOCAN CITY",
+    "VALENZUELA CITY"
+  ],
+  "NEGROS OCCIDENTAL": [
+    "SAN CARLOS CITY"
+  ],
+  "NORTHERN SAMAR": [
+    "CATARMAN (CAPITAL)"
+  ],
+  "NUEVA ECIJA": [
+    "CITY OF GAPAN",
+    "CITY OF SAN JOSE",
+    "CUYAPO",
+    "LICAB",
+    "LUPAO",
+    "SCIENCE CITY OF MU\u00d1OZ"
+  ],
+  "NUEVA VIZCAYA": [
+    "ARITAO",
+    "BAMBANG",
+    "BAYOMBONG (CAPITAL)",
+    "KAYAPA",
+    "SOLANO"
+  ],
+  "ORIENTAL MINDORO": [
+    "VICTORIA"
+  ],
+  "PAMPANGA": [
+    "ANGELES CITY",
+    "ARAYAT",
+    "CITY OF SAN FERNANDO",
+    "MABALACAT",
+    "MEXICO",
+    "SAN SIMON"
+  ],
+  "PANGASINAN": [
+    "ALCALA",
+    "ANDA",
+    "ASINGAN",
+    "BINALONAN",
+    "BINMALEY",
+    "BOLINAO",
+    "BUGALLON",
+    "BURGOS",
+    "CALASIAO",
+    "CITY OF ALAMINOS",
+    "CITY OF URDANETA",
+    "DAGUPAN CITY",
+    "LABRADOR",
+    "LINGAYEN (CAPITAL)",
+    "MANAOAG",
+    "MANGALDAN",
+    "MANGATAREM",
+    "NATIVIDAD",
+    "POZZORUBIO",
+    "ROSALES",
+    "SAN CARLOS CITY",
+    "SAN FABIAN",
+    "SAN JACINTO",
+    "SAN MANUEL",
+    "SAN NICOLAS",
+    "SAN QUINTIN",
+    "SANTA BARBARA",
+    "SANTA MARIA",
+    "SANTO TOMAS",
+    "SISON",
+    "TAYUG",
+    "UMINGAN",
+    "URBIZTONDO",
+    "VILLASIS"
+  ],
+  "QUEZON": [
+    "SAN NARCISO"
+  ],
+  "QUIRINO": [
+    "CABARROGUIS (CAPITAL)",
+    "MADDELA"
+  ],
+  "RIZAL": [
+    "BINANGONAN",
+    "CAINTA",
+    "CITY OF ANTIPOLO"
+  ],
+  "SOUTHERN LEYTE": [
+    "SAINT BERNARD"
+  ],
+  "TARLAC": [
+    "GERONA",
+    "PURA",
+    "SAN CLEMENTE",
+    "SANTA IGNACIA",
+    "TARLAC CITY"
+  ],
+  "ZAMBALES": [
+    "CANDELARIA",
+    "CASTILLEJOS",
+    "MASINLOC",
+    "PALAUIG",
+    "SANTA CRUZ"
+  ],
+  "ZAMBOANGA DEL NORTE": [
+    "POLANCO"
+  ]
+}
