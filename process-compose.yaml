@@ -1,5 +1,3 @@
-version: "0.5"
-
 log_level: info
 log_location: ./.logs/process-compose.log
 log_configuration:
