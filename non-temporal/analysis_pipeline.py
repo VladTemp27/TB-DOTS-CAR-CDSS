@@ -1,16 +1,50 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import scipy.stats as scistats
 from matplotlib.ticker import FixedLocator
 
 
-@dataclass
+# ------------------------------------------------------------------ #
+#  Preprocessing helpers (shared with consolidation script)           #
+# ------------------------------------------------------------------ #
+def _assign_diagnosis_season(month: float) -> str:
+    if pd.isna(month):
+        return np.nan
+    m = int(month)
+    if m in (12, 1, 2):
+        return "Winter"
+    if m in (3, 4, 5):
+        return "Spring"
+    if m in (6, 7, 8):
+        return "Summer"
+    return "Fall"
+
+
+MICROSCOPY_MAP: dict[str, str] = {
+    "0": "Negative",
+    "(nothing)": "Negative",
+    "+": "Scanty",
+    "(+)": "Scanty",
+    "+n ()": "Scanty",
+    "1+": "1+",
+    "2+": "2+",
+    "3+": "3+",
+    "Not Done": "Not Done",
+    "not done": "Not Done",
+    "NOT DONE": "Not Done",
+    "ODT": "Not Done",
+    "odt": "Not Done",
+}
+VALID_MICROSCOPY: set[str] = {"Negative", "Scanty", "1+", "2+", "3+", "Not Done"}
+
+
+
 class TBAnalysisPipeline:
     output_dir: Path
 
@@ -26,6 +60,90 @@ class TBAnalysisPipeline:
     def load_data(self, file_path: Path) -> pd.DataFrame:
         df = pd.read_csv(file_path)
         return df.replace("No Data", np.nan)
+
+    def load_raw_data(self) -> pd.DataFrame:
+        base_dir = Path(__file__).resolve().parent.parent
+        raw_dir = base_dir / "dataset" / "non-temporal" / "yearly_raw"
+        pattern = "2015-2025-study-without-names_*.csv"
+
+        frames: list[pd.DataFrame] = []
+        for path in sorted(raw_dir.glob(pattern)):
+            year = int(path.stem.split("_")[-1])
+            df = pd.read_csv(path)
+            df.columns = df.columns.str.strip()
+            df = df.replace("No Data", np.nan)
+            df["Year"] = year
+            frames.append(df)
+
+        df = pd.concat(frames, ignore_index=True)
+
+        # --- Remove identifier columns ---
+        drop_cols = [
+            c for c in ["No.", "TB/TPT Case No.", "Date/Time Record was Created"]
+            if c in df.columns
+        ]
+        df = df.drop(columns=drop_cols)
+
+        # --- Date engineering (derived from raw dates) ---
+        date_cols = [
+            "Date of Screening", "Date of Diagnosis", "Date of Notification",
+            "Date Started Tx", "Microscopy Release Date", "RDT Release Date",
+            "Birthdate",
+        ]
+        for c in date_cols:
+            if c in df.columns:
+                df[c] = pd.to_datetime(df[c], errors="coerce")
+
+        if "Date of Diagnosis" in df.columns:
+            df["Diagnosis_Month"] = df["Date of Diagnosis"].dt.month
+            df["Diagnosis_Quarter"] = df["Date of Diagnosis"].dt.quarter
+            df["Diagnosis_DayOfYear"] = df["Date of Diagnosis"].dt.dayofyear
+            df["Diagnosis_Season"] = df["Diagnosis_Month"].apply(_assign_diagnosis_season)
+
+        if "Date of Diagnosis" in df.columns and "Date Started Tx" in df.columns:
+            days = (df["Date Started Tx"] - df["Date of Diagnosis"]).dt.days
+            df["Days_To_Treatment"] = days.where((days >= 0) & (days <= 365))
+
+        if "Date of Screening" in df.columns and "Date of Diagnosis" in df.columns:
+            days = (df["Date of Diagnosis"] - df["Date of Screening"]).dt.days
+            df["Days_Screening_To_Diagnosis"] = days.where((days >= 0) & (days <= 90))
+
+        if "Date of Diagnosis" in df.columns and "Microscopy Release Date" in df.columns:
+            days = (df["Microscopy Release Date"] - df["Date of Diagnosis"]).dt.days
+            df["Days_To_Microscopy_Result"] = days.where((days >= -7) & (days <= 30))
+
+        if "Date of Diagnosis" in df.columns and "RDT Release Date" in df.columns:
+            days = (df["RDT Release Date"] - df["Date of Diagnosis"]).dt.days
+            df["Days_To_RDT_Result"] = days.where((days >= -7) & (days <= 30))
+
+        if "Birthdate" in df.columns:
+            computed = df["Year"] - df["Birthdate"].dt.year
+            df["Computed_Age"] = computed.where((computed >= 0) & (computed <= 110))
+
+        df = df.drop(columns=[c for c in date_cols if c in df.columns])
+
+        # --- Microscopy result standardization ---
+        if "Microscopy Result" in df.columns:
+            df["Microscopy Result"] = (
+                df["Microscopy Result"].astype(str).str.strip().replace(MICROSCOPY_MAP)
+            )
+            df.loc[~df["Microscopy Result"].isin(VALID_MICROSCOPY), "Microscopy Result"] = np.nan
+
+        # --- Outlier removal ---
+        if "Age" in df.columns:
+            df["Age"] = pd.to_numeric(df["Age"], errors="coerce")
+            df = df[df["Age"].between(0, 110)].copy()
+
+        if "Age" in df.columns and "Computed_Age" in df.columns:
+            valid_age = df["Age"].notna()
+            bad_computed = (
+                df["Computed_Age"].isna()
+                | (df["Computed_Age"] < 0)
+                | (df["Computed_Age"] > 110)
+            )
+            df.loc[valid_age & bad_computed, "Computed_Age"] = df.loc[valid_age & bad_computed, "Age"]
+
+        return df.reset_index(drop=True)
 
     def compute_missing_summary(self, df: pd.DataFrame) -> pd.DataFrame:
         summary = pd.DataFrame({
@@ -319,6 +437,129 @@ class TBAnalysisPipeline:
         }
         return pd.DataFrame(list(quality.items()), columns=["Quality Metric", "Value"])
 
+    # ------------------------------------------------------------------ #
+    #  Correlation analyses                                              #
+    # ------------------------------------------------------------------ #
+    NUMERICAL_COLS: list[str] = [
+        "Age",
+        "Days_To_Treatment",
+        "Days_Screening_To_Diagnosis",
+        "Days_To_Microscopy_Result",
+        "Days_To_RDT_Result",
+        "Diagnosis_DayOfYear",
+    ]
+
+    CATEGORICAL_COLS: list[str] = [
+        "Type",
+        "Sex",
+        "Anatomical Site",
+        "Registration Group",
+        "Bacteriologic Status",
+        "Microscopy Result",
+        "RDT Result",
+        "Source of Patient",
+        "Outcome/Status",
+        "Province",
+        "Region",
+        "Screening/Diagnosing Health Facility",
+        "Treatment Health Facility",
+    ]
+
+    def compute_numerical_correlation(self, df: pd.DataFrame) -> dict[str, Path]:
+        available = [c for c in self.NUMERICAL_COLS if c in df.columns]
+        if len(available) < 2:
+            return {}
+        n = len(available)
+        r_mat = pd.DataFrame(np.nan, index=available, columns=available)
+        for i in range(n):
+            for j in range(i, n):
+                col_i = pd.to_numeric(df[available[i]], errors="coerce")
+                col_j = pd.to_numeric(df[available[j]], errors="coerce")
+                mask = col_i.notna() & col_j.notna()
+                if mask.sum() < 3:
+                    continue
+                r, _ = scistats.pearsonr(col_i[mask], col_j[mask])
+                r_mat.loc[available[i], available[j]] = round(r, 2)
+                r_mat.loc[available[j], available[i]] = round(r, 2)
+        return {"numerical_pearson_correlation": self._save_corr_heatmap(
+            r_mat,
+            "numerical_pearson_correlation",
+            "Pearson Correlation Matrix of Continuous Variables",
+            vmin=-1, vmax=1, cmap="RdBu_r",
+        )}
+
+    def compute_categorical_correlation(self, df: pd.DataFrame) -> dict[str, Path]:
+        available = [
+            c for c in self.CATEGORICAL_COLS
+            if c in df.columns
+            and df[c].nunique(dropna=True) >= 2
+            and df[c].notna().sum() >= 10
+        ]
+        if len(available) < 2:
+            return {}
+        n = len(available)
+        v_mat = pd.DataFrame(np.nan, index=available, columns=available)
+        for i in range(n):
+            for j in range(i, n):
+                if len(pair := df[[available[i], available[j]]].dropna()) < 10:
+                    continue
+                try:
+                    ct = pd.crosstab(pair.iloc[:, 0], pair.iloc[:, 1])
+                except Exception:
+                    continue
+                if ct.shape[0] < 2 or ct.shape[1] < 2:
+                    continue
+                chi2, _, _, _ = scistats.chi2_contingency(ct, correction=False)
+                n_total = ct.values.sum()
+                k = ct.shape[0]
+                r = ct.shape[1]
+                v = np.sqrt(chi2 / (n_total * min(k - 1, r - 1)))
+                v_mat.loc[available[i], available[j]] = round(v, 2)
+                v_mat.loc[available[j], available[i]] = round(v, 2)
+        return {"categorical_cramersv_correlation": self._save_corr_heatmap(
+            v_mat,
+            "categorical_cramersv_correlation",
+            "Cram\u00e9r's V Correlation Matrix of Categorical Variables",
+            vmin=0, vmax=1, cmap="YlOrRd",
+        )}
+
+    def _save_corr_heatmap(
+        self,
+        matrix: pd.DataFrame,
+        name: str,
+        title: str,
+        vmin: float,
+        vmax: float,
+        cmap: str,
+    ) -> Path:
+        n = len(matrix.columns)
+        figsize = (max(7, n * 0.85), max(6, n * 0.7))
+        fig, ax = plt.subplots(figsize=figsize)
+        data = matrix.values.astype(float)
+        im = ax.imshow(data, cmap=cmap, vmin=vmin, vmax=vmax, aspect="equal")
+
+        for i in range(n):
+            for j in range(n):
+                val = data[i, j]
+                if np.isnan(val):
+                    ax.text(j, i, "NaN", ha="center", va="center", fontsize=6, color="grey")
+                else:
+                    c = "white" if abs(val) > 0.6 else "black"
+                    ax.text(j, i, f"{val:.2f}", ha="center", va="center", fontsize=8, color=c)
+
+        labels = [c.replace("_", " ").replace("/", " / ") for c in matrix.columns]
+        ax.set_xticks(range(n))
+        ax.set_yticks(range(n))
+        ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=7)
+        ax.set_yticklabels(labels, fontsize=7)
+
+        cbar = fig.colorbar(im, ax=ax, shrink=0.8)
+        cbar.ax.tick_params(labelsize=8)
+
+        ax.set_title(title, fontsize=11, fontweight="bold")
+        fig.tight_layout()
+        return self._save_fig(fig, name)
+
     def export_all_figures(self, df: pd.DataFrame) -> dict[str, Path]:
         outputs: dict[str, Path] = {}
 
@@ -555,6 +796,10 @@ class TBAnalysisPipeline:
             caption="Data Quality Assessment",
             label="tab:data_quality",
         )
+
+        # --- Correlation analyses ---
+        outputs.update(self.compute_numerical_correlation(df))
+        outputs.update(self.compute_categorical_correlation(df))
 
         return outputs
 

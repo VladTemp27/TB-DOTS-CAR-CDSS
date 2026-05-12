@@ -18,13 +18,11 @@ logger = logging.getLogger(__name__)
 
 
 def main() -> None:
-    dataset_path = BASE_DIR / "dataset" / "non-temporal" / "2015-2025-consolidated-clean.csv"
-
     pipeline = TBAnalysisPipeline()
-    df = pipeline.load_data(dataset_path)
+    df = pipeline.load_raw_data()
     outputs = pipeline.export_all_figures(df)
 
-    logger.info("Exported %d SVG images to %s", len(outputs), pipeline.output_dir)
+    logger.info("Exported %d images to %s", len(outputs), pipeline.output_dir)
 
 
 if __name__ == "__main__":
