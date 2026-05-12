@@ -23,6 +23,38 @@ from backend.models import Xray as XrayRow
 from backend.xray_store import new_xray_id
 
 
+REQUIRED_FORM_FIELDS = (
+    "name",
+    "medicalId",
+    "age",
+    "sex",
+    "province",
+    "registrationGroup",
+    "anatomicalSite",
+    "bacteriologicStatus",
+    "microscopyResult",
+    "sourceOfPatient",
+    "type",
+)
+
+REQUIRED_FEATURE_KEYS = (
+    "age",
+    "daysToTreatment",
+    "year",
+    "sex",
+    "anatomicalSite",
+    "registrationGroup",
+    "bacteriologicStatus",
+    "microscopyResult",
+    "sourceOfPatient",
+    "type",
+    "province",
+    "cityMunicipality",
+    "treatmentHealthFacility",
+    "screeningDiagnosingHealthFacility",
+)
+
+
 def _backend_dir() -> Path:
     return Path(__file__).resolve().parent
 
@@ -99,21 +131,101 @@ def _demo_patients() -> list[_DemoPatient]:
     # Goal: non-empty dashboard + varied risk + trends + adherence.
     base = _now_ms() - 10 * 24 * 60 * 60 * 1000
 
-    def contribs(*items: tuple[str, float, str]) -> list[dict]:
-        return [
-            {"feature": f, "delta": float(d), "direction": direction}
-            for (f, d, direction) in items
+    def contribs(used: dict, prob: float) -> list[dict]:
+        # Mirror production shape: one entry per model feature so the
+        # FeatureContribution page looks complete for seeded records.
+        items: list[dict] = [
+            {
+                "feature": "Age",
+                "delta": 0.05 if int(used.get("age", 0)) >= 45 else 0.02,
+                "direction": "risk" if int(used.get("age", 0)) >= 45 else "protective",
+            },
+            {
+                "feature": "Days to Treatment",
+                "delta": 0.10 if int(used.get("daysToTreatment", 7)) > 7 else 0.03,
+                "direction": "risk" if int(used.get("daysToTreatment", 7)) > 7 else "protective",
+            },
+            {
+                "feature": "Year",
+                "delta": 0.01,
+                "direction": "protective",
+            },
+            {
+                "feature": "Sex",
+                "delta": 0.02,
+                "direction": "risk" if str(used.get("sex", "")).upper() == "M" else "protective",
+            },
+            {
+                "feature": "Anatomical Site",
+                "delta": 0.04,
+                "direction": "risk" if str(used.get("anatomicalSite", "")).upper() == "P" else "protective",
+            },
+            {
+                "feature": "Registration Group",
+                "delta": 0.11 if str(used.get("registrationGroup", "")).upper() != "NEW" else 0.03,
+                "direction": "risk" if str(used.get("registrationGroup", "")).upper() != "NEW" else "protective",
+            },
+            {
+                "feature": "Bacteriologic Status",
+                "delta": 0.08 if str(used.get("bacteriologicStatus", "")).upper() == "POS" else 0.03,
+                "direction": "risk" if str(used.get("bacteriologicStatus", "")).upper() == "POS" else "protective",
+            },
+            {
+                "feature": "Microscopy Result",
+                "delta": 0.12 if str(used.get("microscopyResult", "")).upper() == "POS" else 0.05,
+                "direction": "risk" if str(used.get("microscopyResult", "")).upper() == "POS" else "protective",
+            },
+            {
+                "feature": "Source of Patient",
+                "delta": 0.06 if str(used.get("sourceOfPatient", "")).lower() == "referral" else 0.02,
+                "direction": "risk" if str(used.get("sourceOfPatient", "")).lower() == "referral" else "protective",
+            },
+            {
+                "feature": "Type",
+                "delta": 0.09 if str(used.get("type", "")).lower() in {"retreatment", "relapse"} else 0.03,
+                "direction": "risk" if str(used.get("type", "")).lower() in {"retreatment", "relapse"} else "protective",
+            },
+            {
+                "feature": "Province",
+                "delta": 0.01,
+                "direction": "protective",
+            },
+            {
+                "feature": "City/Municipality",
+                "delta": 0.01,
+                "direction": "protective",
+            },
+            {
+                "feature": "Treatment Facility",
+                "delta": 0.02,
+                "direction": "protective",
+            },
+            {
+                "feature": "Screening Facility",
+                "delta": 0.02,
+                "direction": "protective",
+            },
         ]
+
+        # Nudge top factors by risk profile so cards look realistic.
+        if prob >= 0.7:
+            for item in items:
+                if item["feature"] in {
+                    "Microscopy Result",
+                    "Days to Treatment",
+                    "Registration Group",
+                    "Type",
+                }:
+                    item["delta"] = round(float(item["delta"]) + 0.04, 3)
+
+        items.sort(key=lambda x: float(x["delta"]), reverse=True)
+        return items
 
     def pred(*, label: int, prob: float, ts: int, used: dict) -> dict:
         return {
             "label": int(label),
             "failure_probability": float(prob),
-            "contributions": contribs(
-                ("Adherence", 0.22 if prob > 0.6 else -0.08, "risk" if prob > 0.6 else "protective"),
-                ("Microscopy Result", 0.12 if used.get("microscopyResult") == "POS" else -0.05, "risk" if used.get("microscopyResult") == "POS" else "protective"),
-                ("Days to Treatment", 0.10 if used.get("daysToTreatment", 7) > 7 else -0.02, "risk" if used.get("daysToTreatment", 7) > 7 else "protective"),
-            ),
+            "contributions": contribs(used, prob),
             "features_used": used,
             "timestamp": int(ts),
         }
@@ -224,6 +336,64 @@ def _demo_patients() -> list[_DemoPatient]:
     ]
 
 
+def _validate_demo_patients(demo: list[_DemoPatient]) -> None:
+    for d in demo:
+        if not d.name.strip():
+            raise SystemExit(f"Invalid demo patient {d.id}: missing name")
+
+        # medicalId is required by the form/API shape; we mirror id for seeded records.
+        if not d.id.strip():
+            raise SystemExit("Invalid demo patient: missing id/medicalId")
+
+        missing = [k for k in REQUIRED_FEATURE_KEYS if k not in d.features]
+        if missing:
+            raise SystemExit(f"Invalid demo patient {d.id}: missing required feature keys: {missing}")
+
+        for key in REQUIRED_FORM_FIELDS:
+            value = d.name if key == "name" else (d.id if key == "medicalId" else d.features.get(key))
+            if value is None:
+                raise SystemExit(f"Invalid demo patient {d.id}: required field {key!r} is null")
+            if isinstance(value, str) and not value.strip():
+                raise SystemExit(f"Invalid demo patient {d.id}: required field {key!r} is empty")
+
+        age = d.features.get("age")
+        if not isinstance(age, int) or age <= 0:
+            raise SystemExit(f"Invalid demo patient {d.id}: age must be a positive integer")
+
+        dtt = d.features.get("daysToTreatment")
+        if not isinstance(dtt, int) or dtt < 0:
+            raise SystemExit(
+                f"Invalid demo patient {d.id}: daysToTreatment must be a non-negative integer"
+            )
+
+        for idx, pr in enumerate(d.predictions, start=1):
+            used = pr.get("features_used")
+            if not isinstance(used, dict):
+                raise SystemExit(
+                    f"Invalid demo patient {d.id} prediction #{idx}: features_used missing or invalid"
+                )
+
+            missing_used = [k for k in REQUIRED_FEATURE_KEYS if k not in used]
+            if missing_used:
+                raise SystemExit(
+                    f"Invalid demo patient {d.id} prediction #{idx}: "
+                    f"features_used missing required keys: {missing_used}"
+                )
+
+            used_age = used.get("age")
+            if not isinstance(used_age, int) or used_age <= 0:
+                raise SystemExit(
+                    f"Invalid demo patient {d.id} prediction #{idx}: age must be a positive integer"
+                )
+
+            used_dtt = used.get("daysToTreatment")
+            if not isinstance(used_dtt, int) or used_dtt < 0:
+                raise SystemExit(
+                    f"Invalid demo patient {d.id} prediction #{idx}: "
+                    "daysToTreatment must be a non-negative integer"
+                )
+
+
 def _seed_db(db: Session, *, include_xrays: bool) -> int:
     # Refuse to seed into a non-empty DB unless user reset first.
     existing = db.scalar(select(PatientRow.id).limit(1))
@@ -233,6 +403,7 @@ def _seed_db(db: Session, *, include_xrays: bool) -> int:
         )
 
     demo = _demo_patients()
+    _validate_demo_patients(demo)
     for d in demo:
         p = PatientRow(
             id=d.id,
