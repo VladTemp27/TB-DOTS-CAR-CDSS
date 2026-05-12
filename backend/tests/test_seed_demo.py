@@ -58,6 +58,20 @@ EXPECTED_CONTRIBUTION_FEATURES = {
     "Screening Facility",
 }
 
+CATEGORICAL_FEATURE_TO_ENCODING = {
+    "sex": "Sex",
+    "anatomicalSite": "Anatomical_Site",
+    "registrationGroup": "Registration_Group",
+    "bacteriologicStatus": "Bacteriologic_Status",
+    "microscopyResult": "Microscopy_Result",
+    "sourceOfPatient": "Source_of_Patient",
+    "type": "Type",
+    "province": "Province",
+    "cityMunicipality": "City_Municipality",
+    "treatmentHealthFacility": "Treatment_Health_Facility",
+    "screeningDiagnosingHealthFacility": "Screening_Diagnosing_Health_Facility",
+}
+
 
 @pytest.fixture()
 def tmp_data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -191,3 +205,30 @@ def test_seeded_prediction_features_used_include_required_keys(tmp_data_dir: Pat
 
         assert isinstance(used.get("age"), int) and used["age"] > 0
         assert isinstance(used.get("daysToTreatment"), int) and used["daysToTreatment"] >= 0
+
+
+def test_seeded_categorical_values_are_selectable_in_ui(tmp_data_dir: Path):
+    r = _run_seed("--reset", env={"TB_ALLOW_DEV_RESET": "1"})
+    assert r.returncode == 0, r.stdout + r.stderr
+
+    repo_root = Path(__file__).resolve().parents[2]
+    enc = json.loads((repo_root / "web-app" / "src" / "data" / "feature_encodings.json").read_text())
+    allowed = {
+        feature_key: set(enc["__categorical"][enc_key].keys())
+        for feature_key, enc_key in CATEGORICAL_FEATURE_TO_ENCODING.items()
+    }
+
+    db_path = Path(os.environ["TB_DB_PATH"])
+    conn = sqlite3.connect(db_path)
+    try:
+        rows = conn.execute("SELECT id, features FROM patients").fetchall()
+    finally:
+        conn.close()
+
+    assert rows
+    for patient_id, features_json in rows:
+        features = json.loads(features_json)
+        for feature_key, choices in allowed.items():
+            assert features[feature_key] in choices, (
+                f"{patient_id}: {feature_key}={features[feature_key]!r} not selectable from UI"
+            )

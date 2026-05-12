@@ -54,6 +54,20 @@ REQUIRED_FEATURE_KEYS = (
     "screeningDiagnosingHealthFacility",
 )
 
+CATEGORICAL_FEATURE_TO_ENCODING = {
+    "sex": "Sex",
+    "anatomicalSite": "Anatomical_Site",
+    "registrationGroup": "Registration_Group",
+    "bacteriologicStatus": "Bacteriologic_Status",
+    "microscopyResult": "Microscopy_Result",
+    "sourceOfPatient": "Source_of_Patient",
+    "type": "Type",
+    "province": "Province",
+    "cityMunicipality": "City_Municipality",
+    "treatmentHealthFacility": "Treatment_Health_Facility",
+    "screeningDiagnosingHealthFacility": "Screening_Diagnosing_Health_Facility",
+}
+
 
 def _backend_dir() -> Path:
     return Path(__file__).resolve().parent
@@ -167,23 +181,33 @@ def _demo_patients() -> list[_DemoPatient]:
             },
             {
                 "feature": "Bacteriologic Status",
-                "delta": 0.08 if str(used.get("bacteriologicStatus", "")).upper() == "POS" else 0.03,
-                "direction": "risk" if str(used.get("bacteriologicStatus", "")).upper() == "POS" else "protective",
+                "delta": 0.08
+                if str(used.get("bacteriologicStatus", "")).startswith("Bacteriologically-confirmed")
+                else 0.03,
+                "direction": "risk"
+                if str(used.get("bacteriologicStatus", "")).startswith("Bacteriologically-confirmed")
+                else "protective",
             },
             {
                 "feature": "Microscopy Result",
-                "delta": 0.12 if str(used.get("microscopyResult", "")).upper() == "POS" else 0.05,
-                "direction": "risk" if str(used.get("microscopyResult", "")).upper() == "POS" else "protective",
+                "delta": 0.12 if str(used.get("microscopyResult", "")) in {"1+", "2+", "3+"} else 0.05,
+                "direction": "risk"
+                if str(used.get("microscopyResult", "")) in {"1+", "2+", "3+"}
+                else "protective",
             },
             {
                 "feature": "Source of Patient",
-                "delta": 0.06 if str(used.get("sourceOfPatient", "")).lower() == "referral" else 0.02,
-                "direction": "risk" if str(used.get("sourceOfPatient", "")).lower() == "referral" else "protective",
+                "delta": 0.06
+                if str(used.get("sourceOfPatient", "")).upper() != "PUBLIC HEALTH CENTER"
+                else 0.02,
+                "direction": "risk"
+                if str(used.get("sourceOfPatient", "")).upper() != "PUBLIC HEALTH CENTER"
+                else "protective",
             },
             {
                 "feature": "Type",
-                "delta": 0.09 if str(used.get("type", "")).lower() in {"retreatment", "relapse"} else 0.03,
-                "direction": "risk" if str(used.get("type", "")).lower() in {"retreatment", "relapse"} else "protective",
+                "delta": 0.09 if str(used.get("type", "")).upper() == "DRTB" else 0.03,
+                "direction": "risk" if str(used.get("type", "")).upper() == "DRTB" else "protective",
             },
             {
                 "feature": "Province",
@@ -242,10 +266,10 @@ def _demo_patients() -> list[_DemoPatient]:
 
     common = {
         "year": 2026,
-        "province": "CAR",
-        "cityMunicipality": "Baguio",
-        "treatmentHealthFacility": "Baguio City Health Center",
-        "screeningDiagnosingHealthFacility": "Baguio General Hospital",
+        "province": "BENGUET",
+        "cityMunicipality": "BAGUIO CITY",
+        "treatmentHealthFacility": "BAGUIO GENERAL HOSPITAL AND MEDICAL CENTER - IDOTS",
+        "screeningDiagnosingHealthFacility": "BAGUIO GENERAL HOSPITAL AND MEDICAL CENTER - IDOTS",
     }
 
     # Note: keep feature keys as client expects (camelCase), because we store JSON and
@@ -257,12 +281,12 @@ def _demo_patients() -> list[_DemoPatient]:
         "sex": "F",
         "anatomicalSite": "P",
         "registrationGroup": "NEW",
-        "bacteriologicStatus": "POS",
-        "microscopyResult": "POS",
-        "sourceOfPatient": "Walk-in",
-        "type": "New",
+        "bacteriologicStatus": "Bacteriologically-confirmed TB",
+        "microscopyResult": "3+",
+        "sourceOfPatient": "PUBLIC HEALTH CENTER",
+        "type": "DSTB",
     }
-    p1_used_m1 = {**p1_features, "microscopyResult": "NEG"}
+    p1_used_m1 = {**p1_features, "microscopyResult": "Negative"}
 
     p2_features = {
         **common,
@@ -271,10 +295,10 @@ def _demo_patients() -> list[_DemoPatient]:
         "sex": "M",
         "anatomicalSite": "P",
         "registrationGroup": "RELAPSE",
-        "bacteriologicStatus": "POS",
-        "microscopyResult": "POS",
-        "sourceOfPatient": "Referral",
-        "type": "Retreatment",
+        "bacteriologicStatus": "Bacteriologically-confirmed TB",
+        "microscopyResult": "2+",
+        "sourceOfPatient": "OTHER PUBLIC FACILITY",
+        "type": "DRTB",
     }
 
     p3_features = {
@@ -284,10 +308,10 @@ def _demo_patients() -> list[_DemoPatient]:
         "sex": "M",
         "anatomicalSite": "EP",
         "registrationGroup": "NEW",
-        "bacteriologicStatus": "NEG",
-        "microscopyResult": "NEG",
-        "sourceOfPatient": "Walk-in",
-        "type": "New",
+        "bacteriologicStatus": "Clinically-diagnosed TB",
+        "microscopyResult": "Negative",
+        "sourceOfPatient": "PUBLIC HEALTH CENTER",
+        "type": "DSTB",
     }
 
     return [
@@ -337,6 +361,15 @@ def _demo_patients() -> list[_DemoPatient]:
 
 
 def _validate_demo_patients(demo: list[_DemoPatient]) -> None:
+    enc_path = _backend_dir().parent / "web-app" / "src" / "data" / "feature_encodings.json"
+    ui_choices: dict[str, set[str]] = {}
+    if enc_path.exists():
+        import json
+
+        enc = json.loads(enc_path.read_text())
+        for feature_key, enc_key in CATEGORICAL_FEATURE_TO_ENCODING.items():
+            ui_choices[feature_key] = set(enc.get("__categorical", {}).get(enc_key, {}).keys())
+
     for d in demo:
         if not d.name.strip():
             raise SystemExit(f"Invalid demo patient {d.id}: missing name")
@@ -355,6 +388,14 @@ def _validate_demo_patients(demo: list[_DemoPatient]) -> None:
                 raise SystemExit(f"Invalid demo patient {d.id}: required field {key!r} is null")
             if isinstance(value, str) and not value.strip():
                 raise SystemExit(f"Invalid demo patient {d.id}: required field {key!r} is empty")
+
+        for feature_key, choices in ui_choices.items():
+            value = d.features.get(feature_key)
+            if value not in choices:
+                raise SystemExit(
+                    f"Invalid demo patient {d.id}: feature {feature_key!r} value {value!r} "
+                    "is not selectable from UI choices"
+                )
 
         age = d.features.get("age")
         if not isinstance(age, int) or age <= 0:
@@ -379,6 +420,14 @@ def _validate_demo_patients(demo: list[_DemoPatient]) -> None:
                     f"Invalid demo patient {d.id} prediction #{idx}: "
                     f"features_used missing required keys: {missing_used}"
                 )
+
+            for feature_key, choices in ui_choices.items():
+                value = used.get(feature_key)
+                if value not in choices:
+                    raise SystemExit(
+                        f"Invalid demo patient {d.id} prediction #{idx}: features_used {feature_key!r} "
+                        f"value {value!r} is not selectable from UI choices"
+                    )
 
             used_age = used.get("age")
             if not isinstance(used_age, int) or used_age <= 0:
