@@ -10,6 +10,10 @@ WEBAPP="$ROOT/web-app"
 LOGS="$ROOT/logs"
 BACKEND_PORT=8000
 FRONTEND_PORT=5173
+VENV="$ROOT/.venv"
+PYTHON="$VENV/bin/python"
+PIP="$VENV/bin/pip"
+UVICORN="$VENV/bin/uvicorn"
 
 # ── colors / ANSI ─────────────────────────────────────────────────────────────
 GREEN='\033[0;32m'
@@ -53,8 +57,8 @@ echo ""
 echo -e "${BOLD}TB-DOTS-CAR-CDSS Dev Environment${RESET}"
 echo "────────────────────────────────────"
 
-if ! command -v python3 &>/dev/null; then
-  err "python3 not found. Install Python 3.10+."
+if [[ ! -x "$PYTHON" ]]; then
+  err "Virtualenv not found at $VENV — run: python3 -m venv .venv && .venv/bin/pip install -r backend/requirements.txt"
   exit 1
 fi
 if ! command -v node &>/dev/null; then
@@ -69,9 +73,17 @@ if [[ ! -f "$MODEL" ]]; then
 fi
 
 # ── install deps if needed ────────────────────────────────────────────────────
-if ! python3 -c "import fastapi,uvicorn,llama_cpp,sqlalchemy,alembic" &>/dev/null 2>&1; then
+if ! "$PYTHON" -c "import fastapi,uvicorn,llama_cpp,sqlalchemy,alembic" &>/dev/null 2>&1; then
   log "Installing backend dependencies..."
-  pip install -r "$BACKEND/requirements.txt" --quiet
+  if [[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]]; then
+    log "Apple Silicon detected — building llama-cpp-python with Metal (3-5 min first run)..."
+    "$PIP" install -r "$BACKEND/requirements.txt" --quiet
+    CMAKE_ARGS="-DGGML_METAL=on" \
+      "$PIP" install "llama-cpp-python>=0.3.0" \
+        --no-binary llama-cpp-python --force-reinstall --quiet
+  else
+    "$PIP" install -r "$BACKEND/requirements.txt" --quiet
+  fi
   ok "Backend dependencies installed"
 fi
 if [[ ! -d "$WEBAPP/node_modules" ]]; then
@@ -83,7 +95,10 @@ fi
 # ── start processes (output → log files) ─────────────────────────────────────
 log "Starting backend API on :$BACKEND_PORT  (log → logs/backend.log)"
 cd "$ROOT"
-uvicorn backend.main:app --port "$BACKEND_PORT" --log-level info >> "$BACKEND_LOG" 2>&1 &
+if [[ "$(uname -s)" == "Linux" ]]; then
+  export LD_LIBRARY_PATH="$ROOT/.venv/lib/python3.14/site-packages/nvidia/cuda_runtime/lib:$ROOT/.venv/lib/python3.14/site-packages/nvidia/cublas/lib:$ROOT/.venv/lib/python3.14/site-packages/nvidia/cuda_nvrtc/lib:${LD_LIBRARY_PATH:-}"
+fi
+"$UVICORN" backend.main:app --port "$BACKEND_PORT" --log-level info >> "$BACKEND_LOG" 2>&1 &
 BACKEND_PID=$!
 
 log "Starting React frontend on :$FRONTEND_PORT  (log → logs/frontend.log)"
@@ -129,15 +144,15 @@ draw_dashboard() {
   local load_time=0
 
   if [[ -n "$raw" ]]; then
-    be_status=$(echo "$raw"       | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'))" 2>/dev/null || echo "?")
-    ram_mb=$(echo "$raw"          | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('ram_mb',0))" 2>/dev/null || echo 0)
-    inference_active=$(echo "$raw"| python3 -c "import sys,json; d=json.load(sys.stdin); print(str(d.get('inference_active',False)).lower())" 2>/dev/null || echo false)
-    requests_served=$(echo "$raw" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('requests_served',0))" 2>/dev/null || echo 0)
-    requests_active=$(echo "$raw" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('requests_active',0))" 2>/dev/null || echo 0)
-    last_patient=$(echo "$raw"    | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('last_patient') or '—')" 2>/dev/null || echo "—")
-    last_tokens=$(echo "$raw"     | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('last_tokens',0))" 2>/dev/null || echo 0)
-    last_elapsed=$(echo "$raw"    | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('last_elapsed_s',0))" 2>/dev/null || echo 0)
-    load_time=$(echo "$raw"       | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('model_load_time_s',0))" 2>/dev/null || echo 0)
+    be_status=$(echo "$raw"       | "$PYTHON" -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'))" 2>/dev/null || echo "?")
+    ram_mb=$(echo "$raw"          | "$PYTHON" -c "import sys,json; d=json.load(sys.stdin); print(d.get('ram_mb',0))" 2>/dev/null || echo 0)
+    inference_active=$(echo "$raw"| "$PYTHON" -c "import sys,json; d=json.load(sys.stdin); print(str(d.get('inference_active',False)).lower())" 2>/dev/null || echo false)
+    requests_served=$(echo "$raw" | "$PYTHON" -c "import sys,json; d=json.load(sys.stdin); print(d.get('requests_served',0))" 2>/dev/null || echo 0)
+    requests_active=$(echo "$raw" | "$PYTHON" -c "import sys,json; d=json.load(sys.stdin); print(d.get('requests_active',0))" 2>/dev/null || echo 0)
+    last_patient=$(echo "$raw"    | "$PYTHON" -c "import sys,json; d=json.load(sys.stdin); print(d.get('last_patient') or '—')" 2>/dev/null || echo "—")
+    last_tokens=$(echo "$raw"     | "$PYTHON" -c "import sys,json; d=json.load(sys.stdin); print(d.get('last_tokens',0))" 2>/dev/null || echo 0)
+    last_elapsed=$(echo "$raw"    | "$PYTHON" -c "import sys,json; d=json.load(sys.stdin); print(d.get('last_elapsed_s',0))" 2>/dev/null || echo 0)
+    load_time=$(echo "$raw"       | "$PYTHON" -c "import sys,json; d=json.load(sys.stdin); print(d.get('model_load_time_s',0))" 2>/dev/null || echo 0)
   fi
 
   # ── backend proc RAM (RSS) via ps ──
@@ -175,7 +190,7 @@ draw_dashboard() {
   # ── last request tok/s ──
   local tok_per_s="—"
   if [[ "$last_elapsed" != "0" && "$last_elapsed" != "0.0" && "$last_tokens" -gt 0 ]]; then
-    tok_per_s=$(python3 -c "print(f'{$last_tokens/$last_elapsed:.1f}')" 2>/dev/null || echo "?")
+    tok_per_s=$("$PYTHON" -c "print(f'{$last_tokens/$last_elapsed:.1f}')" 2>/dev/null || echo "?")
   fi
 
   # ── recent log lines (last 5) ──
