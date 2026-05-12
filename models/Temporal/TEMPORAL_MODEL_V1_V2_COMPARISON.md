@@ -2,6 +2,12 @@
 
 This document compares the earlier temporal pipeline in [v1/TEMPORAL_MODEL_RESULTS.md](v1/TEMPORAL_MODEL_RESULTS.md) and the v1 notebooks ([v1/Hybrid_Bi-LSTM_temporal.ipynb](v1/Hybrid_Bi-LSTM_temporal.ipynb), [v1/lightgbm_temporal.ipynb](v1/lightgbm_temporal.ipynb), [v1/random_forest_temporal.ipynb](v1/random_forest_temporal.ipynb), [v1/xgboost_model_temporal.ipynb](v1/xgboost_model_temporal.ipynb)) against the later v2 pipeline summarized in [v2/results.md](v2/results.md) and implemented in the v2 notebooks under [v2](v2).
 
+Artifacts & outputs
+
+- v1 notebooks (legacy): artifacts are written by the v1 notebooks to the `models/` directory as configured in those notebooks (see `models/Temporal/v1/*` for the notebooks). If you run a v1 notebook in-place it will save checkpoints and plots to `models/` relative to the notebook's working dir.
+- v2 notebooks (current): all v2 training artifacts and visualizations are saved inside `models/Temporal/v2/output/` (for example `models/Temporal/v2/output/xgboost/`, `models/Temporal/v2/output/lightgbm/`, `models/Temporal/v2/output/hybrid_lstm/`). This repo now centralizes v2 outputs under that `v2/output` folder.
+
+
 ## Executive Summary
 
 v2 is better than v1 for the main reason that it is a materially stronger pipeline, not just a different set of model hyperparameters. The later version uses a much larger cohort, cleaner preprocessing, richer temporal encoding, and a more credible evaluation setup. That combination makes the final metrics more stable and more clinically useful, especially for the tree-based models.
