@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Check, AlertTriangle, X } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
@@ -6,13 +6,39 @@ import { XrayUploadField } from '../components/XrayUploadField'
 import { getChoices, predictWithContributions } from '../lib/inference'
 import { getPatient, addMonthlyRecord, addPrediction, attachMonthlyXrays } from '../lib/storage'
 import { PageFooter } from '../components/PageFooter'
+import type { Patient } from '../lib/storage'
 
 type Adherence = 'full' | 'partial' | 'poor'
 
 export function MonthlyCheckin() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
-  const patient = id ? getPatient(id) : null
+  const [patient, setPatient] = useState<Patient | null>(null)
+  const [loadingPatient, setLoadingPatient] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    if (!id) {
+      setLoadingPatient(false)
+      setPatient(null)
+      return
+    }
+    setLoadingPatient(true)
+    ;(async () => {
+      try {
+        const p = await getPatient(id)
+        if (!cancelled) setPatient(p)
+      } catch (e) {
+        if (!cancelled) setLoadError(e instanceof Error ? e.message : String(e))
+      } finally {
+        if (!cancelled) setLoadingPatient(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
 
   const [weight, setWeight] = useState('')
   const [smearResult, setSmearResult] = useState('')
@@ -34,25 +60,26 @@ export function MonthlyCheckin() {
       const result = await predictWithContributions(updatedFeatures)
 
       const parsedWeight = parseFloat(weight)
-      addMonthlyRecord(id, {
+      const now = Date.now()
+      await addMonthlyRecord(id, {
         month: monthNumber,
         weight: Number.isFinite(parsedWeight) ? parsedWeight : undefined,
         smearResult: smearResult || undefined,
         adherence,
         failureProbability: result.failureProbability,
-        timestamp: Date.now(),
+        timestamp: now,
       })
 
       if (xrayFiles.length > 0) {
         await attachMonthlyXrays(id, monthNumber, xrayFiles)
       }
 
-      addPrediction(id, {
+      await addPrediction(id, {
         label: result.label,
         failureProbability: result.failureProbability,
         contributions: result.contributions,
         featuresUsed: updatedFeatures,
-        timestamp: Date.now(),
+        timestamp: now,
       })
 
       navigate(`/patient/${id}/risk-update`, { state: { result, monthNumber } })
@@ -77,6 +104,39 @@ export function MonthlyCheckin() {
   ]
 
   const inputCls = 'w-full min-h-[44px] border border-border rounded-xl px-3 py-2.5 text-sm text-ink-base bg-surface placeholder-ink-muted focus:border-primary outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1'
+
+  if (loadingPatient) {
+    return (
+      <div className="min-h-screen bg-bg flex flex-col">
+        <AppHeader backLabel="Back" onBack={() => navigate(-1)} />
+        <div className="flex-1 px-4 lg:px-8 pt-10 pb-6 w-full max-w-3xl mx-auto">
+          <p className="text-sm text-ink-muted">Loading patient…</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-bg flex flex-col">
+        <AppHeader backLabel="Back" onBack={() => navigate(-1)} />
+        <div className="flex-1 px-4 lg:px-8 pt-10 pb-6 w-full max-w-3xl mx-auto">
+          <p className="text-sm text-risk-high">{loadError}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!patient || !id) {
+    return (
+      <div className="min-h-screen bg-bg flex flex-col">
+        <AppHeader backLabel="Back" onBack={() => navigate(-1)} />
+        <div className="flex-1 px-4 lg:px-8 pt-10 pb-6 w-full max-w-3xl mx-auto">
+          <p className="text-sm text-ink-muted">Patient not found.</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-bg flex flex-col">

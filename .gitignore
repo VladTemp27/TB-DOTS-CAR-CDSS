@@ -123,3 +123,6 @@ docs/superpowers/
 workflow.md
 start.sh
 .env
+
+# Backend data (SQLite + X-ray blobs)
+data/
