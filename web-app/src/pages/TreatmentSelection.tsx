@@ -45,7 +45,18 @@ export function TreatmentSelection() {
     const p = getPatient(id)
     if (p) {
       p.treatmentRegimen = selected || undefined
-      p.treatmentStartDate = startDate
+      p.treatmentStartDate = startDate || undefined
+      savePatient(p)
+    }
+    navigate(`/patient/${id}`)
+  }
+
+  function handleSkip() {
+    if (!id) return
+    const p = getPatient(id)
+    if (p) {
+      p.treatmentRegimen = undefined
+      p.treatmentStartDate = startDate || undefined
       savePatient(p)
     }
     navigate(`/patient/${id}`)
@@ -100,7 +111,7 @@ export function TreatmentSelection() {
           {/* Date input */}
           <div className="bg-surface border border-border rounded-2xl p-4 lg:p-5">
             <label className="block text-sm font-medium text-ink-secondary mb-2" htmlFor="startDate">
-              Treatment Start Date <span className="text-red-500">*</span>
+              Treatment Start Date <span className="text-ink-muted font-normal">(optional)</span>
             </label>
             <input
               id="startDate"
@@ -114,10 +125,14 @@ export function TreatmentSelection() {
       </div>
 
       <PageFooter>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
           <button onClick={() => navigate(-1)}
             className="flex-1 border border-border text-ink-secondary py-3.5 rounded-xl font-semibold text-sm">
             ← Back
+          </button>
+          <button onClick={handleSkip}
+            className="flex-1 text-ink-secondary py-3.5 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors">
+            Skip for now
           </button>
           <button
             onClick={handleProceed}

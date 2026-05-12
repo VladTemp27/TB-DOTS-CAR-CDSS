@@ -26,6 +26,7 @@ export function PatientProfile() {
     : patient.treatmentRegimen === 'mdr' ? 'MDR-TB Regimen'
     : patient.treatmentRegimen === 'xdr' ? 'XDR-TB Regimen'
     : 'No Regimen Selected'
+  const hasTreatment = !!patient.treatmentRegimen
 
   return (
     <div className="min-h-screen bg-bg flex flex-col">
@@ -75,12 +76,21 @@ export function PatientProfile() {
             </div>
 
             {/* Desktop-only action button */}
-            <button
-              onClick={() => navigate(`/patient/${id}/checkin`)}
-              className="hidden lg:block w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm active:bg-primary-dark hover:bg-primary-mid transition-colors"
-            >
-              Log Monthly Update →
-            </button>
+            {hasTreatment ? (
+              <button
+                onClick={() => navigate(`/patient/${id}/checkin`)}
+                className="hidden lg:block w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm active:bg-primary-dark hover:bg-primary-mid transition-colors"
+              >
+                Log Monthly Update →
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate(`/patient/${id}/treatment`)}
+                className="hidden lg:block w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm active:bg-primary-dark hover:bg-primary-mid transition-colors"
+              >
+                Select Treatment Regimen →
+              </button>
+            )}
 
             <button
               onClick={() => navigate(`/patient/${id}/chart`)}
@@ -154,12 +164,21 @@ export function PatientProfile() {
       {/* Mobile footer CTA */}
       <div className="lg:hidden">
         <PageFooter>
-          <button
-            onClick={() => navigate(`/patient/${id}/checkin`)}
-            className="w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm active:bg-primary-dark"
-          >
-            Log Monthly Update →
-          </button>
+          {hasTreatment ? (
+            <button
+              onClick={() => navigate(`/patient/${id}/checkin`)}
+              className="w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm active:bg-primary-dark"
+            >
+              Log Monthly Update →
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate(`/patient/${id}/treatment`)}
+              className="w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm active:bg-primary-dark"
+            >
+              Select Treatment Regimen →
+            </button>
+          )}
         </PageFooter>
       </div>
     </div>
