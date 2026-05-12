@@ -71,9 +71,7 @@ export function PatientIntakeXray() {
           <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 flex gap-2.5 items-start">
             <Info size={16} className="text-blue-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
             <p className="text-xs text-blue-700">
-              Images are stored locally in this browser for now.{' '}
-              {/* TODO(server): remove local-storage note once server upload is implemented */}
-              In a production deployment, images should be uploaded to a secure server endpoint.
+              Images are uploaded to the local backend on this workstation.
             </p>
           </div>
 

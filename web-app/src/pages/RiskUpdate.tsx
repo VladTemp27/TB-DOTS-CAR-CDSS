@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { ArrowUp, ArrowDown, Info } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
@@ -5,22 +6,68 @@ import { RiskBadge, riskColor } from '../components/RiskBadge'
 import { getPatient } from '../lib/storage'
 import type { ContributionResult } from '../lib/inference'
 import { PageFooter } from '../components/PageFooter'
+import type { Patient } from '../lib/storage'
 
 export function RiskUpdate() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const location = useLocation()
-  const patient = id ? getPatient(id) : null
+  const [patient, setPatient] = useState<Patient | null>(null)
+  const [loadingPatient, setLoadingPatient] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const result: ContributionResult | null = location.state?.result ?? null
   const monthNumber: number = location.state?.monthNumber ?? 1
 
-  const prob     = result?.failureProbability ?? 0
-  const prevProb = patient?.predictions.at(-2)?.failureProbability
-  const delta    = prevProb != null ? prob - prevProb : null
+  useEffect(() => {
+    let cancelled = false
+    if (!id) {
+      setLoadingPatient(false)
+      setPatient(null)
+      return
+    }
+    setLoadingPatient(true)
+    ;(async () => {
+      try {
+        const p = await getPatient(id)
+        if (!cancelled) setPatient(p)
+      } catch (e) {
+        if (!cancelled) setLoadError(e instanceof Error ? e.message : String(e))
+      } finally {
+        if (!cancelled) setLoadingPatient(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  if (loadingPatient) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <p className="text-ink-muted">Loading patient…</p>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <p className="text-ink-muted">{loadError}</p>
+      </div>
+    )
+  }
+
+  const latestPrediction = patient?.predictions.at(-1)
+  const prob = result?.failureProbability ?? latestPrediction?.failureProbability ?? 0
+  const prevProb = patient && patient.predictions.length > 1
+    ? patient.predictions.at(-2)?.failureProbability
+    : undefined
+  const delta = prevProb != null ? prob - prevProb : null
   const isHigh   = prob >= 0.5
   const { text } = riskColor(prob)
 
-  const topContribs = result?.contributions.slice(0, 3) ?? []
+  const topContribs = (result?.contributions ?? latestPrediction?.contributions ?? []).slice(0, 3)
+  const derivedMonthNumber = monthNumber || patient?.monthlyRecords.at(-1)?.month || 1
 
   const riskGradient = isHigh
     ? 'bg-gradient-to-br from-risk-high/5 to-risk-high/15 border-risk-high/40'
@@ -34,8 +81,8 @@ export function RiskUpdate() {
         <div className="flex justify-between items-start">
           <div>
             <p className="font-bold text-ink-base font-display">{patient?.name}</p>
-            <p className="text-xs text-ink-secondary">{patient?.medicalId} · Month {monthNumber}</p>
-            <p className="text-xs text-ink-muted">{patient?.treatmentRegimen?.toUpperCase() || ''} · {monthNumber} of 6 months</p>
+            <p className="text-xs text-ink-secondary">{patient?.medicalId} · Month {derivedMonthNumber}</p>
+            <p className="text-xs text-ink-muted">{patient?.treatmentRegimen?.toUpperCase() || ''} · {derivedMonthNumber} of 6 months</p>
           </div>
           <RiskBadge probability={prob} size="md" />
         </div>

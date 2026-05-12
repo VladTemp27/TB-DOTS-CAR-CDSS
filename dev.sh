@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev.sh — start MedGemma backend + React frontend with a live dashboard
+# dev.sh — start backend API + React frontend with a live dashboard
 # Usage: ./dev.sh
 
 set -euo pipefail
@@ -69,7 +69,7 @@ if [[ ! -f "$MODEL" ]]; then
 fi
 
 # ── install deps if needed ────────────────────────────────────────────────────
-if ! python3 -c "import llama_cpp" &>/dev/null 2>&1; then
+if ! python3 -c "import fastapi,uvicorn,llama_cpp,sqlalchemy,alembic" &>/dev/null 2>&1; then
   log "Installing backend dependencies..."
   pip install -r "$BACKEND/requirements.txt" --quiet
   ok "Backend dependencies installed"
@@ -81,9 +81,9 @@ if [[ ! -d "$WEBAPP/node_modules" ]]; then
 fi
 
 # ── start processes (output → log files) ─────────────────────────────────────
-log "Starting MedGemma backend on :$BACKEND_PORT  (log → logs/backend.log)"
-cd "$BACKEND"
-uvicorn main:app --port "$BACKEND_PORT" --log-level info >> "$BACKEND_LOG" 2>&1 &
+log "Starting backend API on :$BACKEND_PORT  (log → logs/backend.log)"
+cd "$ROOT"
+uvicorn backend.main:app --port "$BACKEND_PORT" --log-level info >> "$BACKEND_LOG" 2>&1 &
 BACKEND_PID=$!
 
 log "Starting React frontend on :$FRONTEND_PORT  (log → logs/frontend.log)"
@@ -189,7 +189,7 @@ draw_dashboard() {
 
   echo ""
   echo -e "  ${BOLD}${CYAN}SERVICES${RESET}"
-  printf "  %-22s %b\n" "MedGemma Backend" "$be_badge"
+  printf "  %-22s %b\n" "Backend API"      "$be_badge"
   printf "  %-22s %b\n" "React Frontend"   "$fe_badge"
 
   echo ""

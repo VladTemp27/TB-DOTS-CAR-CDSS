@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { CheckCircle2 } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { StepProgress } from '../components/StepProgress'
 import { getPatient, savePatient } from '../lib/storage'
 import { PageFooter } from '../components/PageFooter'
+import type { Patient } from '../lib/storage'
 
 type RegimenId = 'hrze' | 'mdr' | 'xdr'
 
@@ -35,14 +36,42 @@ const REGIMENS: Array<{ id: RegimenId; name: string; drugs: string; duration: st
 export function TreatmentSelection() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
-  const patient = id ? getPatient(id) : null
+  const [patient, setPatient] = useState<Patient | null>(null)
+  const [loadingPatient, setLoadingPatient] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  const [selected, setSelected] = useState<RegimenId | ''>(patient?.treatmentRegimen ?? '')
-  const [startDate, setStartDate] = useState(patient?.treatmentStartDate ?? '')
+  const [selected, setSelected] = useState<RegimenId | ''>('')
+  const [startDate, setStartDate] = useState('')
 
-  function handleProceed() {
+  useEffect(() => {
+    let cancelled = false
+    if (!id) {
+      setLoadingPatient(false)
+      setPatient(null)
+      return
+    }
+    setLoadingPatient(true)
+    ;(async () => {
+      try {
+        const p = await getPatient(id)
+        if (cancelled) return
+        setPatient(p)
+        setSelected(((p?.treatmentRegimen as RegimenId | undefined) ?? ''))
+        setStartDate(p?.treatmentStartDate ?? '')
+      } catch (e) {
+        if (!cancelled) setLoadError(e instanceof Error ? e.message : String(e))
+      } finally {
+        if (!cancelled) setLoadingPatient(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  async function handleProceed() {
     if (!id || !selected) return
-    const p = getPatient(id)
+    const p = patient ?? (await getPatient(id))
     if (p) {
       p.treatmentRegimen = selected || undefined
       p.treatmentStartDate = startDate || undefined
@@ -57,9 +86,25 @@ export function TreatmentSelection() {
     if (p) {
       p.treatmentRegimen = undefined
       p.treatmentStartDate = startDate || undefined
-      savePatient(p)
+      await savePatient(p)
     }
     navigate(`/patient/${id}`)
+  }
+
+  if (loadingPatient) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <p className="text-ink-muted">Loading patient…</p>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <p className="text-ink-muted">{loadError}</p>
+      </div>
+    )
   }
 
   return (
