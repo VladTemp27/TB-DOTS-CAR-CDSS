@@ -86,7 +86,7 @@ export function PatientIntakeStep2() {
         failureProbability: result.failureProbability,
         contributions: result.contributions,
         featuresUsed: features,
-        timestamp: Date.now(),
+        timestamp: dateOfDiagnosis ? new Date(dateOfDiagnosis).getTime() : 0,
       })
       sessionStorage.removeItem(DRAFT_KEY)
       navigate('/patient/new/xray', { state: { id, result } })
