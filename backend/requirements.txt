@@ -6,7 +6,6 @@ SQLAlchemy>=2.0.0
 alembic>=1.12.0
 python-multipart>=0.0.9
 pytest>=8.0.0
-llama-cpp-python>=0.3.0; sys_platform == 'linux'
 nvidia-cuda-runtime-cu12; sys_platform == 'linux'
 nvidia-cublas-cu12; sys_platform == 'linux'
 nvidia-cuda-nvrtc-cu12; sys_platform == 'linux'
