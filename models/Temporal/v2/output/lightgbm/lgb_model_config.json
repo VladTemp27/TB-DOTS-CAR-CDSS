@@ -9,7 +9,7 @@
     "min_child_samples": 5,
     "is_unbalance": true
   },
-  "n_features": 407,
+  "n_features": 1139,
   "n_patients": 599,
   "train_patients": 419,
   "val_patients": 120,
@@ -17,6 +17,6 @@
   "training_mode": "progressive_temporal (one sample per patient per month, M0-M12)",
   "split": "70/20/10 (patient-level, stratified)",
   "seed": 42,
-  "threshold": 0.8499999999999996,
-  "best_iteration": 179
+  "threshold": 0.6899999999999997,
+  "best_iteration": 76
 }

@@ -1,10 +1,11 @@
-"""Utilities for loading cleaned dataset, patient-level splitting,
+"""Utilities for loading the combined temporal dataset, patient-level splitting,
 and train-only scaling for temporal models.
 
 These helpers are intended to be used by the temporal model notebooks
 so that scalers are fitted on the training set only and then applied
 to validation and test sets.
 """
+from importlib import util as importlib_util
 from pathlib import Path
 import sys
 import joblib
@@ -16,11 +17,37 @@ from sklearn.preprocessing import StandardScaler
 # helper is run from the notebook folder or as a script.
 MODULE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = MODULE_DIR.parents[1]
-for candidate in (REPO_ROOT / "dataset" / "temporal", REPO_ROOT):
-    candidate_str = str(candidate)
-    if candidate_str not in sys.path:
-        sys.path.insert(0, candidate_str)
-import preprocessingV2 as pp
+
+
+def _load_preprocessing_module():
+    module_path = REPO_ROOT / "dataset" / "temporal" / "preprocessingV2.py"
+    spec = importlib_util.spec_from_file_location("preprocessingV2", module_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to load preprocessingV2 from {module_path}")
+    module = importlib_util.module_from_spec(spec)
+    sys.modules.setdefault("preprocessingV2", module)
+    spec.loader.exec_module(module)
+    return module
+
+
+pp = _load_preprocessing_module()
+
+
+def _resolve_source_csv(csv_path: str | None) -> Path:
+    """Resolve the raw combined dataset path used by the model notebooks.
+
+    The notebook helpers still pass the old cleaned CSV path, so this keeps the
+    public function signature stable while steering the loader to the combined
+    raw dataset that should now be preprocessed on demand.
+    """
+    default_path = REPO_ROOT / "dataset" / "temporal" / "combined_complete_dataset.csv"
+    if csv_path is None:
+        return default_path
+
+    requested_path = Path(csv_path)
+    if requested_path.name == "cleaned_human_readable.csv":
+        return default_path
+    return requested_path
 
 
 def _build_model_arrays(df_static: pd.DataFrame, df_temporal: pd.DataFrame):
@@ -42,15 +69,8 @@ def _build_model_arrays(df_static: pd.DataFrame, df_temporal: pd.DataFrame):
     # identifiers, dates, and provenance fields that are not suitable as
     # direct model inputs.
     drop_exact = {
-        "patient_id",
-        "no",
-        "outcome",
+        "data_year",
         "source_file",
-        "facility",
-        "name_of_diagnosing_facility",
-        "name_of_treatment_unit",
-        "weight",
-        "height",
     }
     drop_prefixes = ("date_of_", "intensive_phase_", "continuation_phase_")
 
@@ -127,13 +147,13 @@ def _build_model_arrays(df_static: pd.DataFrame, df_temporal: pd.DataFrame):
 
 
 def load_cleaned_csv(csv_path: str):
-    """Load cleaned human-readable CSV and prepare model-ready arrays.
+    """Load the combined dataset and prepare model-ready arrays.
 
     Returns a dict with model-ready arrays and feature-name lists:
         {X_temporal, X_static, X_combined_flat, patient_ids,
          static_feature_names, temporal_feature_names, ...}
     """
-    p = Path(csv_path)
+    p = _resolve_source_csv(csv_path)
     if not p.exists():
         raise FileNotFoundError(f"CSV not found: {csv_path}")
 
