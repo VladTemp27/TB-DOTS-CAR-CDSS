@@ -1,0 +1,48 @@
+version: "0.5"
+
+log_level: info
+log_location: ./.logs/process-compose.log
+log_configuration:
+  rotation:
+    max_size_mb: 5
+    max_backups: 3
+    max_age_days: 7
+    compress: true
+
+processes:
+  backend:
+    command: ".venv/bin/uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload --log-level info"
+    working_dir: "."
+    environment:
+      - "PYTHONUNBUFFERED=1"
+      - "MODEL_PATH=./models/medgemma-1.5-4b-it-IQ4_XS.gguf"
+    log_location: "./logs/backend.log"
+    availability:
+      restart: on_failure
+      backoff_seconds: 2
+      max_restarts: 10
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        scheme: http
+        path: /api/health
+        port: 8000
+      initial_delay_seconds: 3
+      period_seconds: 3
+      timeout_seconds: 2
+      failure_threshold: 20   # allow up to 60s for model load
+
+  frontend:
+    command: "npm run dev -- --host 127.0.0.1 --port 5173"
+    working_dir: "./web-app"
+    environment:
+      - "VITE_API_URL=http://127.0.0.1:8000"
+      - "BROWSER=none"
+    log_location: "./logs/frontend.log"
+    depends_on:
+      backend:
+        condition: process_healthy
+    availability:
+      restart: on_failure
+      backoff_seconds: 1
+      max_restarts: 5
