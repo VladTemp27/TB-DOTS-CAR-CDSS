@@ -67,20 +67,34 @@ if ! command -v node &>/dev/null; then
 fi
 
 MODEL="$ROOT/models/medgemma-1.5-4b-it-IQ4_XS.gguf"
-if [[ ! -f "$MODEL" ]]; then
+MODEL_PRESENT=false
+if [[ -f "$MODEL" ]]; then
+  MODEL_PRESENT=true
+else
   warn "Model file not found: $MODEL"
-  warn "Backend will start but MedGemma card will show an error."
+  warn "Backend will start without MedGemma inference (llama-cpp-python skipped)."
 fi
 
 # ── install deps if needed ────────────────────────────────────────────────────
-if ! "$PYTHON" -c "import fastapi,uvicorn,llama_cpp,sqlalchemy,alembic" &>/dev/null 2>&1; then
+if [[ "$MODEL_PRESENT" == "true" ]]; then
+  IMPORT_CHECK="import fastapi,uvicorn,llama_cpp,sqlalchemy,alembic"
+else
+  IMPORT_CHECK="import fastapi,uvicorn,sqlalchemy,alembic"
+fi
+
+if ! "$PYTHON" -c "$IMPORT_CHECK" &>/dev/null 2>&1; then
   log "Installing backend dependencies..."
-  if [[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]]; then
+  if [[ "$MODEL_PRESENT" == "true" && "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]]; then
     log "Apple Silicon detected — building llama-cpp-python with Metal (3-5 min first run)..."
     "$PIP" install -r "$BACKEND/requirements.txt" --quiet
     CMAKE_ARGS="-DGGML_METAL=on" \
       "$PIP" install "llama-cpp-python>=0.3.0" \
         --no-binary llama-cpp-python --force-reinstall --quiet
+  elif [[ "$MODEL_PRESENT" == "false" ]]; then
+    _TMPFILE=$(mktemp)
+    grep -v 'llama-cpp-python' "$BACKEND/requirements.txt" > "$_TMPFILE"
+    "$PIP" install -r "$_TMPFILE" --quiet
+    rm -f "$_TMPFILE"
   else
     "$PIP" install -r "$BACKEND/requirements.txt" --quiet
   fi
