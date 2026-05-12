@@ -1,0 +1,23 @@
+\begin{table}[htbp]
+\caption{Top Results for Extended Feature Set Experiments}
+\label{tab:extended_results}
+\begin{tabular}{lcccccc}
+\toprule
+
+Model & Sampler & ROC-AUC & CV-AUC Mean & Recall (Fail) & F1 (Fail) & Accuracy \\
+\midrule
+
+LightGBM & SMOTE - ENN & 0.6923 & 0.6768 & 0.2986 & 0.2876 & 0.7954 \\
+XGBoost & SMOTE - ENN & 0.6843 & 0.6658 & 0.7376 & 0.3013 & 0.5269 \\
+LightGBM & SMOTE - Tomek & 0.6816 & 0.6748 & 0.0860 & 0.1423 & 0.8567 \\
+Random Forest & SMOTE - ENN & 0.6805 & 0.6807 & 0.4253 & 0.3170 & 0.7466 \\
+LightGBM & SMOTE & 0.6796 & 0.6760 & 0.0679 & 0.1119 & 0.8511 \\
+Gradient Boosting & SMOTE & 0.6789 & 0.6722 & 0.0995 & 0.1583 & 0.8536 \\
+XGBoost & SMOTE & 0.6777 & 0.6674 & 0.6380 & 0.3389 & 0.6558 \\
+Gradient Boosting & SMOTE - ENN & 0.6756 & 0.6725 & 0.4253 & 0.3082 & 0.7359 \\
+XGBoost & SMOTE - Tomek & 0.6748 & 0.6694 & 0.6018 & 0.3201 & 0.6464 \\
+Gradient Boosting & SMOTE - Tomek & 0.6690 & 0.6712 & 0.0814 & 0.1338 & 0.8542 \\
+\bottomrule
+
+\end{tabular}
+\end{table}

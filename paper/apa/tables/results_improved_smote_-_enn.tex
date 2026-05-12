@@ -1,0 +1,19 @@
+\begin{table}[htbp]
+\caption{Performance Results — Improved / SMOTE - ENN}
+\label{tab:improved_smote_-_enn}
+\begin{tabular}{lcccccc}
+\toprule
+
+Model & ROC-AUC & CV-AUC Mean & CV-AUC Std & Recall (Fail) & F1 (Fail) & Accuracy \\
+\midrule
+
+Logistic Regression & 0.6346 & 0.6396 & 0.0208 & 0.6335 & 0.2872 & 0.5651 \\
+Random Forest & 0.6866 & 0.6911 & 0.0113 & 0.4525 & 0.3226 & 0.7372 \\
+XGBoost & 0.6801 & 0.6857 & 0.0148 & 0.7285 & 0.3117 & 0.5551 \\
+LightGBM & 0.6757 & 0.6905 & 0.0167 & 0.3303 & 0.2920 & 0.7785 \\
+Gradient Boosting & 0.6775 & 0.6849 & 0.0127 & 0.4118 & 0.3256 & 0.7641 \\
+SVM (RBF) & 0.6017 & 0.5869 & 0.0162 & 0.5928 & 0.2695 & 0.5557 \\
+\bottomrule
+
+\end{tabular}
+\end{table}
