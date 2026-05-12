@@ -86,6 +86,11 @@ INPUT_PATH = (
     / "dataset" / "temporal" / "combined_complete_dataset.csv"
 )
 
+CLEANED_INPUT_PATH = (
+    Path(__file__).resolve().parent.parent.parent
+    / "dataset" / "temporal" / "output" / "cleaned_human_readable.csv"
+)
+
 MONTH_RANGE = range(0, 13)  # M0 – M12
 
 MONTHLY_SUFFIXES = [
@@ -135,6 +140,17 @@ CATEGORICAL_COLUMNS = [
     "co_morbidities",
     "prior_history_of_tb",
     "dat_supported",
+]
+
+TEMPORAL_FEATURES = [
+    "monthly_doses_taken",
+    "cumulative_doses_taken",
+    "monthly_missed_doses",
+    "pct_adherence",
+    "weight",
+    "height",
+    "smear_tb_lamp",
+    "xpert_mtb_rif",
 ]
 
 LAG_FEATURE           = "pct_adherence"
@@ -196,6 +212,71 @@ def _cramers_v(x: pd.Series, y: pd.Series) -> float:
     if denom == 0:
         return np.nan
     return float(np.sqrt(chi2 / denom))
+
+
+def _safe_parse_temporal(val) -> float:
+    """Parse a temporal value to numeric, handling units and text patterns."""
+    if pd.isna(val):
+        return np.nan
+    val = str(val).strip()
+    if val.lower() in ("", "nan", "n/a"):
+        return np.nan
+
+    # Strip known unit suffixes
+    cleaned = val.lower()
+    for unit in ["kg", "kgs", "cm", "cms", "%"]:
+        cleaned = cleaned.replace(unit, "").strip()
+    try:
+        return float(cleaned)
+    except ValueError:
+        pass
+
+    # Smear / Xpert text patterns → binary
+    neg_patterns = {"negative", "not detected", "mtb not det", "no afb seen",
+                    "n", "nd", "mtb nd", "neg", "negataive", "mtb not detected"}
+    pos_patterns = {"positive", "detected", "mtb detected", "mtb det",
+                    "1+", "2+", "3+", "scanty", "trace", "p"}
+    core = val.lower().strip()
+    if core in neg_patterns:
+        return 0.0
+    if core in pos_patterns:
+        return 1.0
+
+    return np.nan
+
+
+def _compute_cramers_matrix(
+    df: pd.DataFrame,
+    columns: list[str],
+) -> pd.DataFrame:
+    """
+    Compute a square Cramér's V association matrix for the given columns.
+
+    Only columns with at least 2 unique non-null values and at least 10
+    non-null observations are included. Returns an empty DataFrame if
+    fewer than 2 usable columns remain.
+    """
+    usable = [
+        c for c in columns
+        if c in df.columns
+        and df[c].nunique(dropna=True) >= 2
+        and df[c].notna().sum() >= 10
+    ]
+
+    if len(usable) < 2:
+        return pd.DataFrame()
+
+    matrix = pd.DataFrame(np.nan, index=usable, columns=usable, dtype=float)
+    for i, col_i in enumerate(usable):
+        for j, col_j in enumerate(usable):
+            if i == j:
+                matrix.loc[col_i, col_j] = 1.0
+            elif j > i:
+                v = _cramers_v(df[col_i], df[col_j])
+                matrix.loc[col_i, col_j] = v
+                matrix.loc[col_j, col_i] = v  # symmetric
+
+    return matrix.round(2)
 
 
 # ============================================================================
@@ -581,6 +662,104 @@ class TemporalEDAPipeline:
         )
 
     # ==================================================================
+    # STATION 3B – Temporal Feature Correlation (M0–M7)
+    # Pearson r matrix of per-patient observed means for 8 temporal
+    # features plus 2 retention features. Uses only M0–M7 where ≥24%
+    # of patients have recorded data. No imputed values — each mean
+    # is computed from observed months only.
+    # ==================================================================
+    def station3b_temporal_feature_correlation(self, df: pd.DataFrame) -> None:
+        print("\n" + "=" * 60)
+        print("STATION 3B: Temporal Feature Correlation (M0–M7)")
+        print("=" * 60)
+
+        # Confirm at least some temporal columns exist
+        existing = []
+        for feat in TEMPORAL_FEATURES:
+            if any(f"m{m}_{feat}" in df.columns for m in range(0, 8)):
+                existing.append(feat)
+
+        if not existing:
+            print("  No temporal features found — skipping.")
+            return
+
+        # ── Per-patient observed means (M0–M7) ──────────────────────
+        patient_vals = pd.DataFrame(index=df.index)
+        for feat in existing:
+            cols = [f"m{m}_{feat}" for m in range(0, 8)]
+            cols = [c for c in cols if c in df.columns]
+            # Parse each column to numeric (handles units, text patterns)
+            parsed = pd.DataFrame(index=df.index)
+            for col in cols:
+                p = pd.to_numeric(df[col], errors="coerce")
+                if p.isna().all() and df[col].notna().any():
+                    p = df[col].apply(_safe_parse_temporal)
+                parsed[col] = p
+            # Convert decimal-fraction adherence (0.95 → 95)
+            if feat == "pct_adherence":
+                for col in parsed.columns:
+                    mask = parsed[col].notna() & (parsed[col] <= 2)
+                    parsed.loc[mask, col] = parsed.loc[mask, col] * 100
+            patient_vals[feat] = parsed.mean(axis=1, skipna=True)
+
+        # ── Retention features ──────────────────────────────────────
+        month_has = pd.DataFrame(index=df.index)
+        for m in range(0, 8):
+            mc = [c for c in df.columns if c.startswith(f"m{m}_")]
+            month_has[m] = df[mc].notna().any(axis=1) if mc else False
+
+        patient_vals["last_month_attended"] = month_has.apply(
+            lambda r: int(r[r].index.max()) if r.any() else -1, axis=1
+        )
+        patient_vals["total_observed_months"] = month_has.sum(axis=1)
+
+        all_feats = existing + ["last_month_attended", "total_observed_months"]
+
+        # ── Table: descriptive stats ────────────────────────────────
+        table_rows = []
+        for col in all_feats:
+            s = patient_vals[col].dropna()
+            table_rows.append({
+                "Feature": col,
+                "N": len(s),
+                "Mean": round(s.mean(), 2),
+                "SD": round(s.std(), 2),
+                "Min": round(s.min(), 2),
+                "Max": round(s.max(), 2),
+            })
+
+        self.export_table(
+            pd.DataFrame(table_rows),
+            "temporal_feature_descriptive_stats",
+            "Per-Patient Observed Means of Temporal Features (M0–M7)",
+            "tab:temporal_feature_descriptive_stats",
+        )
+
+        # ── Figure: Pearson correlation matrix ──────────────────────
+        numeric = patient_vals[all_feats].apply(pd.to_numeric, errors="coerce")
+        usable = [c for c in all_feats if numeric[c].notna().sum() >= 10]
+
+        if len(usable) < 2:
+            print("  Insufficient data for Pearson matrix — skipping.")
+            return
+
+        corr = numeric[usable].corr(method="pearson").round(2)
+
+        self._render_heatmap(
+            corr,
+            filename="temporal_feature_correlation",
+            title=(
+                "Pearson r — Temporal Feature Means M0–M7\n"
+                "Pairwise-complete observed means; "
+                "retention features capture dropout signal"
+            ),
+            cbar_label="Pearson r",
+            cmap="coolwarm",
+            vmin=-1, vmax=1, center=0,
+            x_rotation=45,
+        )
+
+    # ==================================================================
     # STATION 4 – Temporal Correlation (Lag Analysis)
     # Justifies: Use of a temporal model architecture (RNN/LSTM) and
     #            informs the look-back window selection.
@@ -804,6 +983,68 @@ class TemporalEDAPipeline:
         )
 
     # ==================================================================
+    # STATION 5B – Publication-Ready Cramér's V Matrices
+    # Exports two separate full-size PDFs sharing the same column set
+    # for direct comparison:
+    #   1. categorical_cramersv_raw.pdf      — pre-imputation (white = NaN)
+    #   2. categorical_cramersv_imputed.pdf  — post-pipeline
+    # ==================================================================
+    def station5b_imputed_categorical_comparison(self, df_raw: pd.DataFrame) -> None:
+        print("\n" + "=" * 60)
+        print("STATION 5B: Publication-Ready Cramér's V Matrices")
+        print("=" * 60)
+
+        if not CLEANED_INPUT_PATH.exists():
+            print(f"  [SKIP] Cleaned dataset not found at {CLEANED_INPUT_PATH}.")
+            print(f"  Run preprocessingV2.py first to generate it.")
+            return
+
+        df_clean = pd.read_csv(CLEANED_INPUT_PATH)
+        print(f"  Loaded cleaned: {df_clean.shape[0]} rows x "
+              f"{df_clean.shape[1]} columns")
+
+        shared_cols = [c for c in CATEGORICAL_COLUMNS if c in df_clean.columns]
+        print(f"  Pipeline-surviving columns: {len(shared_cols)} — {shared_cols}")
+
+        raw_matrix   = _compute_cramers_matrix(df_raw, shared_cols)
+        clean_matrix = _compute_cramers_matrix(df_clean, shared_cols)
+
+        if raw_matrix.empty or clean_matrix.empty:
+            print("  Insufficient data — skipping.")
+            return
+
+        # Align to the same column set (handles nationality excluded from
+        # cleaned matrix since it has only 1 unique value after harmonization)
+        common = [c for c in raw_matrix.index if c in clean_matrix.index]
+        if len(common) < 2:
+            print("  Fewer than 2 common columns — skipping.")
+            return
+
+        raw_matrix   = raw_matrix.loc[common, common]
+        clean_matrix = clean_matrix.loc[common, common]
+        print(f"  Aligned columns: {len(common)} — {common}")
+
+        # ── Raw matrix ─────────────────────────────────────────────
+        self._render_heatmap(
+            raw_matrix,
+            filename="categorical_cramersv_raw",
+            title="Cramér's V — Raw Categorical Features (white cells = NaN)",
+            cbar_label="Cramér's V  [0 = no association, 1 = perfect]",
+            cmap="YlOrRd", vmin=0, vmax=1, center=0.5,
+            x_rotation=90,
+        )
+
+        # ── Imputed matrix ─────────────────────────────────────────
+        self._render_heatmap(
+            clean_matrix,
+            filename="categorical_cramersv_imputed",
+            title="Cramér's V — Imputed Categorical Features (3 columns excluded)",
+            cbar_label="Cramér's V  [0 = no association, 1 = perfect]",
+            cmap="YlOrRd", vmin=0, vmax=1, center=0.5,
+            x_rotation=90,
+        )
+
+    # ==================================================================
     # STATION 6 – Temporal Cohort Timeline
     # Justifies: Date parsing logic in Stage 3 (mixed formats, century
     #            swaps, treatment_start < date_of_diagnosis fix).
@@ -896,8 +1137,10 @@ class TemporalEDAPipeline:
         self.station1_global_missingness(df)
         self.station2_patient_retention_cascade(df)
         self.station3_raw_vitals_distribution(df)       # + Pearson matrix
+        self.station3b_temporal_feature_correlation(df)
         self.station4_temporal_lag_correlation(df)
         self.station5_categorical_audit(df)             # + Cramér's V matrix
+        self.station5b_imputed_categorical_comparison(df)
         self.station6_temporal_cohort_timeline(df)
 
         print("\n" + "#" * 60)
