@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { LayoutDashboard, ArrowDown, ArrowUp, Minus, HelpCircle } from 'lucide-react'
 import { getAllPatients } from '../lib/storage'
 import { riskLabel, riskColor } from '../components/RiskBadge'
@@ -12,9 +12,38 @@ function latestProb(p: Patient): number {
 }
 
 export function Dashboard() {
-  const patients = getAllPatients()
-  const total = patients.length
+  const [patients, setPatients] = useState<Patient[] | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [adhHintOpen, setAdhHintOpen] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const list = await getAllPatients()
+        if (!cancelled) setPatients(list)
+      } catch (e) {
+        if (!cancelled) setLoadError(e instanceof Error ? e.message : String(e))
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (patients === null) {
+    return (
+      <div className="min-h-screen bg-bg flex flex-col">
+        <AppHeader title="Dashboard" />
+        <div className="flex-1 px-4 lg:px-8 pt-10 pb-8 w-full">
+          <p className="text-sm text-ink-muted">Loading dashboard…</p>
+          {loadError && <p className="text-sm text-risk-high mt-2">{loadError}</p>}
+        </div>
+      </div>
+    )
+  }
+
+  const total = patients.length
 
   const highRisk = patients.filter(p => riskLabel(latestProb(p)) === 'HIGH').length
   const medRisk  = patients.filter(p => riskLabel(latestProb(p)) === 'MED').length
