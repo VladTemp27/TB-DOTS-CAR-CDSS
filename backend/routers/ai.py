@@ -20,16 +20,13 @@ router = APIRouter()
 def health():
     _backend = llm_mod._stats["backend"]
     if llm_mod._load_error:
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "status": "error",
-                "error": llm_mod._load_error,
-                "model": "medgemma-1.5-4b-it-IQ4_XS",
-                "n_ctx": N_CTX,
-                "backend": _backend,
-            },
-        )
+        return {
+            "status": "error",
+            "error": llm_mod._load_error,
+            "model": "medgemma-1.5-4b-it-IQ4_XS",
+            "n_ctx": N_CTX,
+            "backend": _backend,
+        }
     if llm_mod.llm is None:
         return {"status": "loading", "model": "medgemma-1.5-4b-it-IQ4_XS", "n_ctx": N_CTX, "backend": _backend}
     return {"status": "ready", "model": "medgemma-1.5-4b-it-IQ4_XS", "n_ctx": N_CTX, "backend": _backend}
