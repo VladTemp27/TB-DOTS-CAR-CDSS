@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { ArrowUp, ArrowDown, Info } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
@@ -5,14 +6,56 @@ import { RiskBadge, riskColor } from '../components/RiskBadge'
 import { getPatient } from '../lib/storage'
 import type { ContributionResult } from '../lib/inference'
 import { PageFooter } from '../components/PageFooter'
+import type { Patient } from '../lib/storage'
 
 export function RiskUpdate() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const location = useLocation()
-  const patient = id ? getPatient(id) : null
+  const [patient, setPatient] = useState<Patient | null>(null)
+  const [loadingPatient, setLoadingPatient] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const result: ContributionResult | null = location.state?.result ?? null
   const monthNumber: number = location.state?.monthNumber ?? 1
+
+  useEffect(() => {
+    let cancelled = false
+    if (!id) {
+      setLoadingPatient(false)
+      setPatient(null)
+      return
+    }
+    setLoadingPatient(true)
+    ;(async () => {
+      try {
+        const p = await getPatient(id)
+        if (!cancelled) setPatient(p)
+      } catch (e) {
+        if (!cancelled) setLoadError(e instanceof Error ? e.message : String(e))
+      } finally {
+        if (!cancelled) setLoadingPatient(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  if (loadingPatient) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <p className="text-ink-muted">Loading patient…</p>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <p className="text-ink-muted">{loadError}</p>
+      </div>
+    )
+  }
 
   const prob     = result?.failureProbability ?? 0
   const prevProb = patient?.predictions.at(-2)?.failureProbability

@@ -1,15 +1,46 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Stethoscope, UserPlus } from 'lucide-react'
 import { getAllPatients } from '../lib/storage'
 import { AppHeader } from '../components/AppHeader'
 import { PatientCard } from '../components/PatientCard'
 import { riskLabel } from '../components/RiskBadge'
+import type { Patient } from '../lib/storage'
 
 export function Home() {
   const navigate = useNavigate()
-  const patients = getAllPatients()
+  const [patients, setPatients] = useState<Patient[] | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const list = await getAllPatients()
+        if (!cancelled) setPatients(list)
+      } catch (e) {
+        if (!cancelled) setLoadError(e instanceof Error ? e.message : String(e))
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (patients === null) {
+    return (
+      <div className="min-h-screen bg-bg flex flex-col">
+        <AppHeader />
+        <div className="flex-1 px-4 lg:px-8 pt-10 pb-24 lg:pb-8 w-full max-w-5xl mx-auto">
+          <p className="text-sm text-ink-muted">Loading patients…</p>
+          {loadError && (
+            <p className="text-sm text-risk-high mt-2">{loadError}</p>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   const filtered = query.trim()
     ? patients.filter(p =>

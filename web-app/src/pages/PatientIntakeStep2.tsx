@@ -71,7 +71,7 @@ export function PatientIntakeStep2() {
     try {
       const result = await predictWithContributions(features)
       const id = generateId()
-      savePatient({
+      await savePatient({
         id,
         name: draft.name ?? 'Unknown',
         medicalId: draft.medicalId ?? id,
