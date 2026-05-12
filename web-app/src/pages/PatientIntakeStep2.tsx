@@ -4,7 +4,7 @@ import { Info } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { StepProgress } from '../components/StepProgress'
 import { getChoices, predictWithContributions } from '../lib/inference'
-import { savePatient, generateId } from '../lib/storage'
+import { savePatient, generateId, addPrediction } from '../lib/storage'
 import type { PatientFeatures } from '../lib/inference'
 import { PageFooter } from '../components/PageFooter'
 
@@ -78,14 +78,15 @@ export function PatientIntakeStep2() {
         features,
         treatmentStartDate: dateStartedTx,
         createdAt: Date.now(),
-        predictions: [{
-          label: result.label,
-          failureProbability: result.failureProbability,
-          contributions: result.contributions,
-          featuresUsed: features,
-          timestamp: Date.now(),
-        }],
+        predictions: [],
         monthlyRecords: [],
+      })
+      await addPrediction(id, {
+        label: result.label,
+        failureProbability: result.failureProbability,
+        contributions: result.contributions,
+        featuresUsed: features,
+        timestamp: Date.now(),
       })
       sessionStorage.removeItem(DRAFT_KEY)
       navigate('/patient/new/xray', { state: { id, result } })
