@@ -6,7 +6,7 @@ interface Props {
   onBack?: () => void
 }
 
-export function AppHeader({ title = 'Tuberculosis Diagnostic', backLabel, onBack }: Props) {
+export function AppHeader({ title = 'Tuberculosis Diagnostic System', backLabel, onBack }: Props) {
   return (
     <header className="lg:hidden bg-surface border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
       {backLabel && onBack ? (
@@ -20,9 +20,11 @@ export function AppHeader({ title = 'Tuberculosis Diagnostic', backLabel, onBack
         </button>
       ) : (
         <>
-          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xs font-bold font-display">TB</span>
-          </div>
+          <img
+            src="/logo.png"
+            alt="TB Logo"
+            className="w-9 h-9 rounded-xl object-contain flex-shrink-0"
+          />
           <span className="font-semibold text-ink-base text-base font-display">{title}</span>
         </>
       )}

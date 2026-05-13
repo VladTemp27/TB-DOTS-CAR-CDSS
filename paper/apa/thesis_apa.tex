@@ -30,7 +30,7 @@
 % ----- References: apacite must be loaded BEFORE hyperref -----
 \usepackage[natbibapa]{apacite}
 \bibliographystyle{apacite}
-\shortcites{ref2,ref3,ref4,ref5,ref6,ref7,ref8,ref9,ref11,ref12,ref13,ref14,ref15,ref16,ref17,ref18,ref19,ref21,ref22,ref23,ref24,ref25,ref26,ref27,ref28,ref29,ref30,ref31,ref33,ref34,ref35,ref36,ref37}
+\shortcites{ref2,ref3,ref4,ref5,ref6,ref7,ref8,ref9,ref11,ref12,ref13,ref14,ref15,ref16,ref17,ref18,ref19,ref21,ref22,ref23,ref24,ref25,ref26,ref27,ref28,ref29,ref30,ref31,ref33,ref34,ref35,ref36,ref37,ref39,ref40,ref41,ref42,ref43,ref44}
 
 % ----- Hyperlinks (loaded after apacite to avoid citation link conflicts) -----
 \usepackage{hyperref}
@@ -333,6 +333,12 @@ To ensure the reproducibility of these results and minimize technical inconsiste
 
 The validated models are embedded into a Clinical Decision Support System (CDSS) designed for healthcare providers. This system visualizes patient risk levels and provides a summary of predictive outputs. Key features include a predictive dashboard that displays the probability of treatment failure and success, risk factor visualization that highlights the specific variables (e.g., adherence gaps, lab results) contributing to the risk score, and dynamic updates where the system accepts new follow-up data (e.g., monthly weight, smear results), triggering updated risk predictions to support real-time clinical management throughout the treatment duration.
 
+\subsection{SLM-Based Narrative Explanation Layer}
+
+To improve the usability of model explanations for healthcare users, the CDSS includes a small language model (SLM) as a constrained narrative layer that verbalizes model outputs into readable clinical text. SHAP-based feature contribution outputs remain the primary explanation source, while the SLM functions as a presentation layer rather than an independent predictor or diagnostic engine \citep{ref39, ref41}. This component operates post-prediction and does not alter model training, inference probabilities, or risk classification thresholds. In the implemented pipeline, the web client constructs a structured interpretation request containing selected patient context fields, predicted treatment-failure probability, and ranked contribution signals, then sends the payload to a dedicated interpretation endpoint for streamed narrative rendering in the interface.
+
+The SLM is operationally bounded to explanation tasks only. It is not used to infer new clinical causes, generate treatment prescriptions, or replace clinician judgment. This role separation aligns with current medical-domain SLM framing and health AI governance expectations for bounded decision support, while keeping model interpretability grounded in the original attribution signal \citep{ref40, ref42, ref44}. Final clinical judgment remains with the treating healthcare professional.
+
 % ======================== RESULTS AND DISCUSSION ========================
 \section{Results and Discussion}
 
@@ -467,6 +473,12 @@ This study investigated the use of machine learning models to predict treatment 
 The study contributes in several ways. By integrating temporal monitoring data with static baseline features, it demonstrates that patient-level longitudinal information improves predictive performance over static data alone. The application of SMOTE-ENN and advanced data augmentation techniques for Bi-LSTM effectively addresses the extreme class imbalance inherent in TB treatment outcomes, enhancing the model's capacity to detect high-risk patients. Furthermore, the findings suggest that predictive models, particularly Random Forest with SMOTE-ENN, have practical value for clinical decision support systems, enabling clinicians to identify patients at risk of treatment failure early and prioritize interventions accordingly.
 
 Based on these findings, it is recommended that healthcare facilities and policymakers consider integrating machine learning models like Random Forest with SMOTE-ENN into existing TB monitoring programs to improve treatment outcomes and optimize resource allocation. Future research should focus on larger, multi-region datasets to enhance generalization, explore hybrid modeling approaches combining deep learning and tree-based methods, and investigate additional features such as social determinants of health and geographic risk factors. Additionally, enhancing model interpretability, particularly of Bi-LSTM attention outputs, could improve clinician trust and adoption.
+
+\subsection{Safety Scope and Interpretation Limits}
+
+The narrative explanation layer improves accessibility of model reasoning by translating contribution signals into clinician-readable text, but its outputs must be interpreted within clear safety boundaries. The explanation should be read as describing how factors increased or decreased the model-predicted risk, not as establishing causal mechanisms of disease progression. This distinction is important in high-stakes settings where generative outputs may otherwise be over-interpreted beyond their evidentiary basis \citep{ref42, ref43}.
+
+Accordingly, the system is positioned as decision support: it summarizes model behavior while preserving clinician authority for diagnosis and treatment decisions. This framing is consistent with contemporary reporting and governance guidance for AI-assisted clinical prediction systems, where transparency, bounded use, and human oversight remain central requirements \citep{ref44}.
 
 % ======================== ACKNOWLEDGMENTS ========================
 \section{Acknowledgments}
