@@ -38,6 +38,40 @@ pp = _load_preprocessing_module()
 
 SUCCESS_OUTCOMES = {"Cured", "Treatment Completed"}
 TRAINING_DROP_COLUMNS = {"data_year", "source_file"}
+TEMPORAL_V2_FEATURE_POLICY = "temporal_v2_medical_temporal_leakage_v2"
+TEMPORAL_V2_DROP_COLUMNS = TRAINING_DROP_COLUMNS | {
+    # Outcome-time leakage: valid for retrospective timelines, not prediction inputs.
+    "date_of_outcome",
+    # Administrative identifiers can let flexible models memorize records/sites.
+    "no",
+    "facility",
+    "name_of_diagnosing_facility",
+    "name_of_treatment_unit",
+    # Late/final treatment process fields are not available at early prediction months.
+    "regimen_type_at_end_of_treatment",
+    "regimen_type_at_6th_month_of_treatment",
+    "intensive_phase_start_date",
+    "intensive_phase_end_date",
+    "continuation_phase_start_date",
+    "continuation_phase_end_date",
+    # Raw duplicated/high-cardinality strings are parsed into numeric columns above.
+    "blood_pressure",
+    "height",
+    "weight",
+    # Near-empty/free-text fields are unstable in small medical cohorts.
+    "tuberculosis_culture",
+    "tuberculin_skin_test",
+    "other_lab_test",
+    "other",
+    "others",
+    "dat_supported_dup",
+    "risk_factors_for_drug_resistance_tuberculosis",
+}
+
+
+def get_temporal_v2_drop_feature_cols() -> set[str]:
+    """Columns excluded from v2 temporal predictors for leakage control."""
+    return set(TEMPORAL_V2_DROP_COLUMNS)
 
 
 def _resolve_source_csv(csv_path: str | None) -> Path:
@@ -219,7 +253,8 @@ def build_split_model_inputs(
     drop_feature_cols = set(TRAINING_DROP_COLUMNS if drop_feature_cols is None else drop_feature_cols)
 
     static_features = df_static.drop(columns=["outcome"], errors="ignore").copy()
-    static_features = static_features.drop(columns=[c for c in drop_feature_cols if c in static_features.columns])
+    applied_drop_feature_cols = sorted(c for c in drop_feature_cols if c in static_features.columns)
+    static_features = static_features.drop(columns=applied_drop_feature_cols)
     static_features = _convert_datetime_columns_to_numeric(static_features)
     bool_cols = static_features.select_dtypes(include=["bool"]).columns.tolist()
     for col in bool_cols:
@@ -233,6 +268,11 @@ def build_split_model_inputs(
     }
     static_splits = {name: static_features.iloc[idx].copy() for name, idx in split_indices.items()}
     train_static = static_splits["train"]
+    static_missing_cols = [
+        c for c in train_static.columns
+        if c not in {"patient_id", "__row_pos"} and train_static[c].isna().any()
+    ]
+    static_missing_indicator_names = [f"{c}__missing" for c in static_missing_cols]
 
     static_cat_cols = [
         c for c in train_static.select_dtypes(include=["object", "category"]).columns.tolist()
@@ -254,6 +294,8 @@ def build_split_model_inputs(
     train_dummy_cols = None
     for name, split_df in static_splits.items():
         split_out = split_df[["__row_pos"]].copy()
+        for col in static_missing_cols:
+            split_out[f"{col}__missing"] = split_df[col].isna().astype(np.float32)
         if static_num_impute_cols:
             transformed = static_num_imputer.transform(split_df[static_num_impute_cols])
             split_out = pd.concat(
@@ -295,6 +337,11 @@ def build_split_model_inputs(
         if c not in set(temporal_cat_cols) | {"patient_id", "month"}
         and pd.api.types.is_numeric_dtype(train_temporal[c])
     ]
+    temporal_missing_cols = [
+        c for c in temporal_num_cols + temporal_cat_cols
+        if train_temporal[c].isna().any()
+    ]
+    temporal_missing_indicator_names = [f"{c}__missing" for c in temporal_missing_cols]
     temporal_num_impute_cols = [c for c in temporal_num_cols if train_temporal[c].notna().any()]
     temporal_num_all_missing = [c for c in temporal_num_cols if c not in temporal_num_impute_cols]
 
@@ -309,6 +356,8 @@ def build_split_model_inputs(
     for name, split_df in temporal_splits.items():
         split_sorted = split_df.sort_values(["patient_id", "month"]).copy()
         processed = split_sorted[["patient_id", "month"]].copy()
+        for col in temporal_missing_cols:
+            processed[f"{col}__missing"] = split_sorted[col].isna().astype(np.float32)
         if temporal_num_impute_cols:
             num_frame = split_sorted[["month"] + temporal_num_impute_cols].copy()
             for col in temporal_num_impute_cols:
@@ -326,7 +375,14 @@ def build_split_model_inputs(
 
     df_temporal_model = pd.concat(processed_temporal_splits.values(), axis=0).sort_values(["patient_id", "month"]).reset_index(drop=True)
     df_static_model, df_temporal_model = pp._post_imputation_clinical_clipping(df_static_model, df_temporal_model)
-    return _build_model_arrays(df_static_model, df_temporal_model)
+    arrays = _build_model_arrays(df_static_model, df_temporal_model)
+    arrays.update({
+        "feature_policy_version": TEMPORAL_V2_FEATURE_POLICY,
+        "dropped_feature_cols": applied_drop_feature_cols,
+        "static_missing_indicator_names": static_missing_indicator_names,
+        "temporal_missing_indicator_names": temporal_missing_indicator_names,
+    })
+    return arrays
 
 
 def patient_level_split(n_patients: int, y=None, train_frac=0.7, val_frac=0.15, test_frac=0.15, random_state: int = 42):
@@ -505,7 +561,7 @@ def find_optimal_threshold(
         Candidate thresholds to evaluate. Defaults to 0.10..0.90.
     objective : str
         - "balanced": favor a mix of F1, recall, and specificity.
-        - "failure_recall": favor recall while keeping some specificity.
+        - "failure_recall": favor detecting failures while keeping success recall.
         - "specificity": favor reducing false positives.
         - "f1": pure F1 search.
         - "accuracy": choose the threshold with the highest accuracy.
@@ -530,18 +586,21 @@ def find_optimal_threshold(
 
     for threshold in thresholds:
         y_pred = (y_prob >= threshold).astype(int)
-        tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
 
         accuracy = accuracy_score(y_true, y_pred)
         precision = precision_score(y_true, y_pred, zero_division=0)
         recall = recall_score(y_true, y_pred, zero_division=0)
         f1 = f1_score(y_true, y_pred, zero_division=0)
-        specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+        failure_recall = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+        success_recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        specificity = failure_recall
+        balanced_accuracy = (failure_recall + success_recall) / 2.0
 
         if precision < min_precision:
             score = -np.inf
         elif objective == "failure_recall":
-            score = (0.50 * recall) + (0.30 * specificity) + (0.20 * f1)
+            score = (0.55 * failure_recall) + (0.25 * balanced_accuracy) + (0.20 * f1)
         elif objective == "specificity":
             score = (0.50 * specificity) + (0.30 * f1) + (0.20 * recall)
         elif objective == "f1":
@@ -556,8 +615,11 @@ def find_optimal_threshold(
             "accuracy": float(accuracy),
             "precision": float(precision),
             "recall": float(recall),
+            "failure_recall": float(failure_recall),
+            "success_recall": float(success_recall),
             "f1": float(f1),
             "specificity": float(specificity),
+            "balanced_accuracy": float(balanced_accuracy),
             "score": float(score),
         }
         rows.append(row)
