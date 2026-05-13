@@ -131,14 +131,21 @@ export function PatientChart() {
             )}
           </div>
           <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => navigate(`/patient/${id}/checkin`)}
-              disabled={!patient.treatmentRegimen}
-              title={!patient.treatmentRegimen ? 'Select a treatment regimen before logging a monthly update' : undefined}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-mid transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
-            >
-              Log Monthly Update
-            </button>
+            {patient.treatmentRegimen ? (
+              <button
+                onClick={() => navigate(`/patient/${id}/checkin`)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-mid transition-colors"
+              >
+                Log Monthly Update
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate(`/patient/${id}/treatment`)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-mid transition-colors"
+              >
+                Select Treatment Regimen
+              </button>
+            )}
             <button
               onClick={() => navigate(`/patient/${id}`)}
               className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium text-ink-secondary hover:bg-surface transition-colors"
