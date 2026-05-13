@@ -426,7 +426,7 @@ class TemporalEDAPipeline:
             "Feature":              miss_ratio.index,
             "Missing Count":        miss_count.values,
             "Missing \\%":          (miss_ratio.values * 100).round(2),
-            "Alpha Drop (≥80\\%)":  [
+            "Column Exclusion (≥80\\%)":  [
                 "Yes" if v >= ALPHA_THRESHOLD else "No"
                 for v in miss_ratio.values
             ],
@@ -453,13 +453,13 @@ class TemporalEDAPipeline:
                 color=colors[::-1], edgecolor="black", linewidth=0.4)
         ax.axvline(ALPHA_THRESHOLD * 100, color="red", linestyle="--",
                    linewidth=1.2,
-                   label=f"Alpha Drop Threshold ({int(ALPHA_THRESHOLD*100)}\\%)")
+                   label=f"Column Exclusion Threshold ({int(ALPHA_THRESHOLD*100)}\\%)")
         ax.axvline(50, color="orange", linestyle=":", linewidth=1.0,
                    label="50\\% Reference")
         ax.set_xlabel("Missing Data (\\%)")
         ax.set_title(
             "Global Feature Missingness — Raw Temporal Dataset\n"
-            "Red bars meet the Alpha (Drop) threshold (≥80\\%)"
+            "Red bars meet the Column Exclusion threshold (≥80\\%)"
         )
         ax.legend(fontsize=8)
         ax.xaxis.set_major_formatter(mticker.PercentFormatter())
@@ -506,7 +506,7 @@ class TemporalEDAPipeline:
             retention_df,
             "retention_stats_by_month",
             "Patient Data Retention by Month (M0–M12): "
-            "Evidence for Gamma Pathway (Missing-as-Indicator)",
+            "Evidence for Missing Indicator with Fill",
             "tab:retention_stats_by_month",
         )
 
@@ -533,7 +533,7 @@ class TemporalEDAPipeline:
         ax1.set_title(
             "Patient Retention Cascade (M0–M12)\n"
             "Increasing missingness over time justifies Forward-Fill "
-            "+ Gamma (Missing Indicator) strategy"
+            "+ Missing Indicator with Fill strategy"
         )
         lines1, labels1 = ax1.get_legend_handles_labels()
         lines2, labels2 = ax2.get_legend_handles_labels()
