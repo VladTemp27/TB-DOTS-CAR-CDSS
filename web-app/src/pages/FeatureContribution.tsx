@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Info } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
@@ -6,6 +7,9 @@ import { FeatureBar } from '../components/FeatureBar'
 import { getPatient } from '../lib/storage'
 import { featureKeyFor } from '../lib/inference'
 import { PageFooter } from '../components/PageFooter'
+import { ClinicalInterpretation } from '../components/ClinicalInterpretation'
+import type { ContributionResult } from '../lib/inference'
+import type { Patient } from '../lib/storage'
 
 function formatValue(displayName: string, raw: unknown): string | undefined {
   if (raw === undefined || raw === null || raw === '') return undefined
@@ -16,8 +20,50 @@ function formatValue(displayName: string, raw: unknown): string | undefined {
 export function FeatureContribution() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
-  const patient = id ? getPatient(id) : null
+  const [patient, setPatient] = useState<Patient | null>(null)
+  const [loadingPatient, setLoadingPatient] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    if (!id) {
+      setLoadingPatient(false)
+      setPatient(null)
+      return
+    }
+    setLoadingPatient(true)
+    ;(async () => {
+      try {
+        const p = await getPatient(id)
+        if (!cancelled) setPatient(p)
+      } catch (e) {
+        if (!cancelled) setLoadError(e instanceof Error ? e.message : String(e))
+      } finally {
+        if (!cancelled) setLoadingPatient(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
   const latest  = patient?.predictions.at(-1)
+
+  if (loadingPatient) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <p className="text-ink-muted">Loading patient…</p>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <p className="text-ink-muted">{loadError}</p>
+      </div>
+    )
+  }
 
   if (!patient || !latest) {
     return (
@@ -31,6 +77,15 @@ export function FeatureContribution() {
   const contributions = latest.contributions
   const maxDelta      = Math.max(...contributions.map(c => c.delta), 0.001)
   const featuresUsed  = latest.featuresUsed ?? patient.features
+
+  // Reconstruct a ContributionResult shape from the stored PredictionRecord
+  // (successProbability is derived — storage omits it as redundant)
+  const result: ContributionResult = {
+    label: latest.label,
+    failureProbability: latest.failureProbability,
+    successProbability: 1 - latest.failureProbability,
+    contributions: latest.contributions,
+  }
 
   return (
     <div className="min-h-screen bg-bg flex flex-col">
@@ -79,6 +134,8 @@ export function FeatureContribution() {
             </div>
           </div>
         </div>
+
+        <ClinicalInterpretation patient={patient} result={result} />
 
         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 flex gap-2.5 items-start">
           <Info size={16} className="text-blue-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
