@@ -1,0 +1,12 @@
+{
+  "Days To Treatment": "Days_To_Treatment",
+  "Province": "Province",
+  "Age": "Age",
+  "Sex": "Sex",
+  "BMI": "BMI",
+  "Smear Result": "Smear_Result",
+  "Treatment Category": "Treatment_Category",
+  "Patient Category": "Patient_Category",
+  "Weight": "Weight",
+  "Height": "Height"
+}
