@@ -30,7 +30,7 @@
 % ----- References: apacite must be loaded BEFORE hyperref -----
 \usepackage[natbibapa]{apacite}
 \bibliographystyle{apacite}
-\shortcites{ref2,ref3,ref4,ref5,ref6,ref7,ref8,ref9,ref11,ref12,ref13,ref14,ref15,ref16,ref17,ref18,ref19,ref21,ref22,ref23,ref24,ref25,ref26,ref27,ref28,ref29,ref30,ref31,ref33,ref34,ref35,ref36,ref37}
+\shortcites{ref2,ref3,ref4,ref5,ref6,ref7,ref8,ref9,ref11,ref12,ref13,ref14,ref15,ref16,ref17,ref18,ref19,ref21,ref22,ref23,ref24,ref25,ref26,ref27,ref28,ref29,ref30,ref31,ref33,ref34,ref35,ref36,ref37,ref39,ref40,ref41,ref42,ref43,ref44}
 
 % ----- Hyperlinks (loaded after apacite to avoid citation link conflicts) -----
 \usepackage{hyperref}
@@ -244,7 +244,15 @@ The raw dataset comprises demographic variables (e.g., age, sex, civil status), 
 
 \subsection{Exploratory Data Analysis}
 
-Prior to predictive modeling, an exploratory analysis is conducted to characterize the study population and identify latent subgroups. The study employs cluster analysis on demographic, clinical, and diagnostic dimensions to detect natural groupings of patients. These clusters reveal distinguishing features such as specific comorbidity profiles, adherence behaviors, and regimen responses. Importantly, the resulting cluster assignments are not merely descriptive; they are integrated as engineered features into the subsequent supervised learning models. This approach enables the algorithms to learn both individual-level attributes and subgroup-level patterns that significantly influence treatment success or failure.
+Prior to predictive modeling, an exploratory analysis was conducted to characterize the study population, assess data completeness, and quantify the associations among variables to inform downstream preprocessing and modeling decisions.
+
+A global missingness audit was performed across all 28 columns to identify the sparsity structure of the dataset (Table~\ref{tab:missing_data_summary}). Per-column missing rates were ranked, revealing that variables such as microscopy result (37.8\% missing), diagnosis-derived temporal features (53.6\%), and clinical delay intervals (59.3--98.8\%) exhibited substantial missingness. This audit provided the empirical basis for the missingness thresholds applied in the Missing Data Handling subsection.
+
+Pairwise correlations among continuous variables were computed using Pearson's r on available-case observations. The numerical set included age, four derived clinical delay intervals (days from screening to diagnosis, days to treatment, days to microscopy result, and days to RDT result), and diagnosis day-of-year. The purpose was to determine whether multivariate imputation via MICE was warranted: if continuous predictors carry meaningful correlation structure, MICE can borrow signal from observed features to estimate missing values; if uncorrelated, univariate mean-fill would be equally effective.
+
+For categorical variables, pairwise association strength was quantified using Cram\'{e}r's V, a chi-square-based measure normalized to the \([0, 1]\) interval. Columns with fewer than two unique non-null values or fewer than ten non-null observations were excluded from the matrix. The categorical set examined included patient demographics (sex, type of TB, anatomical site), clinical classifications (registration group, bacteriologic status, microscopy result, RDT result), geographic identifiers (province, region), facility-level attributes (screening and treatment health facility), source of patient, and treatment outcome. This analysis detected inflated associations arising from high-cardinality columns and confirmed that the categorical feature space carried sufficient structure for predictive modeling.
+
+Additionally, the study employs cluster analysis on demographic, clinical, and diagnostic dimensions to detect natural groupings of patients. These clusters reveal distinguishing features such as specific comorbidity profiles, adherence behaviors, and regimen responses. Importantly, the resulting cluster assignments are not merely descriptive; they are integrated as engineered features into the subsequent supervised learning models. This approach enables the algorithms to learn both individual-level attributes and subgroup-level patterns that significantly influence treatment success or failure.
 
 \subsection{Missing Data Handling}
 
@@ -325,6 +333,12 @@ To ensure the reproducibility of these results and minimize technical inconsiste
 
 The validated models are embedded into a Clinical Decision Support System (CDSS) designed for healthcare providers. This system visualizes patient risk levels and provides a summary of predictive outputs. Key features include a predictive dashboard that displays the probability of treatment failure and success, risk factor visualization that highlights the specific variables (e.g., adherence gaps, lab results) contributing to the risk score, and dynamic updates where the system accepts new follow-up data (e.g., monthly weight, smear results), triggering updated risk predictions to support real-time clinical management throughout the treatment duration.
 
+\subsection{SLM-Based Narrative Explanation Layer}
+
+To improve the usability of model explanations for healthcare users, the CDSS includes a small language model (SLM) as a constrained narrative layer that verbalizes model outputs into readable clinical text. SHAP-based feature contribution outputs remain the primary explanation source, while the SLM functions as a presentation layer rather than an independent predictor or diagnostic engine \citep{ref39, ref41}. This component operates post-prediction and does not alter model training, inference probabilities, or risk classification thresholds. In the implemented pipeline, the web client constructs a structured interpretation request containing selected patient context fields, predicted treatment-failure probability, and ranked contribution signals, then sends the payload to a dedicated interpretation endpoint for streamed narrative rendering in the interface.
+
+The SLM is operationally bounded to explanation tasks only. It is not used to infer new clinical causes, generate treatment prescriptions, or replace clinician judgment. This role separation aligns with current medical-domain SLM framing and health AI governance expectations for bounded decision support, while keeping model interpretability grounded in the original attribution signal \citep{ref40, ref42, ref44}. Final clinical judgment remains with the treating healthcare professional.
+
 % ======================== RESULTS AND DISCUSSION ========================
 \section{Results and Discussion}
 
@@ -336,9 +350,87 @@ Of the 44 features identified with missing data, 15 were excluded via column exc
 
 The listwise deletion pathway was not activated, as the dataset-level MCAR test was rejected and no individual variable simultaneously satisfied all three conditions of confirmed MCAR mechanism, fewer than 15\% missing observations, and a post-deletion sample size exceeding 500. Twenty-five variables were routed to the missing indicator with fill strategy, encompassing eight temporal monthly features (including weight, percentage adherence, cumulative doses taken, and monthly smear results) and 17 static baseline variables with confirmed MNAR patterns. Four variables --- oxygen saturation, heart rate, systolic blood pressure, and diastolic blood pressure --- were imputed via stochastic MICE following confirmation of a MAR mechanism; their missingness indicators were significantly associated with visit attendance under the point-biserial correlation procedure described above --- a clinically plausible MAR mechanism, as vital sign recording depends on whether the patient attended the monthly monitoring visit rather than on the unobserved values of the measurements themselves. The concentration of stochastic imputation on this small subset of high-value features reflects the diagnostic-first design of the pipeline, which reserves computationally intensive probabilistic imputation for variables where the statistical assumptions required for its validity are met \citep{ref31, ref33}.
 
+\input{tables/missing_data_summary.tex}
+
 \subsection{Dataset Characteristics and Class Distribution}
 
-The final dataset exhibited significant class imbalance, with 86.2\% of cases classified as treatment success and 13.8\% as treatment failure. To ensure robust evaluation, the dataset was stratified into 70\% training, 20\% testing, and 10\% validation subsets. Feature engineering expanded the dataset to 15 predictors, including four newly introduced geographic and facility-level variables and one derived clinical delay variable (Diagnosis\_to\_Treatment\_days). Resampling using SMOTE combined with Edited Nearest Neighbors (SMOTE+ENN) was applied exclusively to the training set, increasing the minority (failure) class by 433\% and achieving a near-balanced 0.70:1 ratio. This approach mitigated class bias while preserving realistic evaluation conditions in the test and validation sets.
+The final validated dataset comprised 7,389 complete patient records encompassing demographic, geographic, and clinical features. Overall, the dataset exhibited a significant class imbalance, with 86.2\% of evaluated cases classified as treatment success and 13.8\% as treatment failure. To ensure robust evaluation, the dataset was stratified into 70\% training, 20\% testing, and 10\% validation subsets. Feature engineering expanded the dataset to 15 predictors, integrating spatial identifiers (Region, Province, City/Municipality) with temporal markers and derived clinical delays (e.g., Diagnosis-to-Treatment days).
+
+\begin{figure}[htbp]
+    \caption{TB Case Notifications by Year (2015--2025)}
+    \label{fig:yearly_case_counts}
+    \centering
+    \includegraphics[width=\columnwidth]{figures/yearly_case_counts.pdf}
+\end{figure}
+
+\begin{figure}[htbp]
+    \caption{Age-Sex Pyramid of the Study Cohort}
+    \label{fig:age_sex_pyramid}
+    \centering
+    \includegraphics[width=\columnwidth]{figures/age_sex_pyramid.pdf}
+\end{figure}
+
+Resampling using SMOTE combined with Edited Nearest Neighbors (SMOTE+ENN) was applied exclusively to the training set. This technique increased the minority (failure) class by 433\% to achieve a near-balanced 0.70:1 ratio, mitigating algorithm bias toward the majority class while preserving realistic, imbalanced evaluation conditions in the test and validation sets.
+
+\subsection{Outcome Distribution}
+
+The initial distribution of treatment outcomes highlighted the programmatic successes as well as the persistent challenges within the DOH-CAR TB-DOTS program. The vast majority of the cohort achieved a positive outcome, with 65.1\% of patients officially classified as ``Treatment Completed'' and 14.2\% as ``Cured.'' 
+
+Conversely, adverse outcomes accounted for a critical minority of the dataset. Patients who were ``Lost to Follow-up'' made up 8.4\% of the cohort, while 3.3\% of the cases resulted in the patient having ``Died.'' A smaller fraction experienced outright treatment failure (0.9\%). The remaining cases were either still ``On Treatment'' (6.9\%) or ``Not Evaluated'' (0.9\%) at the time of data consolidation.
+
+\begin{figure}[htbp]
+    \caption{Distribution of Treatment Outcomes Among PTB Patients}
+    \label{fig:outcome_distribution}
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/treatment_outcomes_pie.pdf}
+\end{figure}
+
+\subsection{Longitudinal Trends (2015--2025)}
+
+An analysis of annual treatment outcomes from 2015 to 2025 revealed significant temporal shifts, reflecting both programmatic improvements and external systemic shocks:
+
+\begin{enumerate}
+    \item \textbf{Treatment Success Rates:} The success rate remained relatively stable in the low-to-mid 80\% range for most of the decade. Success rates dipped slightly to 81.03\% in 2018 before steadily climbing to a peak of 88.92\% in 2023.
+    \item \textbf{Mortality and Pandemic Impact:} The mortality rate among TB patients showed a distinct peak in 2020 (5.47\%) and 2021 (6.63\%), up from 3.65\% in 2019. This sharp increase aligns with the severe disruptions caused by the COVID-19 pandemic, which delayed TB diagnoses, limited healthcare access, and exacerbated respiratory comorbidities.
+    \item \textbf{Loss to Follow-up:} The rate of patients lost to follow-up was highest between 2018 and 2020, peaking at 11.99\%. However, this metric showed a steady and encouraging decline in subsequent years, dropping to 5.56\% by 2024. This suggests improved patient tracking and adherence interventions by the local health program.
+    \item \textbf{2025 Cohort Anomaly:} The data for 2025 showed a drastic drop in recorded success (30.01\%) and a massive spike in unresolved cases (64.80\%). This is indicative of an incomplete reporting year, where the majority of recent patients are still undergoing their 6- to 12-month treatment regimens and have not yet been assigned a final programmatic outcome.
+\end{enumerate}
+
+\input{tables/outcome_trends_by_year.tex}
+
+\subsection{Diagnostic and Treatment Intervals}
+
+The temporal intervals between screening, diagnosis, and treatment initiation were extracted to identify operational delays, which are known risk factors for both disease transmission and treatment failure. Statistical summaries of these intervals revealed highly right-skewed distributions:
+
+\begin{enumerate}
+    \item \textbf{Screening to Diagnosis:} The median time from initial screening to official diagnosis was 2.0 days. However, the upper quartile (Q3) extended to 21.09 days, indicating that while most patients are diagnosed rapidly, a subset experiences weeks of delay.
+    \item \textbf{Diagnosis to Treatment:} The median duration between diagnosis and treatment initiation was efficient at approximately 2.68 days. Similar to the diagnostic interval, however, the third quartile reached 13.12 days.
+    \item \textbf{Microscopy Results:} The median time to receive microscopy results was 6.60 days, with the third quartile extending to 14.95 days.
+\end{enumerate}
+
+These skewed distributions demonstrate that while the median programmatic response is efficient, the long tails represent significant delays for high-risk patients. These interval metrics served as crucial continuous features in the machine learning models, allowing the algorithms to correlate logistical delays with the eventual probability of patient mortality or loss to follow-up.
+
+\input{tables/time_interval_summary.tex}
+
+\subsection{Correlation Analysis}
+
+\begin{figure}[htbp]
+    \caption{Pearson Correlation Matrix of Continuous Variables}
+    \label{fig:numerical_pearson}
+    \centering
+    \includegraphics[width=\columnwidth]{figures/numerical_pearson_correlation.pdf}
+\end{figure}
+
+The Pearson correlation matrix (Figure~\ref{fig:numerical_pearson}) reveals the pairwise relationships among age, clinical delay intervals, and diagnosis timing. Age exhibited weak negative correlations with the time intervals ($|r| < 0.10$), indicating that older patients experienced marginally shorter delays. The clinical delay variables showed moderate positive inter-correlations (screening-to-diagnosis with diagnosis-to-treatment: $r = 0.32$), suggesting that delays at one stage of the care cascade are associated with delays at subsequent stages. Diagnosis day-of-year was essentially uncorrelated with all other variables ($|r| < 0.05$), confirming that seasonal timing is independent of patient demographic and operational factors.
+
+\begin{figure}[htbp]
+    \caption{Cram\'{e}r's V Correlation Matrix of Categorical Variables}
+    \label{fig:categorical_cramersv}
+    \centering
+    \includegraphics[width=\columnwidth]{figures/categorical_cramersv_correlation.pdf}
+\end{figure}
+
+The Cram\'{e}r's V matrix (Figure~\ref{fig:categorical_cramersv}) quantifies pairwise associations among the categorical feature set. Most pairwise associations fell in the moderate range ($V \approx 0.3$--$0.5$), indicating meaningful but not redundant categorical structure. Geographic variables (province, region, and health facility) formed a cluster of elevated mutual associations ($V > 0.6$), as expected given the hierarchical nesting of administrative units. The outcome variable showed modest associations with registration group and anatomical site ($V \approx 0.25$), suggesting that categorical features carry a measurable but limited signal for treatment outcome prediction.
 
 \subsection{Validation Set Performance and Generalization}
 
@@ -381,6 +473,12 @@ This study investigated the use of machine learning models to predict treatment 
 The study contributes in several ways. By integrating temporal monitoring data with static baseline features, it demonstrates that patient-level longitudinal information improves predictive performance over static data alone. The application of SMOTE-ENN and advanced data augmentation techniques for Bi-LSTM effectively addresses the extreme class imbalance inherent in TB treatment outcomes, enhancing the model's capacity to detect high-risk patients. Furthermore, the findings suggest that predictive models, particularly Random Forest with SMOTE-ENN, have practical value for clinical decision support systems, enabling clinicians to identify patients at risk of treatment failure early and prioritize interventions accordingly.
 
 Based on these findings, it is recommended that healthcare facilities and policymakers consider integrating machine learning models like Random Forest with SMOTE-ENN into existing TB monitoring programs to improve treatment outcomes and optimize resource allocation. Future research should focus on larger, multi-region datasets to enhance generalization, explore hybrid modeling approaches combining deep learning and tree-based methods, and investigate additional features such as social determinants of health and geographic risk factors. Additionally, enhancing model interpretability, particularly of Bi-LSTM attention outputs, could improve clinician trust and adoption.
+
+\subsection{Safety Scope and Interpretation Limits}
+
+The narrative explanation layer improves accessibility of model reasoning by translating contribution signals into clinician-readable text, but its outputs must be interpreted within clear safety boundaries. The explanation should be read as describing how factors increased or decreased the model-predicted risk, not as establishing causal mechanisms of disease progression. This distinction is important in high-stakes settings where generative outputs may otherwise be over-interpreted beyond their evidentiary basis \citep{ref42, ref43}.
+
+Accordingly, the system is positioned as decision support: it summarizes model behavior while preserving clinician authority for diagnosis and treatment decisions. This framing is consistent with contemporary reporting and governance guidance for AI-assisted clinical prediction systems, where transparency, bounded use, and human oversight remain central requirements \citep{ref44}.
 
 % ======================== ACKNOWLEDGMENTS ========================
 \section{Acknowledgments}

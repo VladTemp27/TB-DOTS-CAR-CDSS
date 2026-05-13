@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, ShieldCheck } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { login } from '../lib/auth'
 
 export function Login() {
@@ -48,7 +48,7 @@ export function Login() {
         {/* Logo + Title */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 mb-4">
-            <ShieldCheck size={32} className="text-primary" />
+            <img src="/logo.png" alt="TB Logo" className="w-12 h-12 object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-ink-base font-display">TB-DOTS CAR CDSS</h1>
           <p className="text-sm text-ink-muted mt-1">Clinical Decision Support System</p>

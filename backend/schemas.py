@@ -111,3 +111,18 @@ class XrayMetadata(CamelModel):
     sha256: str
     size_bytes: int = Field(alias="sizeBytes")
     created_at: int = Field(alias="createdAt")
+
+
+class InterpretRequest(BaseModel):
+    patient_name: str
+    age: int
+    sex: Literal["M", "F"]
+    bacteriologic_status: str
+    microscopy_result: str
+    anatomical_site: Literal["P", "EP"]
+    registration_group: str
+    source_of_patient: str
+    type: str
+    days_to_treatment: int
+    failure_probability: float
+    contributions: list[ContributionItem]
