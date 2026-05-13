@@ -279,6 +279,43 @@ if [[ ! -d "$WEBAPP/node_modules" ]] \
   ok "Frontend dependencies installed"
 fi
 
+# ── database: migrate + seed ─────────────────────────────────────────────────
+log "Running database migrations..."
+PYTHONPATH="$ROOT" "$PYTHON" -c "
+from pathlib import Path
+from alembic import command
+from alembic.config import Config
+backend = Path('$BACKEND')
+cfg = Config(str(backend / 'alembic.ini'))
+cfg.set_main_option('script_location', str(backend / 'alembic'))
+command.upgrade(cfg, 'head')
+"
+ok "Migrations up to date"
+
+_DB_EMPTY=false
+if PYTHONPATH="$ROOT" "$PYTHON" -c "
+import sys
+from sqlalchemy import select
+from backend.db import session_factory
+from backend.models import Patient as PatientRow
+db = session_factory()()
+try:
+    existing = db.scalar(select(PatientRow.id).limit(1))
+    sys.exit(0 if existing is None else 1)
+finally:
+    db.close()
+" 2>/dev/null; then
+  _DB_EMPTY=true
+fi
+
+if [[ "$_DB_EMPTY" == "true" ]]; then
+  log "Database is empty — seeding demo data..."
+  (cd "$ROOT" && "$PYTHON" -m backend.seed_demo --include-xrays)
+  ok "Demo data seeded"
+else
+  ok "Database already has data — skipping seed"
+fi
+
 # ── start services ────────────────────────────────────────────────────────────
 log "Starting backend API on :$BACKEND_PORT  (log → logs/backend-${_TS}.log)"
 "$UVICORN" backend.main:app --port "$BACKEND_PORT" --log-level info \
@@ -391,14 +428,31 @@ draw_dashboard() {
   local be_tail=""
   be_tail=$(tail -n 5 "$BACKEND_LOG" 2>/dev/null | sed 's/^/  /' || true)
 
+  # Detect actual bound ports from process logs (Vite may auto-increment if configured port is busy)
+  local actual_be_port actual_fe_port
+  actual_be_port=$(grep -m1 'Uvicorn running on' "$BACKEND_LOG" 2>/dev/null \
+    | grep -oE ':[0-9]+' | tail -1 | tr -d ':')
+  [[ -z "$actual_be_port" ]] && actual_be_port="$BACKEND_PORT"
+  actual_fe_port=$(grep -m1 'localhost:' "$FRONTEND_LOG" 2>/dev/null \
+    | grep -oE 'localhost:[0-9]+' | grep -oE '[0-9]+$')
+  [[ -z "$actual_fe_port" ]] && actual_fe_port="$FRONTEND_PORT"
+
+  local be_port_str fe_port_str
+  be_port_str="${DIM}:${actual_be_port}${RESET}"
+  [[ "$actual_be_port" != "$BACKEND_PORT" ]] && \
+    be_port_str="${YELLOW}:${actual_be_port}${RESET} ${DIM}(cfg :${BACKEND_PORT})${RESET}"
+  fe_port_str="${DIM}:${actual_fe_port}${RESET}"
+  [[ "$actual_fe_port" != "$FRONTEND_PORT" ]] && \
+    fe_port_str="${YELLOW}:${actual_fe_port}${RESET} ${DIM}(cfg :${FRONTEND_PORT})${RESET}"
+
   clear
   echo -e "${BOLD}  TB-DOTS-CAR-CDSS  ·  Dev Dashboard${RESET}  ${DIM}$(date '+%H:%M:%S')${RESET}"
   echo -e "  ${DIM}$DIVIDER${RESET}"
 
   echo ""
   echo -e "  ${BOLD}${CYAN}SERVICES${RESET}"
-  printf "  %-22s %b\n" "Backend API"    "$be_badge"
-  printf "  %-22s %b\n" "React Frontend" "$fe_badge"
+  printf "  %-22s %b  %b\n" "Backend API"    "$be_badge" "$be_port_str"
+  printf "  %-22s %b  %b\n" "React Frontend" "$fe_badge" "$fe_port_str"
 
   echo ""
   echo -e "  ${BOLD}${CYAN}AI BACKEND${RESET}"
@@ -425,7 +479,7 @@ draw_dashboard() {
 
   echo ""
   echo -e "  ${DIM}$DIVIDER${RESET}"
-  echo -e "  ${DIM}Backend → http://localhost:$BACKEND_PORT   Frontend → http://localhost:$FRONTEND_PORT${RESET}"
+  echo -e "  ${DIM}Backend → http://localhost:${actual_be_port}   Frontend → http://localhost:${actual_fe_port}${RESET}"
   echo -e "  ${DIM}logs/backend-${_TS}.log  |  logs/frontend-${_TS}.log  |  Ctrl+C to stop${RESET}"
 }
 
