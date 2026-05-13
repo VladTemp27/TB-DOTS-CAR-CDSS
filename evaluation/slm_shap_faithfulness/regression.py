@@ -4,20 +4,19 @@
 def compare_runs(base: dict, current: dict) -> dict[str, float]:
     """Compute metric deltas between a baseline and current run summary.
 
-    Args:
-        base: Summary dict from a previous benchmark run (e.g. {"pass_rate": 0.8}).
-        current: Summary dict from the current benchmark run.
-
-    Returns:
-        Dict of {metric_delta: value} for each numeric metric present in both.
-        Positive delta means improvement.
+    Compares all numeric keys present in either base or current.
+    Keys present only in current get a delta equal to the current value (base assumed 0).
+    Keys present only in base get a delta equal to -base value (current assumed 0).
+    Positive delta means improvement.
     """
+    all_keys = set(base) | set(current)
     deltas = {}
-    for key in base:
-        if key in current:
-            try:
-                delta = round(float(current[key]) - float(base[key]), 6)
-                deltas[f"{key}_delta"] = delta
-            except (TypeError, ValueError):
-                pass
+    for key in all_keys:
+        base_val = base.get(key)
+        curr_val = current.get(key)
+        try:
+            delta = round(float(curr_val or 0.0) - float(base_val or 0.0), 6)
+            deltas[f"{key}_delta"] = delta
+        except (TypeError, ValueError):
+            pass
     return deltas

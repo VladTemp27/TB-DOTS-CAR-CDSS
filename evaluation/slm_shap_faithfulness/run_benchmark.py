@@ -10,7 +10,8 @@ from evaluation.slm_shap_faithfulness.config import BenchmarkConfig
 from evaluation.slm_shap_faithfulness.parser import parse_explanation
 from evaluation.slm_shap_faithfulness.scorer import score_case
 from evaluation.slm_shap_faithfulness.shap_truth import build_truth_rows
-from evaluation.slm_shap_faithfulness.io import write_results
+from evaluation.slm_shap_faithfulness.io import write_results, read_results
+from evaluation.slm_shap_faithfulness.regression import compare_runs
 from evaluation.slm_shap_faithfulness.adapters.artifact_adapter import load_cases_from_artifacts
 from evaluation.slm_shap_faithfulness.adapters.runtime_adapter import load_cases_from_runtime
 
@@ -73,6 +74,19 @@ def run_benchmark(
     }
 
     results = {"patients": patient_results, "summary": summary}
+
+    # Regression comparison: if baseline_path provided, compute and attach deltas
+    if baseline_path is not None:
+        try:
+            baseline = read_results(baseline_path)
+            baseline_summary = baseline.get("summary", {})
+            regression = compare_runs(baseline_summary, summary)
+            results["regression"] = regression
+        except (FileNotFoundError, OSError) as exc:
+            raise RuntimeError(
+                f"Could not read baseline from {baseline_path}: {exc}"
+            ) from exc
+
     write_results(output_dir, results)
     return results
 
