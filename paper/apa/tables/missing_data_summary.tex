@@ -1,15 +1,20 @@
-\begin{table}[htbp]
-
-\caption{Missing Data Summary by Column}
-\label{tab:missing_data_summary}
-\begin{tabular}{lcc}
-
+\small
+\begin{longtable}{lcc}
+\caption{Missing Data Summary by Column} \\
+\label{tab:missing_data_summary} \\
 \toprule
-
 Column & Missing\_Count & Missing\_Percentage \\
-
 \midrule
-
+\endfirsthead
+\caption*{Table \ref{tab:missing_data_summary} (continued)} \\
+\toprule
+Column & Missing\_Count & Missing\_Percentage \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
 Days\_To\_Microscopy\_Result & 7297 & 98.75 \\
 Days\_To\_RDT\_Result & 6638 & 89.84 \\
 Days\_Screening\_To\_Diagnosis & 4444 & 60.14 \\
@@ -38,9 +43,4 @@ Year & 0 & 0 \\
 Outcome/Status & 0 & 0 \\
 Registration Group & 0 & 0 \\
 Computed\_Age & 0 & 0 \\
-
-\bottomrule
-
-\end{tabular}
-
-\end{table}
+\end{longtable}
