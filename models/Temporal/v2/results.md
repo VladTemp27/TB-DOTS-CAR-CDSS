@@ -4,29 +4,28 @@
 
 This file is the canonical, thesis-friendly summary for `models/Temporal/v2/`.
 
-Important: the currently saved v2 artifacts were generated on **two different dataset configurations**, so **do not** rank tree models vs the Bi-LSTM run as if they were evaluated on the same split.
+Important: this report reflects the current saved artifacts in `models/Temporal/v2/output/`.
 
 ---
 
 ## What Changed
 
 An older draft of this file contained a single unified ranking across all models.
-The latest saved evaluation artifacts show that:
+The latest saved evaluation artifacts show that the models below were evaluated on the same run:
 
-- **Tree models** (XGBoost, Random Forest, LightGBM) were evaluated on a run that reports **431 patients** total and a **44-patient test set**.
-- **Bi-LSTM** was evaluated on a run that reports **599 patients** total and a **60-patient test set**.
-
-This report therefore summarizes results in **two tracks**.
+- **Dataset**: 431 patients (70/20/10 patient-level)
+- **Test set**: 44 patients (6 Failure, 38 Success)
 
 ---
 
-## Track A - Tree Models (Dataset: 431 patients; Test: 44 patients)
+## Test Set Results (Dataset: 431 patients; Test: 44 patients)
 
 Source artifacts:
 
 - `output/xgboost/xgb_evaluation_report.txt`, `output/xgboost/xgb_metrics.json`
 - `output/random_forest/rf_evaluation_report.txt`, `output/random_forest/rf_metrics.json`
 - `output/lightgbm/lgb_evaluation_report.txt`, `output/lightgbm/lgb_metrics.json`
+- `output/hybrid_lstm/evaluation_report.txt`, `output/hybrid_lstm/lstm_metrics.json`
 
 ### Test Set Metrics (M12)
 
@@ -36,6 +35,8 @@ Source artifacts:
 | XGBoost (+SMOTE-ENN) | 0.9318 | 0.8904 | 0.9730 | 0.9474 | 0.9600 | 0.8333 | 0.9561 | 0.9923 | 0.70 |
 | Random Forest (+SMOTE-ENN) | 0.9318 | 0.8904 | 0.9730 | 0.9474 | 0.9600 | 0.8333 | **0.9605** | **0.9934** | 0.61 |
 | LightGBM (+SMOTE-ENN) | 0.8636 | 0.8509 | 0.9706 | 0.8684 | 0.9167 | 0.8333 | 0.9167 | 0.9827 | 0.86 |
+| Hybrid Bi-LSTM (Baseline) | 0.9091 | 0.8772 | 0.9722 | 0.9211 | 0.9459 | 0.8333 | 0.9254 | 0.9852 | 0.31 |
+| Hybrid Bi-LSTM (Augmented) | 0.8182 | 0.8246 | 0.9688 | 0.8158 | 0.8857 | 0.8333 | 0.9342 | 0.9874 | 0.89 |
 
 ### Confusion Matrices
 
@@ -67,14 +68,27 @@ LightGBM (+SMOTE-ENN):
  [ 5 33]]
 ```
 
-### Notes (Tree Track)
+Hybrid Bi-LSTM (Baseline):
+
+```
+[[ 5  1]
+ [ 3 35]]
+```
+
+Hybrid Bi-LSTM (Augmented):
+
+```
+[[ 5  1]
+ [ 7 31]]
+```
+
+### Notes
 
 - XGBoost baseline is the strongest on thresholded metrics (Accuracy/F1/Recall).
 - Random Forest is best on ranking metrics in this track (ROC-AUC/PR-AUC) and reports `oob_score=0.9858`.
 - LightGBM underperforms the other two tree families on this run.
-- All three tree reports include per-month tables (M0..M12) with `n_total=44`.
-
----
+- Hybrid Bi-LSTM baseline is competitive on this split; the augmented variant improves ROC-AUC slightly but reduces thresholded metrics.
+- All reports include per-month tables (M0..M12) with `n_total=44`.
 
 ## Artifact Index
 
@@ -84,3 +98,4 @@ LightGBM (+SMOTE-ENN):
   - `output/lightgbm/lgb_evaluation_report.txt`
 - Bi-LSTM:
   - `output/hybrid_lstm/evaluation_report.txt`
+  - `output/hybrid_lstm/lstm_metrics.json`

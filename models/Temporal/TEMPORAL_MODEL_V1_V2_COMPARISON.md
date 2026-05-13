@@ -10,17 +10,17 @@ Artifacts & outputs
 
 ## Executive Summary
 
-v2 is better than v1 for the main reason that it is a materially stronger pipeline, not just a different set of model hyperparameters. The later version uses a much larger cohort, cleaner preprocessing, richer temporal encoding, and a more credible evaluation setup. That combination makes the final metrics more stable and more clinically useful, especially for the tree-based models.
+v2 is better than v1 primarily because it is a stronger end-to-end pipeline (data cleaning, temporal encoding, and evaluation), not just different hyperparameters.
 
-The most important shift is that v1 was evaluated on a very small test set with only 2 Failure cases, which made the metrics highly unstable and encouraged majority-class collapse. v2 expands the study to 599 patients, raises the test set to 60 patients with 6 Failure cases, and adds more complete preprocessing and feature engineering. As a result, v2 shows substantially better specificity, ROC-AUC, and PR-AUC for XGBoost, Random Forest, and LightGBM.
+The most important methodological shift vs v1 is that v1's held-out test set has only **2 Failure** patients (21 total), which makes specificity/ROC-AUC highly unstable and leads to majority-class collapse. In the current v2 artifacts, all models are evaluated on the same 431-patient split with a 44-patient test set (6 Failure), which makes the reported test metrics far more meaningful.
 
 ## Side-by-Side Pipeline Comparison
 
 | Aspect | v1 | v2 | Why it matters |
 |---|---|---|---|
-| Dataset size | 205 patients | 599 patients | v2 has much lower variance and more failure examples to learn from |
-| Test set | 21 patients, 2 Failure | 60 patients, 6 Failure | v2 metrics are less sensitive to one or two misclassified failures |
-| Reported feature count | 204 engineered features | 407 engineered features | v2 has a richer representation of clinical trajectory |
+| Dataset size | 205 patients | 431 patients | Larger cohorts reduce variance and increase the number of Failure examples |
+| Test set | 21 patients, 2 Failure | 44 patients, 6 Failure | v1 metrics can swing drastically based on 1 patient |
+| Reported feature count | 204 engineered features | 403 engineered features (tree track) | v2's temporal representation is richer and cleaner |
 | Static preprocessing | Encoded/scaled features, outcome columns removed | MICE imputation, categorical harmonization, sanity clipping, date cleaning | v2 is less noisy and less likely to carry missing-value artifacts |
 | Temporal preprocessing | Progressive monthly features | Progressive monthly features plus expanded monthly structure and missingness handling | v2 captures more signal from month-to-month change |
 | Imbalance handling | SMOTE-ENN and class weights/sampler variants | Same ideas, but on a stronger underlying dataset | The same balancing strategy works better when the input data is cleaner |
@@ -42,13 +42,15 @@ That matters because tree models and sequence models both learn from the same un
 
 ### 2. The cohort is much larger
 
-v1 uses 205 patients. v2 uses 599 patients. That is the biggest reason the v2 results are more credible.
+v1 uses 205 patients. The current v2 artifacts use 431 patients. That increase is a key reason v2 results are more credible.
 
-With only 205 patients, the test set contains just 2 Failure cases. In that setting, specificity and ROC-AUC are extremely unstable. One or two prediction changes can swing the reported score dramatically. In v2, the test set has 6 Failure cases, and the cross-validation results further reduce the risk of a lucky or unlucky split driving the conclusion.
+With only 205 patients, the test set contains just 2 Failure cases. In that setting, specificity and ROC-AUC are extremely unstable. One or two prediction changes can swing the reported score dramatically. In v2, the test set has 6 Failure cases (44 total), and the tree models also report 5-fold cross-validation, which further reduces the risk of a lucky or unlucky split driving the conclusion.
 
 ### 3. Feature engineering is richer
 
-v1 already used progressive temporal features, but v2 expands the representation further. The v2 summary reports 407 engineered features, which means the models can now use more of the patient trajectory, not just a flattened monthly snapshot.
+v1 already used progressive temporal features, but v2 expands the representation further, so the models can use more of the patient trajectory rather than a flattened monthly snapshot.
+
+Note: the latest saved tree-model artifacts report **403 features** (see `models/Temporal/v2/output/*/*_evaluation_report.txt`).
 
 The effect is especially visible for the tree-based models:
 
@@ -71,8 +73,8 @@ That is especially important here because test-set ROC-AUC in v1 is not a reliab
 
 XGBoost shows the clearest improvement.
 
-- v1: accuracy 0.9048, specificity 0.0000, ROC-AUC 0.5789, PR-AUC 0.9501
-- v2: accuracy 0.9167, specificity 0.8333, ROC-AUC 0.9259, PR-AUC 0.9908
+- v1 (205p; test=21): accuracy 0.9048, specificity 0.0000, ROC-AUC 0.5789, PR-AUC 0.9501
+- v2 (431p; test=44): accuracy 0.9545, specificity 0.8333, ROC-AUC 0.9561, PR-AUC 0.9923
 
 This is the strongest evidence that v2 is better. In v1, the model mostly collapses to predicting Success, so accuracy looks acceptable but failure detection is poor. In v2, XGBoost keeps high accuracy while also recovering Failure cases. That is the outcome you want in a clinical screening model.
 
@@ -80,8 +82,8 @@ This is the strongest evidence that v2 is better. In v1, the model mostly collap
 
 Random Forest also improves sharply.
 
-- v1: accuracy 0.7143, ROC-AUC 0.5263, specificity 0.0000
-- v2: accuracy 0.9000, ROC-AUC 0.9383, specificity 0.8333
+- v1 (205p; test=21): accuracy 0.7143, ROC-AUC 0.5263, specificity 0.0000
+- v2 (431p; test=44): accuracy 0.9318, ROC-AUC 0.9605, specificity 0.8333
 
 This suggests the v1 forest was not getting enough signal from the data representation and class balance. The v2 pipeline gives it cleaner inputs and more usable temporal structure, so it becomes a strong second choice rather than a weak fallback.
 
@@ -89,8 +91,8 @@ This suggests the v1 forest was not getting enough signal from the data represen
 
 LightGBM changes from a weak result in v1 to a competitive result in v2.
 
-- v1: accuracy 0.9048, ROC-AUC 0.2105, specificity 0.0000
-- v2: accuracy 0.9000, ROC-AUC 0.9136, specificity 0.8333
+- v1 (205p; test=21): accuracy 0.9048, ROC-AUC 0.2105, specificity 0.0000
+- v2 (431p; test=44): accuracy 0.8636, ROC-AUC 0.9167, specificity 0.8333
 
 The jump in ROC-AUC is the key story here. That means v2 is much better at ranking high-risk vs low-risk patients, even if the hard-label accuracy stays close to the other tree models. The v2 cross-validation result also shows that LightGBM is one of the most stable models in the later pipeline.
 
@@ -98,10 +100,10 @@ The jump in ROC-AUC is the key story here. That means v2 is much better at ranki
 
 The Bi-LSTM is the most nuanced case.
 
-- v1: accuracy 0.9048, specificity 0.0000, ROC-AUC 0.4737
-- v2: accuracy 0.8667, specificity 0.3333, ROC-AUC 0.8272
+- v1 (205p; test=21): accuracy 0.9048, specificity 0.0000, ROC-AUC 0.4737
+- v2 (431p; test=44, baseline): accuracy 0.9091, specificity 0.8333, ROC-AUC 0.9254
 
-The v2 Bi-LSTM is not the best model by accuracy, but it is clinically more meaningful than v1 because it stops behaving like a pure majority-class predictor. The lower accuracy is not necessarily a regression; it comes from the model making more Failure predictions, which lowers raw accuracy but improves failure detection and ranking.
+The v2 Bi-LSTM baseline is clinically more meaningful than v1 in one key respect: it no longer collapses to predicting all patients as Success (specificity is no longer 0.0). In the current v2 artifacts, the baseline Bi-LSTM is also competitive with the tree models on this split.
 
 In other words, v2 makes the Bi-LSTM more conservative and more informative, even if it still does not beat the tree-based models for production use.
 
@@ -127,10 +129,7 @@ The cross-validation results in v2 are important because they show the tree mode
 
 v2 is better, but not because every model is universally better in every metric.
 
-- XGBoost is the best overall point estimate
-- Random Forest has the best ROC-AUC
-- LightGBM is the most deployment-friendly and very stable
-- Bi-LSTM captures temporal structure but still lags the tree models for this dataset
+In the current v2 artifacts (431p; test=44), XGBoost has the best Accuracy/F1 point estimate, Random Forest has the best ROC-AUC/PR-AUC, and the Bi-LSTM baseline is competitive. LightGBM remains the most deployment-friendly (ONNX artifacts exist in v2) but is weaker than XGBoost/RF on this run.
 
 So the correct conclusion is not that v2 makes neural models dominate. The correct conclusion is that v2 makes the whole pipeline more trustworthy, and it lets the simpler tree models express the signal much more effectively.
 
