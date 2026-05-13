@@ -1,15 +1,20 @@
-\begin{table}[htbp]
-
-\caption{Patient Data Retention by Month (M0–M12): Evidence for Missing Indicator with Fill}
-\label{tab:retention_stats_by_month}
-\begin{tabular}{lcccc}
-
+\small
+\begin{longtable}{lcccc}
+\caption{Patient Data Retention by Month (M0–M12): Evidence for Missing Indicator with Fill} \\
+\label{tab:retention_stats_by_month} \\
 \toprule
-
-Month & Active Patients & \\% Retained & \\% Data Decay & Adherence Obs. \\
-
+Month & Active Patients & \% Retained & \% Data Decay & Adherence Obs. \\
 \midrule
-
+\endfirsthead
+\caption*{Table \ref{tab:retention_stats_by_month} continued} \\
+\toprule
+Month & Active Patients & \% Retained & \% Data Decay & Adherence Obs. \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
 M0 & 572 & 95.49 & 4.51 & 322 \\
 M1 & 561 & 93.66 & 6.34 & 306 \\
 M2 & 543 & 90.65 & 9.35 & 297 \\
@@ -23,9 +28,4 @@ M9 & 11 & 1.84 & 98.16 & 3 \\
 M10 & 7 & 1.17 & 98.83 & 3 \\
 M11 & 4 & 0.67 & 99.33 & 2 \\
 M12 & 2 & 0.33 & 99.67 & 1 \\
-
-\bottomrule
-
-\end{tabular}
-
-\end{table}
+\end{longtable}

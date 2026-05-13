@@ -1,15 +1,21 @@
-\begin{table}[htbp]
-
-\caption{Global Feature Missingness Rates in the Raw Temporal Dataset}
-\label{tab:raw_missingness_summary}
-\begin{tabular}{lccc}
-
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{p{4cm}rrr}
+\caption{Global Feature Missingness Rates in the Raw Temporal Dataset} \\
+\label{tab:raw_missingness_summary} \\
 \toprule
-
-Feature & Missing Count & Missing \\% & Column Exclusion (≥80\\%) \\
-
+Feature & Missing Count & Missing \% & Column Exclusion (>=80\%) \\
 \midrule
-
+\endfirsthead
+\caption*{Table \ref{tab:raw_missingness_summary} (continued)} \\
+\toprule
+Feature & Missing Count & Missing \% & Column Exclusion (>=80\%) \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
 m8\_weight & 599 & 100.0 & Yes \\
 m12\_weight & 599 & 100.0 & Yes \\
 m11\_height & 599 & 100.0 & Yes \\
@@ -163,9 +169,4 @@ age & 18 & 3.01 & No \\
 data\_year & 0 & 0.0 & No \\
 source\_file & 0 & 0.0 & No \\
 facility & 0 & 0.0 & No \\
-
-\bottomrule
-
-\end{tabular}
-
-\end{table}
+\end{longtable}
