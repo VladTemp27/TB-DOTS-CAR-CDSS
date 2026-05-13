@@ -11,6 +11,10 @@ import sys
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.experimental import enable_iterative_imputer  # noqa: F401
+from sklearn.impute import IterativeImputer
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score, f1_score
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 # Ensure the shared preprocessing module can be imported whether this
@@ -32,6 +36,9 @@ def _load_preprocessing_module():
 
 pp = _load_preprocessing_module()
 
+SUCCESS_OUTCOMES = {"Cured", "Treatment Completed"}
+TRAINING_DROP_COLUMNS = {"data_year", "source_file"}
+
 
 def _resolve_source_csv(csv_path: str | None) -> Path:
     """Resolve the raw combined dataset path used by the model notebooks.
@@ -50,57 +57,60 @@ def _resolve_source_csv(csv_path: str | None) -> Path:
     return requested_path
 
 
-def _build_model_arrays(df_static: pd.DataFrame, df_temporal: pd.DataFrame):
-    """Build numeric model-ready arrays from the cleaned human-readable tables.
+def _build_label_array(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+    """Create binary labels from harmonized outcomes.
 
-    The current preprocessing pipeline intentionally stops at human-readable
-    outputs, so this helper performs the minimal compatibility transforms
-    required by the temporal model notebooks:
-
-    - drop identifiers and raw date / provenance columns from static features
-    - one-hot encode remaining static categoricals
-    - assemble the 3D temporal tensor in month order (M0..M12)
-    - build flattened combined features for tabular models
+    Success is defined as {Cured, Treatment Completed}. Any other non-missing
+    harmonized outcome is treated as Failure. Missing outcomes are excluded.
     """
+    if "outcome" not in df.columns:
+        raise KeyError("Expected 'outcome' column after preprocessing")
 
-    patient_ids = df_static["patient_id"].to_numpy()
+    outcome_series = df["outcome"]
+    valid_mask = outcome_series.notna()
+    y = outcome_series.loc[valid_mask].map(lambda value: 1.0 if value in SUCCESS_OUTCOMES else 0.0)
+    return y.to_numpy(dtype=np.float32), valid_mask.to_numpy(dtype=bool)
 
-    # Keep only useful static columns. The raw human-readable CSV contains
-    # identifiers, dates, and provenance fields that are not suitable as
-    # direct model inputs.
-    drop_exact = {
-        "data_year",
-        "source_file",
-    }
-    drop_prefixes = ("date_of_", "intensive_phase_", "continuation_phase_")
 
-    static_feature_cols = []
-    for col in df_static.columns:
-        if col in drop_exact:
-            continue
-        if any(col.startswith(prefix) for prefix in drop_prefixes):
-            continue
-        if "date" in col.lower():
-            continue
-        static_feature_cols.append(col)
+def _convert_datetime_columns_to_numeric(df: pd.DataFrame) -> pd.DataFrame:
+    """Convert datetime columns to numeric day offsets so they can be modeled."""
+    converted = df.copy()
+    datetime_cols = converted.select_dtypes(include=["datetime64[ns]", "datetime64[ns, UTC]"]).columns.tolist()
+    epoch = pd.Timestamp("1970-01-01")
+    for col in datetime_cols:
+        series = pd.to_datetime(converted[col], errors="coerce")
+        converted[col] = ((series - epoch) / pd.Timedelta(days=1)).astype(float)
+    return converted
 
-    df_static_model = df_static[static_feature_cols].copy()
 
-    # Encode object columns while keeping numeric columns unchanged.
-    cat_cols = df_static_model.select_dtypes(include=["object", "category"]).columns.tolist()
+def _fill_static_categoricals(train_df: pd.DataFrame, split_df: pd.DataFrame, cat_cols: list[str]) -> pd.DataFrame:
+    filled = split_df.copy()
     for col in cat_cols:
-        df_static_model[col] = df_static_model[col].fillna("Unknown").astype(str)
-    df_static_model = pd.get_dummies(df_static_model, columns=cat_cols, dummy_na=False)
+        pct_missing = train_df[col].isna().mean()
+        if pct_missing > 0.90:
+            fill_value = "Unknown"
+        else:
+            mode = train_df[col].mode(dropna=True)
+            fill_value = mode.iloc[0] if len(mode) else "Unknown"
+        filled[col] = filled[col].fillna(fill_value).astype(str)
+    return filled
 
-    # Ensure booleans are numeric.
-    bool_cols = df_static_model.select_dtypes(include=["bool"]).columns.tolist()
-    for col in bool_cols:
-        df_static_model[col] = df_static_model[col].astype(np.int8)
 
-    static_feature_names = df_static_model.columns.tolist()
-    X_static = df_static_model.to_numpy(dtype=np.float32)
+def _fill_temporal_categoricals(train_df: pd.DataFrame, split_df: pd.DataFrame, cat_cols: list[str]) -> pd.DataFrame:
+    filled = split_df.sort_values(["patient_id", "month"]).copy()
+    for col in cat_cols:
+        filled[col] = filled.groupby("patient_id")[col].ffill()
+        pct_missing = train_df[col].isna().mean()
+        if pct_missing > 0.90:
+            fill_value = "Unknown"
+        else:
+            mode = train_df[col].mode(dropna=True)
+            fill_value = mode.iloc[0] if len(mode) else "Unknown"
+        filled[col] = filled[col].fillna(fill_value).astype(str)
+    return filled
 
-    # Temporal features already arrive as cleaned numeric columns in long format.
+
+def _get_temporal_feature_names(df_temporal: pd.DataFrame) -> list[str]:
     temporal_feature_names = [c for c in df_temporal.columns if c not in {"patient_id", "month"}]
     preferred_order = [
         "cumulative_doses_taken",
@@ -112,16 +122,24 @@ def _build_model_arrays(df_static: pd.DataFrame, df_temporal: pd.DataFrame):
         "weight",
         "xpert_mtb_rif",
     ]
-    temporal_feature_names = [
-        feat for feat in preferred_order if feat in temporal_feature_names
-    ] + [feat for feat in temporal_feature_names if feat not in preferred_order]
+    return [feat for feat in preferred_order if feat in temporal_feature_names] + [
+        feat for feat in temporal_feature_names if feat not in preferred_order
+    ]
 
+
+def _build_model_arrays(df_static_model: pd.DataFrame, df_temporal_model: pd.DataFrame):
+    """Assemble numeric static + temporal arrays after split-safe transforms."""
+    patient_ids = df_static_model["patient_id"].to_numpy(dtype=np.int64)
+    static_feature_names = [c for c in df_static_model.columns if c != "patient_id"]
+    X_static = df_static_model[static_feature_names].to_numpy(dtype=np.float32)
+
+    temporal_feature_names = _get_temporal_feature_names(df_temporal_model)
     n_patients = len(patient_ids)
-    n_timesteps = int(df_temporal["month"].max()) + 1 if len(df_temporal) else len(pp.MONTH_RANGE)
+    n_timesteps = int(df_temporal_model["month"].max()) + 1 if len(df_temporal_model) else len(pp.MONTH_RANGE)
     n_temporal_features = len(temporal_feature_names)
     X_temporal = np.zeros((n_patients, n_timesteps, n_temporal_features), dtype=np.float32)
 
-    df_temporal_sorted = df_temporal.sort_values(["patient_id", "month"])
+    df_temporal_sorted = df_temporal_model.sort_values(["patient_id", "month"])
     for j, feat in enumerate(temporal_feature_names):
         pivot = df_temporal_sorted.pivot(index="patient_id", columns="month", values=feat)
         pivot = pivot.reindex(patient_ids)
@@ -130,7 +148,6 @@ def _build_model_arrays(df_static: pd.DataFrame, df_temporal: pd.DataFrame):
 
     X_temporal = np.nan_to_num(X_temporal, nan=0.0)
     X_combined_flat = np.hstack([X_static, X_temporal.reshape(n_patients, -1)]).astype(np.float32)
-
     return {
         "X_temporal": X_temporal,
         "X_static": X_static,
@@ -147,41 +164,172 @@ def _build_model_arrays(df_static: pd.DataFrame, df_temporal: pd.DataFrame):
 
 
 def load_cleaned_csv(csv_path: str):
-    """Load the combined dataset and prepare model-ready arrays.
+    """Load, clean, harmonize, label, and structure the temporal dataset.
 
-    Returns a dict with model-ready arrays and feature-name lists:
-        {X_temporal, X_static, X_combined_flat, patient_ids,
-         static_feature_names, temporal_feature_names, ...}
+    This returns split-ready DataFrames plus trustworthy labels. Model-specific
+    encoding, imputation, and scaling should happen after patient-level split.
     """
     p = _resolve_source_csv(csv_path)
     if not p.exists():
         raise FileNotFoundError(f"CSV not found: {csv_path}")
 
     df = pd.read_csv(p)
-
-    # Ensure patient_id exists
-    if "patient_id" not in df.columns:
-        df = df.reset_index(drop=True)
-        df["patient_id"] = df.index
-
-    # Standardize column names using preprocessing helper (no inplace surprises)
     df.columns = [pp.standardize_column_name(c) for c in df.columns]
-
-    # Run the minimal cleaning pipeline necessary to structure data
     df = pp.clean_and_coerce_types(df)
     df = pp.harmonize_categoricals(df)
     df = pp.drop_uninformative_columns(df)
 
+    y, valid_mask = _build_label_array(df)
+    df = df.loc[valid_mask].reset_index(drop=True)
+    outcome_labels = df["outcome"].astype(str).to_numpy()
+
     df_static, df_temporal = pp.structure_temporal_data(df)
+    df_static = df_static.reset_index(drop=True)
+    df_temporal = df_temporal.sort_values(["patient_id", "month"]).reset_index(drop=True)
 
-    # Impute missing values (MICE + forward fill) — necessary before encoding
-    df_static, df_temporal = pp.impute_missing_mice(df_static, df_temporal)
+    return {
+        "df": df,
+        "df_static": df_static,
+        "df_temporal": df_temporal,
+        "y": y,
+        "outcome_labels": outcome_labels,
+        "patient_ids": df_static["patient_id"].to_numpy(dtype=np.int64),
+        "label_summary": {
+            "n_patients": int(len(df_static)),
+            "n_success": int(y.sum()),
+            "n_failure": int(len(y) - y.sum()),
+        },
+    }
 
-    model_data = _build_model_arrays(df_static, df_temporal)
-    return model_data
+
+def build_split_model_inputs(
+    df_static: pd.DataFrame,
+    df_temporal: pd.DataFrame,
+    train_idx,
+    val_idx=None,
+    test_idx=None,
+    drop_feature_cols=None,
+    random_state: int = 42,
+):
+    """Fit train-only imputers/encoders and return full arrays in patient order."""
+    if val_idx is None:
+        val_idx = np.array([], dtype=int)
+    if test_idx is None:
+        test_idx = np.array([], dtype=int)
+    drop_feature_cols = set(TRAINING_DROP_COLUMNS if drop_feature_cols is None else drop_feature_cols)
+
+    static_features = df_static.drop(columns=["outcome"], errors="ignore").copy()
+    static_features = static_features.drop(columns=[c for c in drop_feature_cols if c in static_features.columns])
+    static_features = _convert_datetime_columns_to_numeric(static_features)
+    bool_cols = static_features.select_dtypes(include=["bool"]).columns.tolist()
+    for col in bool_cols:
+        static_features[col] = static_features[col].astype(np.int8)
+    static_features["__row_pos"] = np.arange(len(static_features))
+
+    split_indices = {
+        "train": np.asarray(train_idx, dtype=int),
+        "val": np.asarray(val_idx, dtype=int),
+        "test": np.asarray(test_idx, dtype=int),
+    }
+    static_splits = {name: static_features.iloc[idx].copy() for name, idx in split_indices.items()}
+    train_static = static_splits["train"]
+
+    static_cat_cols = [
+        c for c in train_static.select_dtypes(include=["object", "category"]).columns.tolist()
+        if c not in {"patient_id", "__row_pos"}
+    ]
+    static_num_cols = [
+        c for c in train_static.columns
+        if c not in set(static_cat_cols) | {"__row_pos"}
+        and pd.api.types.is_numeric_dtype(train_static[c])
+    ]
+    static_num_impute_cols = [c for c in static_num_cols if train_static[c].notna().any()]
+    static_num_all_missing = [c for c in static_num_cols if c not in static_num_impute_cols]
+
+    static_num_imputer = IterativeImputer(max_iter=20, random_state=random_state, sample_posterior=False)
+    if static_num_impute_cols:
+        static_num_imputer.fit(train_static[static_num_impute_cols])
+
+    static_split_frames = {}
+    train_dummy_cols = None
+    for name, split_df in static_splits.items():
+        split_out = split_df[["__row_pos"]].copy()
+        if static_num_impute_cols:
+            transformed = static_num_imputer.transform(split_df[static_num_impute_cols])
+            split_out = pd.concat(
+                [split_out, pd.DataFrame(transformed, columns=static_num_impute_cols, index=split_df.index)],
+                axis=1,
+            )
+        for col in static_num_all_missing:
+            split_out[col] = 0.0
+        if static_cat_cols:
+            cat_filled = _fill_static_categoricals(train_static, split_df[static_cat_cols], static_cat_cols)
+            cat_encoded = pd.get_dummies(cat_filled, columns=static_cat_cols, dummy_na=False, dtype=np.float32)
+            if name == "train":
+                train_dummy_cols = cat_encoded.columns.tolist()
+            else:
+                cat_encoded = cat_encoded.reindex(columns=train_dummy_cols, fill_value=0.0)
+            split_out = pd.concat([split_out, cat_encoded], axis=1)
+        static_split_frames[name] = split_out
+
+    df_static_model = pd.concat(static_split_frames.values(), axis=0).sort_values("__row_pos").drop(columns=["__row_pos"])
+    if "patient_id" in df_static_model.columns:
+        df_static_model["patient_id"] = df_static_model["patient_id"].round().astype(np.int64)
+
+    train_patient_ids = static_features.iloc[split_indices["train"]]["patient_id"].tolist()
+    val_patient_ids = static_features.iloc[split_indices["val"]]["patient_id"].tolist()
+    test_patient_ids = static_features.iloc[split_indices["test"]]["patient_id"].tolist()
+    temporal_splits = {
+        "train": df_temporal[df_temporal["patient_id"].isin(train_patient_ids)].copy(),
+        "val": df_temporal[df_temporal["patient_id"].isin(val_patient_ids)].copy(),
+        "test": df_temporal[df_temporal["patient_id"].isin(test_patient_ids)].copy(),
+    }
+
+    train_temporal = temporal_splits["train"].sort_values(["patient_id", "month"]).copy()
+    temporal_cat_cols = [
+        c for c in train_temporal.select_dtypes(include=["object", "category"]).columns.tolist()
+        if c not in {"patient_id", "month"}
+    ]
+    temporal_num_cols = [
+        c for c in train_temporal.columns
+        if c not in set(temporal_cat_cols) | {"patient_id", "month"}
+        and pd.api.types.is_numeric_dtype(train_temporal[c])
+    ]
+    temporal_num_impute_cols = [c for c in temporal_num_cols if train_temporal[c].notna().any()]
+    temporal_num_all_missing = [c for c in temporal_num_cols if c not in temporal_num_impute_cols]
+
+    train_temporal_num = train_temporal[["month"] + temporal_num_impute_cols].copy()
+    for col in temporal_num_impute_cols:
+        train_temporal_num[col] = train_temporal.groupby("patient_id")[col].ffill()
+    temporal_imputer = IterativeImputer(max_iter=20, random_state=random_state, sample_posterior=False)
+    if temporal_num_impute_cols:
+        temporal_imputer.fit(train_temporal_num[["month"] + temporal_num_impute_cols])
+
+    processed_temporal_splits = {}
+    for name, split_df in temporal_splits.items():
+        split_sorted = split_df.sort_values(["patient_id", "month"]).copy()
+        processed = split_sorted[["patient_id", "month"]].copy()
+        if temporal_num_impute_cols:
+            num_frame = split_sorted[["month"] + temporal_num_impute_cols].copy()
+            for col in temporal_num_impute_cols:
+                num_frame[col] = split_sorted.groupby("patient_id")[col].ffill()
+            num_frame[["month"] + temporal_num_impute_cols] = temporal_imputer.transform(num_frame[["month"] + temporal_num_impute_cols])
+            processed[temporal_num_impute_cols] = num_frame[temporal_num_impute_cols]
+        for col in temporal_num_all_missing:
+            processed[col] = 0.0
+        if temporal_cat_cols:
+            cat_frame = _fill_temporal_categoricals(train_temporal, split_sorted[temporal_cat_cols], temporal_cat_cols)
+            for col in temporal_cat_cols:
+                processed[col] = cat_frame[col]
+        processed["month"] = processed["month"].round().astype(int)
+        processed_temporal_splits[name] = processed
+
+    df_temporal_model = pd.concat(processed_temporal_splits.values(), axis=0).sort_values(["patient_id", "month"]).reset_index(drop=True)
+    df_static_model, df_temporal_model = pp._post_imputation_clinical_clipping(df_static_model, df_temporal_model)
+    return _build_model_arrays(df_static_model, df_temporal_model)
 
 
-def patient_level_split(n_patients: int, train_frac=0.7, val_frac=0.15, test_frac=0.15, random_state: int = 42):
+def patient_level_split(n_patients: int, y=None, train_frac=0.7, val_frac=0.15, test_frac=0.15, random_state: int = 42):
     """Return (train_idx, val_idx, test_idx) arrays of patient indices.
 
     Indices are integers in [0, n_patients).
@@ -189,17 +337,61 @@ def patient_level_split(n_patients: int, train_frac=0.7, val_frac=0.15, test_fra
     if not np.isclose(train_frac + val_frac + test_frac, 1.0):
         raise ValueError("Fractions must sum to 1.0")
 
-    rng = np.random.RandomState(random_state)
     all_idx = np.arange(n_patients)
-    rng.shuffle(all_idx)
+    stratify = np.asarray(y) if y is not None else None
 
-    n_train = int(np.floor(train_frac * n_patients))
-    n_val = int(np.floor(val_frac * n_patients))
+    train_idx, rest_idx = train_test_split(
+        all_idx,
+        test_size=(1.0 - train_frac),
+        random_state=random_state,
+        stratify=stratify,
+    )
 
-    train_idx = all_idx[:n_train]
-    val_idx = all_idx[n_train:n_train + n_val]
-    test_idx = all_idx[n_train + n_val:]
+    rest_stratify = stratify[rest_idx] if stratify is not None else None
+    val_share = val_frac / (val_frac + test_frac)
+    val_idx, test_idx = train_test_split(
+        rest_idx,
+        test_size=(1.0 - val_share),
+        random_state=random_state,
+        stratify=rest_stratify,
+    )
     return train_idx, val_idx, test_idx
+
+
+def prepare_default_model_inputs(
+    csv_path: str,
+    train_frac=0.7,
+    val_frac=0.2,
+    test_frac=0.1,
+    random_state: int = 42,
+    drop_feature_cols=None,
+):
+    """Load the temporal dataset, create trustworthy labels, split patients,
+    and build train-fit model arrays in one call.
+    """
+    data = load_cleaned_csv(csv_path)
+    train_idx, val_idx, test_idx = patient_level_split(
+        len(data["y"]),
+        y=data["y"],
+        train_frac=train_frac,
+        val_frac=val_frac,
+        test_frac=test_frac,
+        random_state=random_state,
+    )
+    arrays = build_split_model_inputs(
+        data["df_static"],
+        data["df_temporal"],
+        train_idx=train_idx,
+        val_idx=val_idx,
+        test_idx=test_idx,
+        drop_feature_cols=drop_feature_cols,
+        random_state=random_state,
+    )
+    data.update(arrays)
+    data["train_idx"] = train_idx
+    data["val_idx"] = val_idx
+    data["test_idx"] = test_idx
+    return data
 
 
 def scale_train_val_test(X_static, X_temporal, train_idx, val_idx, test_idx):
@@ -271,6 +463,118 @@ def scale_full_arrays(X_static, X_temporal, train_idx):
         "X_temporal_scaled": X_temporal_scaled,
         "scaler_static": scaler_static,
         "scaler_temporal": scaler_temporal,
+    }
+
+
+def evaluate_binary_predictions(y_true, y_prob, threshold=0.5):
+    """Return standard binary metrics for a probability threshold."""
+    y_true = np.asarray(y_true).astype(int)
+    y_prob = np.asarray(y_prob, dtype=np.float32)
+    y_pred = (y_prob >= threshold).astype(int)
+
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+    specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+
+    return {
+        "accuracy": accuracy_score(y_true, y_pred),
+        "precision": precision_score(y_true, y_pred, zero_division=0),
+        "recall": recall_score(y_true, y_pred, zero_division=0),
+        "f1": f1_score(y_true, y_pred, zero_division=0),
+        "specificity": specificity,
+        "confusion_matrix": np.array([[tn, fp], [fn, tp]], dtype=int),
+        "threshold": float(threshold),
+    }
+
+
+def find_optimal_threshold(
+    y_true,
+    y_prob,
+    thresholds=None,
+    objective="balanced",
+    min_precision=0.0,
+):
+    """Search for a probability cutoff that matches the clinical tradeoff.
+
+    Parameters
+    ----------
+    y_true : array-like
+        True binary labels where 1 is the positive class.
+    y_prob : array-like
+        Predicted probabilities for the positive class.
+    thresholds : iterable, optional
+        Candidate thresholds to evaluate. Defaults to 0.10..0.90.
+    objective : str
+        - "balanced": favor a mix of F1, recall, and specificity.
+        - "failure_recall": favor recall while keeping some specificity.
+        - "specificity": favor reducing false positives.
+        - "f1": pure F1 search.
+        - "accuracy": choose the threshold with the highest accuracy.
+    min_precision : float
+        Reject thresholds with precision below this floor.
+
+    Returns
+    -------
+    dict
+        Best threshold, score, metrics, and a dataframe of all candidates.
+    """
+    from sklearn.metrics import confusion_matrix
+
+    y_true = np.asarray(y_true).astype(int)
+    y_prob = np.asarray(y_prob, dtype=np.float32)
+    if thresholds is None:
+        thresholds = np.arange(0.10, 0.91, 0.01)
+
+    rows = []
+    best_row = None
+    best_score = -np.inf
+
+    for threshold in thresholds:
+        y_pred = (y_prob >= threshold).astype(int)
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+
+        accuracy = accuracy_score(y_true, y_pred)
+        precision = precision_score(y_true, y_pred, zero_division=0)
+        recall = recall_score(y_true, y_pred, zero_division=0)
+        f1 = f1_score(y_true, y_pred, zero_division=0)
+        specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+
+        if precision < min_precision:
+            score = -np.inf
+        elif objective == "failure_recall":
+            score = (0.50 * recall) + (0.30 * specificity) + (0.20 * f1)
+        elif objective == "specificity":
+            score = (0.50 * specificity) + (0.30 * f1) + (0.20 * recall)
+        elif objective == "f1":
+            score = f1
+        elif objective == "accuracy":
+            score = accuracy
+        else:
+            score = (0.40 * f1) + (0.30 * recall) + (0.30 * specificity)
+
+        row = {
+            "threshold": float(threshold),
+            "accuracy": float(accuracy),
+            "precision": float(precision),
+            "recall": float(recall),
+            "f1": float(f1),
+            "specificity": float(specificity),
+            "score": float(score),
+        }
+        rows.append(row)
+
+        if score > best_score:
+            best_score = score
+            best_row = row
+
+    results = pd.DataFrame(rows)
+    if best_row is None:
+        best_row = results.sort_values(["f1", "specificity", "recall"], ascending=False).iloc[0].to_dict()
+
+    return {
+        "best_threshold": float(best_row["threshold"]),
+        "best_score": float(best_row["score"]),
+        "best_metrics": best_row,
+        "search_results": results,
     }
 
 
