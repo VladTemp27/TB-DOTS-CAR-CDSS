@@ -1,18 +1,18 @@
 \begin{table}[htbp]
-\caption{Performance Results for Baseline with Baseline}
+\caption{Performance Results — Baseline / No Sampling}
 \label{tab:baseline_none}
-\begin{tabular}{lcccc}
+\begin{tabular}{lcccccc}
 \toprule
 
-Model & ROC-AUC & Recall (Fail) & F1 (Fail) & Accuracy \\
+Model & ROC-AUC & CV-AUC Mean & CV-AUC Std & Recall (Fail) & F1 (Fail) & Accuracy \\
 \midrule
 
-Logistic Regression & 0.6640 & 0.6330 & 0.3199 & 0.6279 \\
-Random Forest & 0.6770 & 0.2926 & 0.2750 & 0.7868 \\
-XGBoost & 0.6685 & 0.5266 & 0.3075 & 0.6721 \\
-LightGBM & 0.6788 & 0.5160 & 0.3165 & 0.6919 \\
-Gradient Boosting & 0.7041 & 0.0851 & 0.1468 & 0.8632 \\
-SVM (RBF) & 0.6923 & 0.6489 & 0.3232 & 0.6243 \\
+Logistic Regression & 0.6333 & 0.6337 & 0.0193 & 0.5837 & 0.2863 & 0.5976 \\
+Random Forest & 0.6783 & 0.6677 & 0.0076 & 0.3394 & 0.2804 & 0.7591 \\
+XGBoost & 0.6873 & 0.6628 & 0.0083 & 0.5566 & 0.3187 & 0.6708 \\
+LightGBM & 0.6828 & 0.6641 & 0.0050 & 0.5339 & 0.3172 & 0.6821 \\
+Gradient Boosting & 0.7060 & 0.6693 & 0.0053 & 0.0588 & 0.1053 & 0.8617 \\
+SVM (RBF) & 0.6075 & 0.5941 & 0.0173 & 0.6199 & 0.2630 & 0.5194 \\
 \bottomrule
 
 \end{tabular}
