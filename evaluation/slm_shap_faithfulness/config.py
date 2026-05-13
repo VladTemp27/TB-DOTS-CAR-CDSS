@@ -12,4 +12,4 @@ class BenchmarkConfig:
     weight_sign_accuracy: float = 0.35
     weight_magnitude_accuracy: float = 0.20
     parser_coverage_min: float = 0.95
-    allowed_modes: tuple = ("artifact", "runtime")
+    allowed_modes: tuple[str, ...] = ("artifact", "runtime")

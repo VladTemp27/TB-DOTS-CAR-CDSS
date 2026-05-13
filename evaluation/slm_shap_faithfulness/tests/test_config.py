@@ -1,3 +1,7 @@
+from dataclasses import FrozenInstanceError
+
+import pytest
+
 from evaluation.slm_shap_faithfulness.config import BenchmarkConfig
 
 
@@ -13,3 +17,9 @@ def test_conservative_defaults_and_mode_choices():
     assert cfg.weight_feature_f1 == 0.45
     assert cfg.weight_sign_accuracy == 0.35
     assert cfg.weight_magnitude_accuracy == 0.20
+
+
+def test_config_is_immutable():
+    cfg = BenchmarkConfig()
+    with pytest.raises((FrozenInstanceError, AttributeError)):
+        cfg.top_k = 99
