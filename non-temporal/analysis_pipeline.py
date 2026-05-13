@@ -150,7 +150,6 @@ class TBAnalysisPipeline:
             "Column": df.columns,
             "Missing_Count": df.isnull().sum(),
             "Missing_Percentage": (df.isnull().sum() / len(df) * 100).round(2),
-            "Data_Type": df.dtypes.astype(str),
         })
         return summary.sort_values("Missing_Percentage", ascending=False).reset_index(drop=True)
 
