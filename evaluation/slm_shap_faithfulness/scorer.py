@@ -15,6 +15,23 @@ def score_case(
     if cfg is None:
         cfg = BenchmarkConfig()
 
+    # Guard: both empty → trivially passing but meaningless; return explicit result
+    if not truth_rows and not claims:
+        return {
+            "feature_f1": 1.0,
+            "sign_accuracy": 1.0,
+            "magnitude_accuracy": 1.0,
+            "composite": 1.0,
+            "passed": True,
+            "failure_tags": [],
+        }
+
+    # Validate truth_rows have required keys
+    for row in truth_rows:
+        missing = {"feature", "sign", "magnitude_band"} - row.keys()
+        if missing:
+            raise ValueError(f"truth_row missing required keys: {missing}. Row: {row}")
+
     truth_by_feature = {r["feature"]: r for r in truth_rows}
     claims_by_feature = {c["feature"]: c for c in claims}
 
@@ -70,6 +87,8 @@ def score_case(
         "sign_accuracy": round(sign_accuracy, 6),
         "magnitude_accuracy": round(magnitude_accuracy, 6),
         "composite": composite,
+        # passed = composite threshold AND all individual metrics pass their gates
+        # failure_tags captures which individual gates failed (including "low_composite")
         "passed": composite >= cfg.threshold_composite and not failure_tags,
         "failure_tags": failure_tags,
     }
