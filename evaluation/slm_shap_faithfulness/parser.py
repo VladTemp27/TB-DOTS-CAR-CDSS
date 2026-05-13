@@ -46,8 +46,8 @@ def parse_explanation(
 
     Args:
         text: Raw SLM explanation text.
-        alias_map: Reserved for future use. When provided, only features whose
-            canonical name appears as a value in alias_map are extracted.
+        alias_map: When provided, only features whose canonical name appears as a value
+            in alias_map are extracted. When None, all features in _KNOWN_FEATURES are searched.
 
     Returns:
         dict with keys:

@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 from evaluation.slm_shap_faithfulness.config import BenchmarkConfig
+from evaluation.slm_shap_faithfulness.feature_map import canonicalize_feature
 from evaluation.slm_shap_faithfulness.parser import parse_explanation
 from evaluation.slm_shap_faithfulness.scorer import score_case
 from evaluation.slm_shap_faithfulness.shap_truth import build_truth_rows
@@ -54,7 +55,15 @@ def run_benchmark(
         shap_series = pd.Series(case["shap_values"])
         truth_rows = build_truth_rows(shap_series, top_k=cfg.top_k) if not shap_series.empty else []
         parsed = parse_explanation(case["explanation"])
-        claims = parsed["claims"]
+        # Canonicalize feature names in claims to match shap_values keys (underscore form)
+        claims = []
+        for claim in parsed["claims"]:
+            canonical = canonicalize_feature(claim["feature"])
+            if canonical is not None:
+                claims.append({**claim, "feature": canonical})
+            else:
+                # Keep as-is if no canonical form found (single-word features like Age, BMI)
+                claims.append(claim)
         score = score_case(truth_rows, claims, cfg=cfg)
         patient_results.append({
             "patient_id": case["patient_id"],
@@ -82,7 +91,7 @@ def run_benchmark(
             baseline_summary = baseline.get("summary", {})
             regression = compare_runs(baseline_summary, summary)
             results["regression"] = regression
-        except (FileNotFoundError, OSError) as exc:
+        except RuntimeError as exc:
             raise RuntimeError(
                 f"Could not read baseline from {baseline_path}: {exc}"
             ) from exc
