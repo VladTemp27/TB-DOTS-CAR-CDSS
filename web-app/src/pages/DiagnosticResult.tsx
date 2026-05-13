@@ -158,7 +158,7 @@ export function DiagnosticResult() {
 
               {/* CTA visible inline on desktop */}
               <button
-                onClick={() => navigate(`/patient/${id}/treatment`)}
+                onClick={() => navigate(`/patient/${id}/treatment`, { state: { fromIntake: true } })}
                 className="hidden lg:block w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm active:bg-primary-dark hover:bg-primary-mid transition-colors"
               >
                 Select Treatment Regimen →
@@ -172,7 +172,7 @@ export function DiagnosticResult() {
       <div className="lg:hidden">
         <PageFooter>
           <button
-            onClick={() => navigate(`/patient/${id}/treatment`)}
+            onClick={() => navigate(`/patient/${id}/treatment`, { state: { fromIntake: true } })}
             className="w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm active:bg-primary-dark"
           >
             Select Treatment Regimen →
