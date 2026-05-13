@@ -25,7 +25,11 @@ def load_cases_from_runtime(
 
     Returns:
         Normalized list of case dicts with keys: patient_id, explanation,
-        shap_values, and timestamp (if present).
+        shap_values, and timestamp (if present in source JSON).
+
+    Note:
+        The "timestamp" key is optional and may be absent from the returned
+        case dicts. It is only included when present in the source JSON.
     """
     input_dir = Path(input_dir)
     cases = []
@@ -44,7 +48,7 @@ def load_cases_from_runtime(
         case = {
             "patient_id": data.get("patient_id", path.stem),
             "explanation": data.get("explanation", ""),
-            "shap_values": shap_values or {},
+            "shap_values": shap_values if shap_values is not None else {},
         }
         if "timestamp" in data:
             case["timestamp"] = data["timestamp"]

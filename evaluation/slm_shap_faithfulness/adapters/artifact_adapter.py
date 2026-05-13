@@ -17,6 +17,10 @@ def load_cases_from_artifacts(input_dir: str | Path) -> list[dict]:
     Returns:
         Normalized list of case dicts with keys: patient_id, explanation, shap_values.
         Returns empty list if no matching files are found.
+
+    Note:
+        The "timestamp" key is never included in artifact cases.
+        Use runtime_adapter if timestamp tracking is needed.
     """
     input_dir = Path(input_dir)
     cases = []
