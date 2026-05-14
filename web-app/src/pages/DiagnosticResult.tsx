@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { BarChart3, Info } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
@@ -7,21 +8,72 @@ import { PageFooter } from '../components/PageFooter'
 import { getPatient } from '../lib/storage'
 import type { ContributionResult } from '../lib/inference'
 import { ClinicalInterpretation } from '../components/ClinicalInterpretation'
+import type { Patient } from '../lib/storage'
 
 export function DiagnosticResult() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const location = useLocation()
 
-  const patient = id ? getPatient(id) : null
+  const [patient, setPatient] = useState<Patient | null>(null)
+  const [loadingPatient, setLoadingPatient] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
   const result: ContributionResult | null = location.state?.result ?? null
   const prob = result?.failureProbability ?? patient?.predictions.at(-1)?.failureProbability ?? 0
   const isHighRisk = prob >= 0.6  // matches riskLabel() HIGH threshold in RiskBadge.tsx
+
+  useEffect(() => {
+    let cancelled = false
+    if (!id) {
+      setLoadingPatient(false)
+      setPatient(null)
+      return
+    }
+    setLoadingPatient(true)
+    ;(async () => {
+      try {
+        const p = await getPatient(id)
+        if (!cancelled) setPatient(p)
+      } catch (e) {
+        if (!cancelled) setLoadError(e instanceof Error ? e.message : String(e))
+      } finally {
+        if (!cancelled) setLoadingPatient(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
 
   const riskGradient = isHighRisk
     ? 'bg-gradient-to-br from-risk-high/5 to-risk-high/15 border-risk-high/30'
     : 'bg-gradient-to-br from-risk-low/5 to-risk-low/15 border-risk-low/30'
   const riskText = isHighRisk ? 'text-risk-high' : 'text-risk-low'
+
+  if (loadingPatient) {
+    return (
+      <div className="min-h-screen bg-bg flex flex-col">
+        <AppHeader />
+        <StepProgress steps={5} current={4} />
+        <div className="flex-1 px-4 lg:px-8 pt-10 pb-6 w-full max-w-4xl mx-auto">
+          <p className="text-sm text-ink-muted">Loading patient…</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-bg flex flex-col">
+        <AppHeader />
+        <StepProgress steps={5} current={4} />
+        <div className="flex-1 px-4 lg:px-8 pt-10 pb-6 w-full max-w-4xl mx-auto">
+          <p className="text-sm text-risk-high">{loadError}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-bg flex flex-col">
@@ -106,7 +158,7 @@ export function DiagnosticResult() {
 
               {/* CTA visible inline on desktop */}
               <button
-                onClick={() => navigate(`/patient/${id}/treatment`)}
+                onClick={() => navigate(`/patient/${id}/treatment`, { state: { fromIntake: true } })}
                 className="hidden lg:block w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm active:bg-primary-dark hover:bg-primary-mid transition-colors"
               >
                 Select Treatment Regimen →
@@ -120,7 +172,7 @@ export function DiagnosticResult() {
       <div className="lg:hidden">
         <PageFooter>
           <button
-            onClick={() => navigate(`/patient/${id}/treatment`)}
+            onClick={() => navigate(`/patient/${id}/treatment`, { state: { fromIntake: true } })}
             className="w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm active:bg-primary-dark"
           >
             Select Treatment Regimen →

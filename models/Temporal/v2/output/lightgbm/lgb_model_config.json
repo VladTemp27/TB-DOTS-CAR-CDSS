@@ -1,0 +1,40 @@
+{
+  "model": "LightGBM + SMOTE-ENN",
+  "augmentation": "SMOTE-ENN (Synthetic Minority Oversampling + Edited Nearest Neighbors)",
+  "lightgbm_params": {
+    "n_estimators": 300,
+    "max_depth": 4,
+    "learning_rate": 0.05,
+    "num_leaves": 31,
+    "min_child_samples": 5,
+    "is_unbalance": true
+  },
+  "n_features": 399,
+  "n_patients": 431,
+  "train_patients": 301,
+  "val_patients": 86,
+  "test_patients": 44,
+  "training_mode": "progressive_temporal (one sample per patient per month, M0-M12)",
+  "split": "70/20/10 (patient-level, stratified)",
+  "seed": 42,
+  "feature_policy_version": "temporal_v2_cleaned_output_facility_v1",
+  "dropped_feature_cols": [
+    "continuation_phase_end_date",
+    "continuation_phase_start_date",
+    "data_year",
+    "date_of_birth",
+    "date_of_outcome",
+    "height",
+    "intensive_phase_end_date",
+    "is_missing_outcome",
+    "name_of_diagnosing_facility",
+    "name_of_treatment_unit",
+    "no",
+    "source_file",
+    "weight"
+  ],
+  "static_mnar_indicator_count": 1,
+  "temporal_mnar_indicator_count": 0,
+  "threshold": 0.7799999999999997,
+  "best_iteration": 184
+}

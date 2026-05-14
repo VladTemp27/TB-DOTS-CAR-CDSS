@@ -4,15 +4,9 @@ import { Info } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { StepProgress } from '../components/StepProgress'
 import { getChoices, predictWithContributions } from '../lib/inference'
-import { savePatient, generateId } from '../lib/storage'
 import type { PatientFeatures } from '../lib/inference'
 import { PageFooter } from '../components/PageFooter'
-
-const DRAFT_KEY = 'tb_intake_draft'
-
-function loadDraft() {
-  try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '{}') } catch { return {} }
-}
+import { createDraftPatientId, loadIntakeDraft, saveIntakeDraft } from '../lib/intakeDraft'
 
 const inputCls = 'w-full min-h-[44px] border border-border rounded-xl px-3 py-2.5 text-sm text-ink-base bg-surface placeholder-ink-muted focus:border-primary outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1'
 const selectCls = `${inputCls} bg-surface`
@@ -20,7 +14,7 @@ const labelCls = 'block text-sm font-medium text-ink-secondary mb-1'
 
 export function PatientIntakeStep2() {
   const navigate = useNavigate()
-  const draft = loadDraft()
+  const draft = loadIntakeDraft()
 
   const [bacteriologicStatus, setBacteriologicStatus] = useState(draft.bacteriologicStatus ?? '')
   const [microscopyResult, setMicroscopyResult] = useState(draft.microscopyResult ?? '')
@@ -70,25 +64,23 @@ export function PatientIntakeStep2() {
 
     try {
       const result = await predictWithContributions(features)
-      const id = generateId()
-      savePatient({
-        id,
-        name: draft.name ?? 'Unknown',
-        medicalId: draft.medicalId ?? id,
+      const draftPatientId = draft.draftPatientId ?? draft.medicalId ?? createDraftPatientId()
+      saveIntakeDraft({
+        ...draft,
+        draftPatientId,
+        bacteriologicStatus,
+        microscopyResult,
+        anatomicalSite,
+        sourceOfPatient,
+        type,
+        treatmentFacility,
+        screeningFacility,
+        dateStartedTx,
+        dateOfDiagnosis,
         features,
-        treatmentStartDate: dateStartedTx,
-        createdAt: Date.now(),
-        predictions: [{
-          label: result.label,
-          failureProbability: result.failureProbability,
-          contributions: result.contributions,
-          featuresUsed: features,
-          timestamp: Date.now(),
-        }],
-        monthlyRecords: [],
+        result,
       })
-      sessionStorage.removeItem(DRAFT_KEY)
-      navigate('/patient/new/xray', { state: { id, result } })
+      navigate('/patient/new/xray')
     } catch (err) {
       console.error(err)
       alert('Inference failed. Check the browser console for details.')
@@ -201,7 +193,7 @@ export function PatientIntakeStep2() {
 
       <PageFooter>
         <div className="flex gap-3">
-          <button onClick={() => navigate(-1)}
+          <button onClick={() => navigate('/patient/new')}
             className="flex-1 border border-border text-ink-secondary py-3.5 rounded-xl font-semibold text-sm active:bg-gray-50">
             ← Back
           </button>

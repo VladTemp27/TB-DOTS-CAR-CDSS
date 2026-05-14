@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Download, Printer, ChevronDown, ChevronRight } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
@@ -6,15 +6,57 @@ import { RiskBadge, riskColor } from '../components/RiskBadge'
 import { XrayThumbnail } from '../components/XrayThumbnail'
 import { XrayLightbox } from '../components/XrayLightbox'
 import { getPatient } from '../lib/storage'
+import type { Patient } from '../lib/storage'
 
 export function PatientChart() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
-  const patient = id ? getPatient(id) : null
+  const [patient, setPatient] = useState<Patient | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   // Hooks must come before any early return (Rules of Hooks)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   // null = default (last bucket open); Set = user's explicit choices
   const [openBuckets, setOpenBuckets] = useState<Set<string> | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    if (!id) {
+      setLoading(false)
+      setPatient(null)
+      return
+    }
+    setLoading(true)
+    ;(async () => {
+      try {
+        const p = await getPatient(id)
+        if (!cancelled) setPatient(p)
+      } catch (e) {
+        if (!cancelled) setLoadError(e instanceof Error ? e.message : String(e))
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <p className="text-ink-muted">Loading patient…</p>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <p className="text-ink-muted">{loadError}</p>
+      </div>
+    )
+  }
 
   if (!patient) {
     return (
@@ -82,14 +124,28 @@ export function PatientChart() {
           <div>
             <h1 className="text-2xl font-bold text-ink-base font-display">{patient.name}</h1>
             <p className="text-sm text-ink-muted mt-1">{patient.medicalId}</p>
+            {!patient.treatmentRegimen && (
+              <span className="inline-block mt-1.5 text-xs bg-risk-med/10 text-risk-med font-semibold px-2 py-0.5 rounded-full">
+                No Regimen Selected
+              </span>
+            )}
           </div>
           <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => navigate(`/patient/${id}/checkin`)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-mid transition-colors"
-            >
-              Log Monthly Update
-            </button>
+            {patient.treatmentRegimen ? (
+              <button
+                onClick={() => navigate(`/patient/${id}/checkin`)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-mid transition-colors"
+              >
+                Log Monthly Update
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate(`/patient/${id}/treatment`)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-mid transition-colors"
+              >
+                Select Treatment Regimen
+              </button>
+            )}
             <button
               onClick={() => navigate(`/patient/${id}`)}
               className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium text-ink-secondary hover:bg-surface transition-colors"

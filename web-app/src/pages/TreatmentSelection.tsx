@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { CheckCircle2 } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { StepProgress } from '../components/StepProgress'
 import { getPatient, savePatient } from '../lib/storage'
 import { PageFooter } from '../components/PageFooter'
+import type { Patient } from '../lib/storage'
 
 type RegimenId = 'hrze' | 'mdr' | 'xdr'
 
@@ -35,20 +36,78 @@ const REGIMENS: Array<{ id: RegimenId; name: string; drugs: string; duration: st
 export function TreatmentSelection() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
-  const patient = id ? getPatient(id) : null
+  const location = useLocation()
+  const fromIntake = Boolean((location.state as { fromIntake?: boolean } | null)?.fromIntake)
+  const [patient, setPatient] = useState<Patient | null>(null)
+  const [loadingPatient, setLoadingPatient] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  const [selected, setSelected] = useState<RegimenId | ''>(patient?.treatmentRegimen ?? '')
-  const [startDate, setStartDate] = useState(patient?.treatmentStartDate ?? '')
+  const [selected, setSelected] = useState<RegimenId | ''>('')
+  const [startDate, setStartDate] = useState('')
+  const valid = !!selected && !!startDate
 
-  function handleProceed() {
-    if (!id || !selected) return
-    const p = getPatient(id)
+  useEffect(() => {
+    let cancelled = false
+    if (!id) {
+      setLoadingPatient(false)
+      setPatient(null)
+      return
+    }
+    setLoadingPatient(true)
+    ;(async () => {
+      try {
+        const p = await getPatient(id)
+        if (cancelled) return
+        setPatient(p)
+        setSelected(((p?.treatmentRegimen as RegimenId | undefined) ?? ''))
+        setStartDate(p?.treatmentStartDate ?? '')
+      } catch (e) {
+        if (!cancelled) setLoadError(e instanceof Error ? e.message : String(e))
+      } finally {
+        if (!cancelled) setLoadingPatient(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  async function handleProceed() {
+    if (!id || !valid) return
+    const p = patient ?? (await getPatient(id))
     if (p) {
       p.treatmentRegimen = selected || undefined
-      p.treatmentStartDate = startDate
+      p.treatmentStartDate = startDate || undefined
       savePatient(p)
     }
     navigate(`/patient/${id}`)
+  }
+
+  async function handleSkip() {
+    if (!id) return
+    const p = patient ?? (await getPatient(id))
+    if (p) {
+      p.treatmentRegimen = undefined
+      p.treatmentStartDate = startDate || undefined
+      await savePatient(p)
+    }
+    navigate(`/patient/${id}`)
+  }
+
+  if (loadingPatient) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <p className="text-ink-muted">Loading patient…</p>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <p className="text-ink-muted">{loadError}</p>
+      </div>
+    )
   }
 
   return (
@@ -114,14 +173,20 @@ export function TreatmentSelection() {
       </div>
 
       <PageFooter>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
           <button onClick={() => navigate(-1)}
             className="flex-1 border border-border text-ink-secondary py-3.5 rounded-xl font-semibold text-sm">
             ← Back
           </button>
+          {fromIntake && (
+            <button onClick={handleSkip}
+              className="flex-1 text-ink-secondary py-3.5 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors">
+              Skip for now
+            </button>
+          )}
           <button
             onClick={handleProceed}
-            disabled={!selected}
+            disabled={!valid}
             className="flex-[2] bg-primary text-white py-3.5 rounded-xl font-semibold text-sm disabled:opacity-40"
           >
             Proceed to Outcome →
