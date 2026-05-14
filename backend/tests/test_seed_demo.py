@@ -214,7 +214,7 @@ def test_seeded_categorical_values_are_selectable_in_ui(tmp_data_dir: Path):
     repo_root = Path(__file__).resolve().parents[2]
     enc = json.loads((repo_root / "web-app" / "src" / "data" / "feature_encodings.json").read_text())
     allowed = {
-        feature_key: set(enc["__categorical"][enc_key].keys())
+        feature_key: set(enc[enc_key].keys())
         for feature_key, enc_key in CATEGORICAL_FEATURE_TO_ENCODING.items()
     }
 
