@@ -126,3 +126,5 @@ start.sh
 
 # Backend data (SQLite + X-ray blobs)
 data/
+
+CLAUDE.md

@@ -1,0 +1,31 @@
+\begin{table}[htbp]
+\caption{5-Fold Stratified Cross-Validation ROC-AUC by Model and Feature Version}
+\label{tab:cv_performance}
+\begin{tabular}{lccc}
+\toprule
+
+Model & Version & CV-AUC Mean & CV-AUC Std \\
+\midrule
+
+Gradient Boosting & Baseline & 0.6693 & 0.0053 \\
+Gradient Boosting & Extended Features & 0.6777 & 0.0124 \\
+Gradient Boosting & Improved Features & 0.6909 & 0.0130 \\
+LightGBM & Baseline & 0.6641 & 0.0050 \\
+LightGBM & Extended Features & 0.6721 & 0.0140 \\
+LightGBM & Improved Features & 0.6877 & 0.0160 \\
+Logistic Regression & Baseline & 0.6337 & 0.0193 \\
+Logistic Regression & Extended Features & 0.6393 & 0.0293 \\
+Logistic Regression & Improved Features & 0.6400 & 0.0240 \\
+Random Forest & Baseline & 0.6677 & 0.0076 \\
+Random Forest & Extended Features & 0.6746 & 0.0101 \\
+Random Forest & Improved Features & 0.6877 & 0.0104 \\
+SVM (RBF) & Baseline & 0.5941 & 0.0173 \\
+SVM (RBF) & Extended Features & 0.5806 & 0.0120 \\
+SVM (RBF) & Improved Features & 0.5834 & 0.0135 \\
+XGBoost & Baseline & 0.6628 & 0.0083 \\
+XGBoost & Extended Features & 0.6720 & 0.0101 \\
+XGBoost & Improved Features & 0.6871 & 0.0133 \\
+\bottomrule
+
+\end{tabular}
+\end{table}
