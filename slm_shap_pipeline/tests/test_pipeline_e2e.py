@@ -7,9 +7,10 @@ from slm_shap_pipeline.config import PipelineConfig
 from slm_shap_pipeline.pipeline import run
 
 
-CSV_PATH = Path("dataset/temporal/output/cleaned_human_readable.csv")
-MODEL_PATH = Path("models/Temporal/v2/output/lightgbm/lgb_smoteenn_model.txt")
-GROUPS_PATH = Path("slm_shap_pipeline/feature_groups.json")
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+CSV_PATH = _REPO_ROOT / "dataset/temporal/output/cleaned_human_readable.csv"
+MODEL_PATH = _REPO_ROOT / "models/Temporal/v2/output/lightgbm/lgb_smoteenn_model.txt"
+GROUPS_PATH = _REPO_ROOT / "slm_shap_pipeline/feature_groups.json"
 
 SKIP_IF_MISSING = pytest.mark.skipif(
     not (CSV_PATH.exists() and MODEL_PATH.exists() and GROUPS_PATH.exists()),
@@ -71,6 +72,10 @@ def test_blind_smoke(tmp_path):
     assert len(case_files) == 2
     for cf in case_files:
         data = json.loads(cf.read_text())
+        assert "patient_id" in data
+        assert "explanation" in data
+        assert "shap_values" in data
+        assert isinstance(data["shap_values"], dict)
         assert data["condition"] == "blind"
         assert data["month_of_prediction"] == 12
 
@@ -86,7 +91,9 @@ def test_case_files_match_eval_schema(tmp_path):
         cache_dir=tmp_path / "cache",
     )
     out_dir = run("sighted", config=config, patient_limit=1, dry_run_gemini=True)
-    cf = next((out_dir / "cases").glob("case_*.json"))
+    case_files = list((out_dir / "cases").glob("case_*.json"))
+    assert len(case_files) == 1, f"Expected 1 case file, got {len(case_files)}"
+    cf = case_files[0]
     data = json.loads(cf.read_text())
 
     assert "patient_id" in data
