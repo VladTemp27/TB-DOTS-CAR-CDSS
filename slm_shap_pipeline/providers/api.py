@@ -4,7 +4,7 @@ from __future__ import annotations
 class GoogleAPIProvider:
     name = "google-api"
 
-    def __init__(self, api_key: str, model: str = "gemini-2.5-pro-preview-05-06") -> None:
+    def __init__(self, api_key: str, model: str = "gemini-2.5-pro") -> None:
         self.model = model
         self._api_key = api_key
         self._client = None   # created lazily on first generate() call
