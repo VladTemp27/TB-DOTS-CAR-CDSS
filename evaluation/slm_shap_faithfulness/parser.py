@@ -26,14 +26,18 @@ _MAGNITUDE_MAP = (
 # Feature names to recognize — multi-word first to avoid partial matches
 _KNOWN_FEATURES: tuple[str, ...] = (
     # Multi-word first to prevent partial matches on substrings
+    "Drug Resistance Status",
+    "Missing Indicators",
     "Days To Treatment",
     "Days to Treatment",
     "Registration Group",
     "Case Registration Group",
     "Bacteriologic Status",
+    "Bacteriological Status",
     "Microscopy Result",
     "Smear Microscopy",
     "Treatment Adherence",
+    "Treatment Regimen",
     "Body Weight",
     "Smear Result",
     "Smear/TB Lamp",
@@ -44,7 +48,17 @@ _KNOWN_FEATURES: tuple[str, ...] = (
     "Cumulative Doses",
     "Missed Doses",
     "Months Available",
+    "Vital Signs",
+    "Site Factors",
+    "Chest X-Ray",
+    "Chest Xray",
+    "Chest X Ray",
+    "Civil Status",
+    "Diagnosis Type",
     # Single-word last
+    "Comorbidities",
+    "Nationality",
+    "Dates",
     "Age",
     "Sex",
     "Height",
@@ -93,9 +107,10 @@ def parse_explanation(
         if not match:
             continue
 
-        # Context window: ±80 chars, truncated at sentence boundaries
-        start = max(0, match.start() - 80)
-        end = min(len(text), match.end() + 80)
+        # Context window: ±250 chars — SLM explanations use long sentences where
+        # direction/magnitude words appear well after the feature name.
+        start = max(0, match.start() - 250)
+        end = min(len(text), match.end() + 250)
         context = text[start:end]
         context_lower = context.lower()
 

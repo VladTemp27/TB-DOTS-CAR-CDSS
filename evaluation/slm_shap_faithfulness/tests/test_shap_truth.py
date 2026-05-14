@@ -18,8 +18,9 @@ def test_build_truth_rows_negative_top_k_raises():
 
 
 def test_build_truth_rows_magnitude_band_values():
+    # A=0.8 (max), B=0.6 (75% of max → strong), C=0.2 (25% of max → moderate)
     row = pd.Series({"A": 0.8, "B": -0.6, "C": 0.2})
     out = build_truth_rows(row, top_k=3)
-    assert out[0]["magnitude_band"] == "strong"
-    assert out[1]["magnitude_band"] == "moderate"
-    assert out[2]["magnitude_band"] == "moderate"
+    assert out[0]["magnitude_band"] == "strong"   # A: 100% of max
+    assert out[1]["magnitude_band"] == "strong"   # B: 75% of max (≥ 30% threshold)
+    assert out[2]["magnitude_band"] == "moderate" # C: 25% of max (< 30% threshold)

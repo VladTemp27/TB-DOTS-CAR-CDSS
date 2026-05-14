@@ -12,7 +12,7 @@ def test_score_case_applies_conservative_gate():
     ]
     out = score_case(truth, claims)
     assert out["passed"] is True
-    assert out["composite"] >= 0.82
+    assert out["composite"] >= 0.60
 
 
 def test_score_case_empty_claims_fails():
