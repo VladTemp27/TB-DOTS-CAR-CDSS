@@ -122,8 +122,12 @@ Department of Computing and Information Studies, Saint Louis University
 
 % ----- Author Note (commented out for now) -----
 % \vspace{0.5\baselineskip}
-COURSE NUMBER: Course Name
+\vspace{0.5\baselineskip}
+CS421, CS THESIS 2
+
+\vspace{0.5\baselineskip}
 Josephine S. Dela Cruz, DIT
+
 \vspace{0.5\baselineskip}
 April 24, 2026
 
@@ -141,8 +145,8 @@ April 24, 2026
 {\setlength{\parindent}{0pt}
 Pulmonary Tuberculosis (PTB) remains a critical public health challenge in the Cordillera Administrative Region (CAR), Philippines, where complex patient profiles and programmatic gaps contribute to persistent treatment failure. This study develops machine learning models to predict treatment success or failure among PTB patients in DOH-CAR TB-DOTS facilities covering the period 2015--2025. A standardized preprocessing pipeline performs schema harmonization, patient pseudonymization, and a diagnostic-first missing data handling protocol that classifies each variable's missingness mechanism---Missing Completely at Random (MCAR), Missing at Random (MAR), or Missing Not at Random (MNAR)---before routing it to one of four targeted strategies: column exclusion, listwise deletion, missing indicator imputation, or stochastic Multivariate Imputation by Chained Equations (MICE). Supervised models---Logistic Regression, Support Vector Machines (SVM), and Extreme Gradient Boosting (XGBoost)---are trained alongside Recurrent Neural Network (RNN) and Long Short-Term Memory (LSTM) temporal architectures to capture longitudinal treatment dynamics across the 6- to 12-month treatment course. Shapley Additive Explanations (SHAP) ensure model interpretability by quantifying the contribution of individual patient features to each prediction. The validated models are embedded in a Clinical Decision Support System (CDSS) that provides dynamic risk estimates and factor-level explanations to support early clinical intervention for patients at risk of treatment failure.
 
-% APA 7th: Keywords line is NOT indented; label is italic
-\textit{Keywords:} tuberculosis, machine learning, treatment outcome prediction, clinical decision support system, explainable AI
+% APA 7th: Keywords line starts as an indented paragraph; label is italic
+\noindent\hspace*{0.5in}\textit{Keywords:} tuberculosis, machine learning, treatment outcome prediction, clinical decision support system, explainable AI
 }
 
 \newpage
@@ -612,6 +616,8 @@ The authors would like to express their sincere gratitude to Saint Louis Univers
 
 \section{Appendix A: iCreate Supplementary Material}
 \label{app:supplementary}
+
+The following pages reproduce the original iCreate 2026 supplementary material in its source format for archival completeness.
 \includepdf[pages=-,pagecommand={\thispagestyle{fancy}}]{iCreate.pdf}
 
 
