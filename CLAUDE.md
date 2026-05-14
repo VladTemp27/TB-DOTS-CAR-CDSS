@@ -10,10 +10,10 @@ TB-DOTS CAR CDSS is a research project building ML-based Clinical Decision Suppo
 
 ### Static model experiments (classical ML)
 
-Must be run from the `static/` directory because `run_experiments.py` uses a local import of `experiment_pipeline`:
+Must be run from the `static-model/` directory because `run_experiments.py` uses a local import of `experiment_pipeline`:
 
 ```bash
-cd static
+cd static-model
 python run_experiments.py
 ```
 
@@ -22,7 +22,7 @@ This trains 6 classifiers × 4 sampling strategies, exports LaTeX tables to `pap
 To test the pipeline class in isolation:
 
 ```bash
-cd static
+cd static-model
 python experiment_pipeline.py
 ```
 
@@ -39,7 +39,7 @@ Reads `dataset/temporal/combined_dataset.csv`, outputs model-ready arrays and CS
 ### Data consolidation (one-time setup)
 
 ```bash
-cd static/scripts
+cd static-model/scripts
 python consolidate_non_temporal_data.py
 ```
 
@@ -57,7 +57,7 @@ pip install xgboost lightgbm imbalanced-learn skl2onnx scipy
 
 ### Two parallel modeling tracks
 
-**Static model track** (`static/`): Each patient is a single row. Binary classification predicting treatment success (Cured or Treatment Completed = 1) vs failure (Died, LTFU, Failed = 0).
+**Static model track** (`static-model/`): Each patient is a single row. Binary classification predicting treatment success (Cured or Treatment Completed = 1) vs failure (Died, LTFU, Failed = 0).
 
 - `experiment_pipeline.py` — `TBExperimentPipeline` class encapsulating data loading, feature selection, preprocessing, model definitions, experiment execution, and LaTeX export. The `_pipeline` column in results DataFrames holds the fitted sklearn pipeline object and must be dropped before LaTeX export.
 - `run_experiments.py` — Orchestrates two experiment versions (baseline features vs improved features) × 4 samplers (None, SMOTE, SMOTE-ENN, SMOTE-Tomek). Selects best model by ROC-AUC and exports to ONNX via `skl2onnx`. ONNX export strips the `imblearn` sampler step since `skl2onnx` only supports `sklearn` pipelines.
