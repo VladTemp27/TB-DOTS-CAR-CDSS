@@ -6,6 +6,7 @@ from slm_shap_pipeline.config import PipelineConfig
 from slm_shap_pipeline.providers.base import SLMProvider, make_provider
 from slm_shap_pipeline.providers.cli import GeminiCLIProvider
 from slm_shap_pipeline.providers.api import GoogleAPIProvider
+from slm_shap_pipeline.providers.medgemma import MedGemmaProvider
 
 
 def test_provider_protocol_requires_name_and_generate():
@@ -96,3 +97,74 @@ def test_factory_rejects_unknown_provider():
     cfg = PipelineConfig(provider="bogus")
     with pytest.raises(ValueError, match="Unknown provider"):
         make_provider(cfg)
+
+
+def test_medgemma_provider_name():
+    p = MedGemmaProvider(model_path="models/medgemma-1.5-4b-it-IQ4_XS.gguf")
+    assert p.name == "medgemma"
+
+
+def test_medgemma_provider_raises_when_llama_cpp_missing(tmp_path):
+    # Simulate llama_cpp not installed
+    gguf = tmp_path / "model.gguf"
+    gguf.write_bytes(b"\x00")
+    provider = MedGemmaProvider(model_path=gguf)
+    with patch.dict("sys.modules", {"llama_cpp": None}):
+        with pytest.raises(RuntimeError, match="llama-cpp-python"):
+            provider.generate("hello")
+
+
+def test_medgemma_provider_raises_when_model_missing(tmp_path):
+    provider = MedGemmaProvider(model_path=tmp_path / "nonexistent.gguf")
+    fake_llama_cpp = MagicMock()
+    fake_llama_cpp.Llama = MagicMock()
+    with patch.dict("sys.modules", {"llama_cpp": fake_llama_cpp}):
+        with pytest.raises(RuntimeError, match="not found"):
+            provider.generate("hello")
+
+
+def test_medgemma_provider_generate_calls_llm(tmp_path):
+    gguf = tmp_path / "model.gguf"
+    gguf.write_bytes(b"\x00")
+    provider = MedGemmaProvider(model_path=gguf)
+
+    fake_llm = MagicMock(return_value={"choices": [{"text": " medgemma response "}]})
+    fake_Llama = MagicMock(return_value=fake_llm)
+    fake_llama_cpp = MagicMock()
+    fake_llama_cpp.Llama = fake_Llama
+
+    with patch.dict("sys.modules", {"llama_cpp": fake_llama_cpp}):
+        result = provider.generate("test prompt")
+
+    assert result == "medgemma response"
+    fake_llm.assert_called_once_with(
+        "test prompt",
+        max_tokens=provider._max_tokens,
+        temperature=provider._temperature,
+        top_p=provider._top_p,
+        repeat_penalty=provider._repeat_penalty,
+    )
+
+
+def test_medgemma_provider_raises_on_empty_response(tmp_path):
+    gguf = tmp_path / "model.gguf"
+    gguf.write_bytes(b"\x00")
+    provider = MedGemmaProvider(model_path=gguf)
+
+    fake_llm = MagicMock(return_value={"choices": [{"text": "   "}]})
+    fake_Llama = MagicMock(return_value=fake_llm)
+    fake_llama_cpp = MagicMock()
+    fake_llama_cpp.Llama = fake_Llama
+
+    with patch.dict("sys.modules", {"llama_cpp": fake_llama_cpp}):
+        with pytest.raises(RuntimeError, match="empty"):
+            provider.generate("hello")
+
+
+def test_factory_returns_medgemma_provider(tmp_path):
+    gguf = tmp_path / "model.gguf"
+    gguf.write_bytes(b"\x00")
+    cfg = PipelineConfig(provider="medgemma", medgemma_model_path=gguf)
+    p = make_provider(cfg)
+    assert isinstance(p, MedGemmaProvider)
+    assert p.name == "medgemma"

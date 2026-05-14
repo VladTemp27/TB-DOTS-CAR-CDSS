@@ -28,4 +28,11 @@ def make_provider(config: PipelineConfig) -> SLMProvider:
                 "Set the env var or use --provider cli."
             )
         return GoogleAPIProvider(api_key=api_key, model=config.gemini_model)
+    if config.provider == "medgemma":
+        from slm_shap_pipeline.providers.medgemma import MedGemmaProvider
+        return MedGemmaProvider(
+            model_path=config.medgemma_model_path,
+            n_ctx=config.medgemma_n_ctx,
+            max_tokens=config.medgemma_max_tokens,
+        )
     raise ValueError(f"Unknown provider: {config.provider!r}")

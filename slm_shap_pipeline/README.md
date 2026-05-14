@@ -17,7 +17,8 @@ slm_shap_pipeline/feature_groups.json                        ← SHAP group map
 | Provider | Requirement |
 |---|---|
 | `cli` (default) | `gemini` CLI installed and logged in (`gemini auth login`) |
-| `api` | `GOOGLE_API_KEY` env var set; `google-generativeai` package installed |
+| `api` | `GOOGLE_API_KEY` env var set; `pip install google-genai` |
+| `medgemma` | `pip install llama-cpp-python`; GGUF at `models/medgemma-1.5-4b-it-IQ4_XS.gguf` |
 
 ## Quickstart
 
@@ -54,10 +55,11 @@ python -m slm_shap_pipeline.run_pipeline --help
   --condition {blind,sighted}   Required. Experimental condition.
   --patient-limit N             Stop after N patients (for testing).
   --dry-run-gemini              Skip real Gemini calls; write stub explanations.
-  --provider {cli,api}          SLM backend. Default: cli.
+  --provider {cli,api,medgemma} SLM backend. Default: cli.
   --model MODEL                 Override Gemini model name.
+  --medgemma-model PATH         Override MedGemma GGUF path.
   --output-base PATH            Override output directory.
-  --model-path PATH             Override model file path.
+  --model-path PATH             Override LightGBM model file path.
   --csv-path PATH               Override CSV data path.
 ```
 
@@ -72,6 +74,34 @@ python -m slm_shap_pipeline.run_pipeline \
 ```
 
 API provider bypasses the CLI subprocess and calls the SDK directly. The cache key is provider-agnostic — a CLI-warmed cache is reusable under API and vice versa.
+
+### Run with MedGemma (local GGUF)
+
+```bash
+# Install llama-cpp-python with Metal support (Apple Silicon)
+pip install llama-cpp-python
+
+# Run sighted condition through MedGemma
+python -m slm_shap_pipeline.run_pipeline \
+  --condition sighted \
+  --provider medgemma
+
+# Run blind condition
+python -m slm_shap_pipeline.run_pipeline \
+  --condition blind \
+  --provider medgemma
+```
+
+MedGemma loads the GGUF model at `models/medgemma-1.5-4b-it-IQ4_XS.gguf` (≈2.4 GB, Apple Silicon Metal offload enabled). The model is loaded once and reused for all 44 patients. Expected runtime: ~20–40 min on Apple Silicon (longer than Gemini due to local inference).
+
+After both conditions finish, run the same evaluator:
+
+```bash
+python -m evaluation.slm_shap_faithfulness.run_benchmark \
+  --results-dir outputs/slm_shap_pipeline/latest/sighted
+```
+
+Compare MedGemma's `pass_rate` against Gemini's from the pooled runs to gauge faithfulness gap.
 
 ## Output structure
 

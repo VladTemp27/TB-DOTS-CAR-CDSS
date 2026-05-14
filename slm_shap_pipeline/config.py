@@ -23,3 +23,6 @@ class PipelineConfig:
     gemini_model: str = "gemini-2.5-pro"
     gemini_timeout_seconds: int = 120
     google_api_key_env: str = "GOOGLE_API_KEY"
+    medgemma_model_path: Path = Path("models/medgemma-1.5-4b-it-IQ4_XS.gguf")
+    medgemma_n_ctx: int = 2048
+    medgemma_max_tokens: int = 1536

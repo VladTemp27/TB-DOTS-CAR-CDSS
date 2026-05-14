@@ -12,8 +12,9 @@ def main() -> None:
     parser.add_argument("--condition", choices=["blind", "sighted"], required=True)
     parser.add_argument("--patient-limit", type=int, default=None)
     parser.add_argument("--dry-run-gemini", action="store_true")
-    parser.add_argument("--provider", choices=["cli", "api"], default=None)
+    parser.add_argument("--provider", choices=["cli", "api", "medgemma"], default=None)
     parser.add_argument("--model", type=str, default=None)
+    parser.add_argument("--medgemma-model", type=Path, default=None, help="Path to MedGemma GGUF file")
     parser.add_argument("--output-base", type=Path, default=None)
     parser.add_argument("--model-path", type=Path, default=None)
     parser.add_argument("--csv-path", type=Path, default=None)
@@ -30,6 +31,8 @@ def main() -> None:
         config_kwargs["provider"] = args.provider
     if args.model:
         config_kwargs["gemini_model"] = args.model
+    if args.medgemma_model:
+        config_kwargs["medgemma_model_path"] = args.medgemma_model
 
     config = PipelineConfig(**config_kwargs)
     run(
