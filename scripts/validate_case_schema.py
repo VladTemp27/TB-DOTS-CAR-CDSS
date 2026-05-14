@@ -10,6 +10,12 @@ import json
 import sys
 from pathlib import Path
 
+# Ensure repo root is on sys.path so evaluation.* imports work when script
+# is invoked directly (./scripts/...) rather than as a module (python3 scripts/...)
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
 from evaluation.slm_shap_faithfulness.feature_map import canonicalize_feature
 from evaluation.slm_shap_faithfulness.parser import parse_explanation
 
