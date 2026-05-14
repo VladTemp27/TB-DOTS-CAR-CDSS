@@ -37,6 +37,7 @@ _KNOWN_FEATURES: tuple[str, ...] = (
     "Body Weight",
     "Smear Result",
     "Smear/TB Lamp",
+    "TB Lamp",
     "Xpert Result",
     "Xpert MTB/RIF",
     "Monthly Doses",
@@ -46,17 +47,16 @@ _KNOWN_FEATURES: tuple[str, ...] = (
     # Single-word last
     "Age",
     "Sex",
-    "Weight",
     "Height",
 )
 
 _MIXED_WORDS = (
-    "mixed effect",
+    "mixed effect",    # more specific first
     "mixed",
+    "both increased and decreased",
     "varied",
     "variable",
     "inconsistent",
-    "both increased and decreased",
 )
 
 

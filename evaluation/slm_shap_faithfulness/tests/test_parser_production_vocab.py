@@ -57,3 +57,11 @@ def test_does_not_recognise_stale_province():
     result = parse_explanation("Province moderately decreases risk.")
     features = [c["feature"] for c in result["claims"]]
     assert "Province" not in features
+
+
+def test_increase_beats_mixed_when_both_present():
+    """Increase direction takes priority over mixed when both appear in context."""
+    result = parse_explanation("Treatment Adherence had a mixed but generally increases risk.")
+    claims = [c for c in result["claims"] if c["feature"] == "Treatment Adherence"]
+    assert len(claims) == 1
+    assert claims[0]["direction"] == "increase"
