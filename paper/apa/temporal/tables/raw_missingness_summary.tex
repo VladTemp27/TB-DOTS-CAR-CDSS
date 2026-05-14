@@ -1,13 +1,12 @@
 \small
-\setlength{\tabcolsep}{4pt}
-\begin{longtable}{p{4cm}rrr}
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.44\textwidth}rr>{\raggedright\arraybackslash}p{0.18\textwidth}}
 \caption{Global Feature Missingness Rates in the Raw Temporal Dataset} \\
 \label{tab:raw_missingness_summary} \\
 \toprule
 Feature & Missing Count & Missing \% & Column Exclusion (>=80\%) \\
 \midrule
 \endfirsthead
-\caption*{Table \ref{tab:raw_missingness_summary} (continued)} \\
 \toprule
 Feature & Missing Count & Missing \% & Column Exclusion (>=80\%) \\
 \midrule
@@ -25,7 +24,7 @@ m7\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
 m7\_smear\_tb\_lamp & 599 & 100.0 & Yes \\
 m10\_smear\_tb\_lamp & 599 & 100.0 & Yes \\
 m10\_weight & 599 & 100.0 & Yes \\
-risk\_factor\_s\_for\_drug\_resistance\_tuberculosis & 599 & 100.0 & Yes \\
+\path{risk\_factor\_s\_for\_drug\_resistance\_tuberculosis} & 599 & 100.0 & Yes \\
 m12\_height & 599 & 100.0 & Yes \\
 m12\_smear\_tb\_lamp & 599 & 100.0 & Yes \\
 m12\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
@@ -97,7 +96,7 @@ prior\_history\_of\_tb & 549 & 91.65 & Yes \\
 m2\_weight & 543 & 90.65 & Yes \\
 m1\_weight & 540 & 90.15 & Yes \\
 m7\_pct\_adherence & 519 & 86.64 & Yes \\
-regimen\_type\_at\_6th\_month\_of\_treatment & 518 & 86.48 & Yes \\
+\path{regimen\_type\_at\_6th\_month\_of\_treatment} & 518 & 86.48 & Yes \\
 smear\_microscopy & 502 & 83.81 & Yes \\
 m7\_monthly\_missed\_doses & 502 & 83.81 & Yes \\
 respiratory\_rate & 501 & 83.64 & Yes \\
@@ -110,63 +109,63 @@ m7\_monthly\_doses\_taken & 453 & 75.63 & No \\
 heart\_rate & 441 & 73.62 & No \\
 blood\_pressure & 403 & 67.28 & No \\
 m6\_pct\_adherence & 398 & 66.44 & No \\
-regimen\_type\_at\_end\_of\_treatment & 355 & 59.27 & No \\
+\path{regimen\_type\_at\_end\_of\_treatment} & 355 & 59.27 & No \\
 m6\_monthly\_missed\_doses & 347 & 57.93 & No \\
 m5\_pct\_adherence & 336 & 56.09 & No \\
 m4\_pct\_adherence & 319 & 53.26 & No \\
 m3\_pct\_adherence & 312 & 52.09 & No \\
 m2\_pct\_adherence & 302 & 50.42 & No \\
 m1\_pct\_adherence & 293 & 48.91 & No \\
-name\_of\_treatment\_unit & 290 & 48.41 & No \\
+\path{name\_of\_treatment\_unit} & 290 & 48.41 & No \\
 m0\_pct\_adherence & 277 & 46.24 & No \\
-treatment\_regimen & 273 & 45.58 & No \\
+\path{treatment\_regimen} & 273 & 45.58 & No \\
 m6\_cumulative\_doses\_taken & 263 & 43.91 & No \\
 co\_morbidities & 253 & 42.24 & No \\
 m5\_monthly\_missed\_doses & 252 & 42.07 & No \\
 m0\_cumulative\_doses\_taken & 244 & 40.73 & No \\
-continuation\_phase\_start\_date & 239 & 39.9 & No \\
+\path{continuation\_phase\_start\_date} & 239 & 39.9 & No \\
 m3\_monthly\_missed\_doses & 235 & 39.23 & No \\
 m0\_height & 235 & 39.23 & No \\
-date\_of\_outcome & 235 & 39.23 & No \\
+\path{date\_of\_outcome} & 235 & 39.23 & No \\
 m4\_monthly\_missed\_doses & 233 & 38.9 & No \\
 m6\_monthly\_doses\_taken & 228 & 38.06 & No \\
-continuation\_phase\_end\_date & 228 & 38.06 & No \\
+\path{continuation\_phase\_end\_date} & 228 & 38.06 & No \\
 m0\_monthly\_missed\_doses & 226 & 37.73 & No \\
 m2\_monthly\_missed\_doses & 222 & 37.06 & No \\
-intensive\_phase\_end\_date & 217 & 36.23 & No \\
+\path{intensive\_phase\_end\_date} & 217 & 36.23 & No \\
 m3\_cumulative\_doses\_taken & 217 & 36.23 & No \\
-drug\_resistance\_bacteriological\_status & 217 & 36.23 & No \\
-chest\_x\_ray\_at\_case\_notification & 213 & 35.56 & No \\
+\path{drug\_resistance\_bacteriological\_status} & 217 & 36.23 & No \\
+\path{chest\_x\_ray\_at\_case\_notification} & 213 & 35.56 & No \\
 m1\_monthly\_missed\_doses & 186 & 31.05 & No \\
 m0\_weight & 185 & 30.88 & No \\
 xpert\_mtb\_rif & 182 & 30.38 & No \\
 civil\_status & 167 & 27.88 & No \\
 nationality & 166 & 27.71 & No \\
-date\_of\_notification & 159 & 26.54 & No \\
+\path{date\_of\_notification} & 159 & 26.54 & No \\
 m5\_cumulative\_doses\_taken & 157 & 26.21 & No \\
 m4\_cumulative\_doses\_taken & 152 & 25.38 & No \\
-name\_of\_diagnosing\_facility & 150 & 25.04 & No \\
-intensive\_phase\_start\_date & 136 & 22.7 & No \\
+\path{name\_of\_diagnosing\_facility} & 150 & 25.04 & No \\
+\path{intensive\_phase\_start\_date} & 136 & 22.7 & No \\
 outcome & 127 & 21.2 & No \\
 m2\_cumulative\_doses\_taken & 126 & 21.04 & No \\
-regimen\_type\_at\_start\_of\_treatment & 122 & 20.37 & No \\
-case\_registration\_group & 117 & 19.53 & No \\
-date\_of\_diagnosis & 110 & 18.36 & No \\
+\path{regimen\_type\_at\_start\_of\_treatment} & 122 & 20.37 & No \\
+\path{case\_registration\_group} & 117 & 19.53 & No \\
+\path{date\_of\_diagnosis} & 110 & 18.36 & No \\
 m5\_monthly\_doses\_taken & 101 & 16.86 & No \\
 m1\_cumulative\_doses\_taken & 93 & 15.53 & No \\
 m4\_monthly\_doses\_taken & 90 & 15.03 & No \\
 m3\_monthly\_doses\_taken & 80 & 13.36 & No \\
-bacteriologic\_status & 79 & 13.19 & No \\
+\path{bacteriologic\_status} & 79 & 13.19 & No \\
 diagnosis & 62 & 10.35 & No \\
-treatment\_start\_date & 57 & 9.52 & No \\
+\path{treatment\_start\_date} & 57 & 9.52 & No \\
 m2\_monthly\_doses\_taken & 57 & 9.52 & No \\
 m1\_monthly\_doses\_taken & 39 & 6.51 & No \\
 sex & 33 & 5.51 & No \\
 no & 31 & 5.18 & No \\
 m0\_monthly\_doses\_taken & 30 & 5.01 & No \\
-date\_of\_birth & 20 & 3.34 & No \\
+\path{date\_of\_birth} & 20 & 3.34 & No \\
 age & 18 & 3.01 & No \\
-data\_year & 0 & 0.0 & No \\
-source\_file & 0 & 0.0 & No \\
+\path{data\_year} & 0 & 0.0 & No \\
+\path{source\_file} & 0 & 0.0 & No \\
 facility & 0 & 0.0 & No \\
 \end{longtable}
