@@ -20,6 +20,6 @@ class PipelineConfig:
     val_frac: float = 0.2
     test_frac: float = 0.1
     provider: str = "cli"
-    gemini_model: str = "gemini-2.5-pro-preview-05-06"
+    gemini_model: str = "gemini-2.5-pro"
     gemini_timeout_seconds: int = 120
     google_api_key_env: str = "GOOGLE_API_KEY"

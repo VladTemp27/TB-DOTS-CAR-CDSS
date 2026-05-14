@@ -68,7 +68,7 @@ export GOOGLE_API_KEY="your-key"
 python -m slm_shap_pipeline.run_pipeline \
   --condition sighted \
   --provider api \
-  --model gemini-2.5-pro-preview-05-06
+  --model gemini-2.5-pro
 ```
 
 API provider bypasses the CLI subprocess and calls the SDK directly. The cache key is provider-agnostic — a CLI-warmed cache is reusable under API and vice versa.
