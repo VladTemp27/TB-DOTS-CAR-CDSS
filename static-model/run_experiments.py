@@ -112,11 +112,21 @@ def main():
 
     pipeline.generate_figures(master_df, best_pipeline, X_test_fig, y_test_fig)
 
-    # ONNX → ORT export
+    # ONNX export — full sklearn pipeline (preprocessor + classifier) embedded
+    # Uses onnxmltools to register the XGBoost converter with skl2onnx (XGBoost 3.x compatible)
     try:
-        from skl2onnx import to_onnx
-        from sklearn.pipeline import Pipeline as SKPipeline
         import numpy as np
+        from sklearn.pipeline import Pipeline as SKPipeline
+        from skl2onnx import to_onnx, update_registered_converter
+        from skl2onnx.common.shape_calculator import calculate_linear_classifier_output_shapes
+        from onnxmltools.convert.xgboost.operator_converters.XGBoost import convert_xgboost
+        from xgboost.sklearn import XGBClassifier
+
+        update_registered_converter(
+            XGBClassifier, 'XGBoostXGBClassifier',
+            calculate_linear_classifier_output_shapes, convert_xgboost,
+            options={'nocl': [True, False], 'zipmap': [True, False]},
+        )
 
         steps = [(name, step) for name, step in best_pipeline.steps if name != 'sampler']
         clean_pipe = SKPipeline(steps)
@@ -124,8 +134,11 @@ def main():
         best_features = pipeline.get_features(best_feat_ver)
         X_dummy = pd.DataFrame(np.zeros((1, len(best_features))), columns=best_features)
 
-        onnx_model = to_onnx(clean_pipe, X_dummy[:1], target_opset=12,
-                              options={id(clean_pipe.steps[-1][1]): {'zipmap': False}})
+        onnx_model = to_onnx(
+            clean_pipe, X_dummy[:1].astype(np.float32),
+            target_opset={'': 12, 'ai.onnx.ml': 3},
+            options={id(clean_pipe.steps[-1][1]): {'zipmap': False, 'nocl': True}},
+        )
 
         model_dir = base_dir / "models"
         model_dir.mkdir(parents=True, exist_ok=True)
@@ -133,15 +146,7 @@ def main():
 
         with open(onnx_path, "wb") as f:
             f.write(onnx_model.SerializeToString())
-        logger.info("Serialized ONNX → %s", onnx_path)
-
-        try:
-            from onnxruntime.tools import convert_onnx_models_to_ort
-            convert_onnx_models_to_ort.convert_onnx_models_to_ort(str(model_dir))
-            onnx_path.unlink(missing_ok=True)
-            logger.info("Converted to ORT → %s", model_dir / "tb_outcome_prediction.ort")
-        except Exception as e:
-            logger.warning("ORT conversion failed (keeping .onnx): %s", e)
+        logger.info("Exported ONNX → %s", onnx_path)
 
     except Exception as e:
         logger.warning("Model export failed: %s", e)

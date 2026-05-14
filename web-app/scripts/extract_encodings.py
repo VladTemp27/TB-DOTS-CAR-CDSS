@@ -14,7 +14,7 @@ import os
 import sys
 import pandas as pd
 
-BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CLEAN_CSV = os.path.join(BASE, "dataset", "non-temporal", "2015-2025-consolidated-clean.csv")
 ENCODED_CSV = os.path.join(BASE, "dataset", "non-temporal", "2015-2025-ml-ready.csv")
 OUT_JSON = os.path.join(BASE, "web-app", "src", "data", "feature_encodings.json")
@@ -32,6 +32,12 @@ CATEGORICAL_FEATURES = [
     "Treatment Health Facility",
     "Screening/Diagnosing Health Facility",
 ]
+
+# The clean CSV has data-entry corruption in the Sex column (city names mixed in).
+# Only keep the clinically valid values so UI dropdowns remain correct.
+VALID_VALUES: dict[str, set[str]] = {
+    "Sex": {"F", "M"},
+}
 
 # Map column name → ONNX feature name (spaces/slashes → underscores)
 def onnx_name(col: str) -> str:
@@ -59,12 +65,14 @@ def main():
             "code": encoded[col],
         }).dropna().drop_duplicates()
 
+        allowed = VALID_VALUES.get(col)
         mapping = {}
         for _, row in pairs.iterrows():
             label = str(row["label"]).strip()
             code = int(row["code"])
             if label and label.lower() not in ("nan", "none", ""):
-                mapping[label] = code
+                if allowed is None or label in allowed:
+                    mapping[label] = code
 
         # Sort by code for readability
         mapping = dict(sorted(mapping.items(), key=lambda x: x[1]))
