@@ -180,7 +180,7 @@ def _export_model_comparison(master_df, best_model_row, table_dir):
 
     tex = (
         r'\begin{table}[htbp]' + '\n'
-        r'\caption{Comprehensive Performance Metrics for All Non-Temporal Model Configurations'
+        r'\caption{Comprehensive Performance Metrics for All Static Model Configurations'
         r' (Improved Feature Set)}' + '\n'
         r'\label{tab:model_comparison}' + '\n'
         r'\resizebox{\textwidth}{!}{%' + '\n'
