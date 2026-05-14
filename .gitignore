@@ -130,3 +130,4 @@ data/
 # SLM-SHAP pipeline
 slm_shap_pipeline/cache/
 outputs/slm_shap_pipeline/
+CLAUDE.md
