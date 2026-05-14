@@ -19,7 +19,7 @@ def build_prompt(req) -> str:
     # Build value_map for contribution annotations (only include available fields)
     value_map: dict[str, str] = {
         "Age": f"{req.age} years",
-        "Days to Treatment": f"{req.days_to_treatment} days",
+        "Days To Treatment": f"{req.days_to_treatment} days",
         "Sex": sex_full,
         "Registration Group": req.registration_group,
         "Bacteriologic Status": req.bacteriologic_status,
