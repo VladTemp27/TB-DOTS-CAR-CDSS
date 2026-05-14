@@ -64,6 +64,11 @@ def run(
     provider = make_provider(config)
     print(f"[pipeline]   provider.name = {provider.name}, model = {config.gemini_model}")
 
+    # Each provider gets its own cache subdirectory to prevent cross-model contamination.
+    # Gemini CLI and API share "gemini-cli/" by convention (responses are interchangeable);
+    # MedGemma uses "medgemma/" to keep local-model outputs strictly separated.
+    effective_cache_dir = config.cache_dir / provider.name
+
     print(f"[pipeline] Loading V2 test cohort from {config.csv_path} ...")
     cohort = load_test_patients(config)          # TestCohort, not a list
     patients = cohort.patients
@@ -93,14 +98,13 @@ def run(
             bundle.model_hash, cohort.scaler_static_hash, cohort.scaler_temporal_hash, groups_hash,
         )
 
-        # call_slm uses .json extension for cache files
-        cache_path = config.cache_dir / f"{cache_key}.json"
+        cache_path = effective_cache_dir / f"{cache_key}.json"
         is_cache_hit = cache_path.exists()
 
         try:
             explanation = call_slm(
                 prompt, cache_key, provider,
-                cache_dir=config.cache_dir,
+                cache_dir=effective_cache_dir,
                 dry_run=dry_run_gemini,
             )
             if is_cache_hit:
