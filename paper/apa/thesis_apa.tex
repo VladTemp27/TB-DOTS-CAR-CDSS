@@ -227,7 +227,7 @@ This study uses a dataset of records of PTB patients from the Cordillera Adminis
 \centering
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[
-  node distance=0.45cm and 0.6cm,
+  node distance=0.5cm and 0.9cm,
   mainbox/.style={rectangle, draw, rounded corners=2pt, text width=5.5cm,
     minimum height=0.65cm, align=center, font=\normalsize, fill=gray!10},
   splitbox/.style={rectangle, draw, rounded corners=2pt, text width=2.4cm,
@@ -236,7 +236,7 @@ This study uses a dataset of records of PTB patients from the Cordillera Adminis
 ]
   \node[mainbox, fill=gray!25] (raw)      {Raw Records: DOH-CAR TB-DOTS (2015--2025)};
   \node[mainbox, below=of raw]  (harm)    {Pseudonymization \& Schema Harmonization};
-  \node[mainbox, below=of harm] (eda)     {Exploratory Analysis \& Feature Engineering};
+  \node[mainbox, below=of harm] (eda)     {Exploratory Data Analysis};
   \node[mainbox, below=of eda]  (mdh)     {Diagnostic Missing Data Handling};
   \node[splitbox, below left=0.7cm and 1.4cm of mdh]  (static)   {\textbf{Static Models}\\LR, SVM, XGBoost};
   \node[splitbox, below right=0.7cm and 1.4cm of mdh] (temporal)  {\textbf{Temporal Models}\\RNN, LSTM};
@@ -247,8 +247,8 @@ This study uses a dataset of records of PTB patients from the Cordillera Adminis
   \draw[arrow] (eda)  -- (mdh);
   \draw[arrow] (mdh.south) -- ++(0,-0.35) -| (static.north);
   \draw[arrow] (mdh.south) -- ++(0,-0.35) -| (temporal.north);
-  \draw[arrow] (static.south)   |- (shap.west);
-  \draw[arrow] (temporal.south) |- (shap.east);
+  \draw[arrow] (static.east) -- (shap.west);
+  \draw[arrow] (temporal.west) -- (shap.east);
   \draw[arrow] (shap) -- (cdss);
 \end{tikzpicture}%
 }
@@ -293,28 +293,31 @@ Finally, the temporal stability of adherence behavior across the treatment cours
 Clinical TB registries exhibit heterogeneous missingness arising from inconsistent documentation, varying facility capacities, and the longitudinal structure of treatment monitoring. Applying a single imputation strategy uniformly across all variables is statistically inappropriate when the mechanism generating missingness differs across features. Accordingly, this study implements a diagnostic-first missing data pipeline that first classifies each variable's missingness mechanism and then routes the variable to one of four handling strategies: column exclusion, listwise deletion, missing indicator with fill, or stochastic Multiple Imputation by Chained Equations (MICE) imputation (Figure~\ref{fig:missing_data_pipeline}) \citep{ref31, ref32}.
 
 \begin{figure}[H]
+\caption{Missing Data Handling Decision Logic}
+\label{fig:missing_data_pipeline}
 \centering
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[
-  node distance=0.55cm and 0.8cm,
+  node distance=0.7cm and 1.1cm,
   mainbox/.style={rectangle, draw, rounded corners=2pt, text width=4.8cm,
     minimum height=0.65cm, align=center, font=\normalsize, fill=gray!10},
-  decision/.style={diamond, draw, aspect=2.5, inner sep=1pt,
+  decision/.style={diamond, draw, aspect=3.2, text width=5.2cm, inner sep=1.5pt,
     align=center, font=\normalsize, fill=gray!10},
   outcome/.style={rectangle, draw, rounded corners=2pt, text width=3.2cm,
     minimum height=0.65cm, align=center, font=\normalsize, fill=gray!10},
   arrow/.style={-{Stealth[scale=0.7]}, thick}
 ]
   \node[mainbox, fill=gray!25] (start) {Per Column with Missing Data};
-  \node[decision, below=of start] (d1) {miss\_rate $>$ 80\%?};
-  \node[outcome, right=2.5cm of d1] (ex1) {Column Exclusion};
-  \node[decision, below=1cm of d1] (d2) {miss\_rate $>$ 50\%\\AND low importance?\\{\scriptsize(temporal exempt)}};
-  \node[outcome, right=2.5cm of d2] (ex2) {Column Exclusion};
-  \node[decision, below=1cm of d2] (d3) {MCAR AND\\miss\_rate $<$ 15\%\\AND $N_{\text{rem}} > 500$?};
-  \node[outcome, right=2.5cm of d3] (lw) {Listwise Deletion};
-  \node[decision, below=1cm of d3] (d4) {MAR AND\\importance $\geq$ median?};
-  \node[outcome, right=2.5cm of d4] (mice) {Stochastic MICE};
+  \node[decision, below=of start] (d1) {miss\_rate > 80\%?};
+  \node[outcome, right=2.2cm of d1] (ex1) {Column Exclusion};
+  \node[decision, below=1cm of d1] (d2) {miss\_rate > 50\%\\AND low importance?\\{\scriptsize(temporal exempt)}};
+  \node[outcome, right=2.2cm of d2] (ex2) {Column Exclusion};
+  \node[decision, below=1cm of d2] (d3) {MCAR AND\\miss\_rate < 15\%\\AND N\_rem > 500?};
+  \node[outcome, right=2.2cm of d3] (lw) {Listwise Deletion};
+  \node[decision, below=1cm of d3] (d4) {MAR AND\\importance >= median?};
+  \node[outcome, right=2.2cm of d4] (mice) {Stochastic MICE};
   \node[outcome, below=1cm of d4] (ind) {Missing Indicator\\with Fill};
+  \node[outcome, left=2.2cm of d1, draw=none, fill=none, text opacity=0] (pad) {Column Exclusion};
 
   \draw[arrow] (start) -- (d1);
   \draw[arrow] (d1) -- node[above, font=\scriptsize]{YES} (ex1);
@@ -324,11 +327,9 @@ Clinical TB registries exhibit heterogeneous missingness arising from inconsiste
   \draw[arrow] (d3) -- node[above, font=\scriptsize]{YES} (lw);
   \draw[arrow] (d3) -- node[left, font=\scriptsize]{NO} (d4);
   \draw[arrow] (d4) -- node[above, font=\scriptsize]{YES} (mice);
-  \draw[arrow] (d4) -- node[left, font=\scriptsize, text width=2cm]{NO\\(MNAR or\\low imp.)} (ind);
+  \draw[arrow] (d4) -- node[pos=0.22, left, align=right, font=\scriptsize, xshift=-2pt]{NO\\(MNAR or\\low imp.)} (ind.north);
 \end{tikzpicture}%
 }
-\caption{Missing Data Handling Decision Logic}
-\label{fig:missing_data_pipeline}
 \end{figure}
 
 The first diagnostic step applies Little's MCAR test at the dataset level to evaluate whether data are Missing Completely at Random (MCAR). Under the null hypothesis of MCAR, missingness is independent of all observed and unobserved values, meaning that complete cases constitute an unbiased subsample of the population and listwise deletion would be permissible. The test returned a statistically significant result ($p < 0.05$), rejecting MCAR and confirming that missingness patterns in the dataset are systematically related to the observed data, thus ruling out blanket listwise deletion \citep{ref32}.
