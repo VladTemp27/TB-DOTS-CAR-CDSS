@@ -39,11 +39,13 @@ def _git_short_sha() -> str:
 
 def run(
     condition: str,
-    config: PipelineConfig = PipelineConfig(),
+    config: PipelineConfig | None = None,
     patient_limit: int | None = None,
     dry_run_gemini: bool = False,
 ) -> Path:
     """Run the pipeline for one condition. Returns path to output condition directory."""
+    if config is None:
+        config = PipelineConfig()
     if condition not in ("blind", "sighted"):
         raise ValueError(f"condition must be 'blind' or 'sighted', got {condition!r}")
 
@@ -65,7 +67,7 @@ def run(
     print(f"[pipeline] Loading V2 test cohort from {config.csv_path} ...")
     cohort = load_test_patients(config)          # TestCohort, not a list
     patients = cohort.patients
-    if patient_limit:
+    if patient_limit is not None:
         patients = patients[:patient_limit]
     print(f"[pipeline] {len(patients)} patients to process (month M{config.month_of_prediction}).")
 
@@ -157,7 +159,7 @@ def run(
     latest_link = config.output_base / "latest"
     if latest_link.is_symlink():
         latest_link.unlink()
-    latest_link.symlink_to(config.output_base / timestamp)
+    latest_link.symlink_to(timestamp)
 
     print(f"[pipeline] Done. Output: {out_dir}")
     print(f"  cache_hits={stats['cache_hits']}  failures={stats['gemini_failures']}")
