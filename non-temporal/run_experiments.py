@@ -28,9 +28,7 @@ def main():
     df = pipeline.load_data(dataset_path)
 
     versions = [
-        ('Baseline',              'baseline',  [None]),
-        ('Resampling_Comparison', 'improved',  ['SMOTE', 'SMOTE - ENN', 'SMOTE - Tomek']),
-        ('Extended_Features',     'extended',  ['SMOTE', 'SMOTE - ENN', 'SMOTE - Tomek']),
+        ('Main', 'improved', [None, 'SMOTE - ENN']),
     ]
 
     all_results = []
@@ -60,15 +58,6 @@ def main():
                 X_train, y_train, X_test, y_test, preprocessor)
             res['Version'] = v_name
             all_results.append(res)
-
-            # Export individual experiment table
-            pipeline.export_to_latex(
-                res[['Model', 'ROC-AUC', 'CV-AUC Mean', 'CV-AUC Std',
-                     'Recall (Fail)', 'F1 (Fail)', 'Accuracy']],
-                f"results_{feat_ver}_{str(sampler).lower().replace(' ', '_')}",
-                f"Performance Results — {feat_ver.capitalize()} / {sampler or 'No Sampling'}",
-                f"tab:{feat_ver}_{str(sampler).lower().replace(' ', '_')}"
-            )
 
         # Persist results after each version so partial runs are recoverable
         partial_df = pd.concat(all_results).drop(columns=['_pipeline', 'Version'], errors='ignore')
@@ -112,13 +101,8 @@ def main():
         except Exception as e:
             logger.warning("  Holdout eval failed for %s / %s: %s", row['Model'], row['Sampler'], e)
 
-    # Generate evaluation figures — re-split using the best version's feature set
-    _version_to_feat = {
-        'Baseline': 'baseline',
-        'Resampling_Comparison': 'improved',
-        'Extended_Features': 'extended',
-    }
-    best_feat_ver = _version_to_feat.get(best_version, 'improved')
+    # Generate evaluation figures
+    best_feat_ver = 'improved'
     X_fig = df[pipeline.get_features(best_feat_ver)]
     y_fig = df['Target']
     X_temp_fig, _, y_temp_fig, _ = train_test_split(
@@ -162,45 +146,65 @@ def main():
     except Exception as e:
         logger.warning("Model export failed: %s", e)
 
-    # Export summary tables
-    master_export = master_df.drop(columns=['_pipeline', 'Version', '_score'], errors='ignore')
-
-    best_summary = (master_export
-                    .sort_values('ROC-AUC', ascending=False)
-                    .groupby(['Sampler', 'Model']).head(1))
-    pipeline.export_to_latex(
-        best_summary[['Sampler', 'Model', 'ROC-AUC', 'Recall (Fail)', 'F1 (Fail)']].head(10),
-        "top_models_comparison",
-        "Top 10 Performing Model Configurations Across All Experiments",
-        "tab:top_models"
-    )
-
-    # CV performance table
-    cv_table = (master_df
-                .groupby(['Model', 'Version'])[['CV-AUC Mean', 'CV-AUC Std']]
-                .mean()
-                .round(4)
-                .reset_index())
-    pipeline.export_to_latex(
-        cv_table,
-        "cv_performance",
-        "5-Fold Stratified Cross-Validation ROC-AUC by Model and Feature Version",
-        "tab:cv_performance"
-    )
-
-    # Extended feature set results
-    extended_mask = master_df['Version'] == 'Extended_Features'
-    if extended_mask.any():
-        ext_df = master_export[extended_mask].sort_values('ROC-AUC', ascending=False)
-        pipeline.export_to_latex(
-            ext_df[['Model', 'Sampler', 'ROC-AUC', 'CV-AUC Mean',
-                    'Recall (Fail)', 'F1 (Fail)', 'Accuracy']].head(10),
-            "extended_results",
-            "Top Results for Extended Feature Set Experiments",
-            "tab:extended_results"
-        )
+    # Export model comparison table (APA-formatted, resizeable)
+    _export_model_comparison(master_df, best_model_row, pipeline.table_dir)
 
     logger.info("All experiments completed. Tables → paper/apa/tables/  Figures → paper/apa/figures/")
+
+
+def _export_model_comparison(master_df, best_model_row, table_dir):
+    cols = ['Model', 'Sampler', 'ROC-AUC', 'CV-AUC Mean', 'CV-AUC Std', 'Accuracy',
+            'Precision (Fail)', 'Recall (Fail)', 'F1 (Fail)',
+            'Precision (Succ)', 'Recall (Succ)', 'F1 (Succ)']
+    df = (master_df[cols + ['_score']]
+          .sort_values('ROC-AUC', ascending=False)
+          .reset_index(drop=True))
+
+    def fmt(v):
+        try:
+            return f"{float(v):.4f}"
+        except (ValueError, TypeError):
+            return str(v)
+
+    rows_tex = []
+    for _, row in df.iterrows():
+        is_best = (row['Model'] == best_model_row['Model'] and
+                   row['Sampler'] == best_model_row['Sampler'])
+        score = 0.6 * float(row['ROC-AUC']) + 0.4 * float(row['Recall (Fail)'])
+        cells = [row['Model'], row['Sampler']] + [fmt(row[c]) for c in cols[2:]] + [f"{score:.4f}"]
+        line = ' & '.join(cells) + r' \\'
+        rows_tex.append(r'\textbf{' + line.replace(r' \\', r'} \\') if is_best else line)
+
+    header = (r'Model & Sampler & AUC & CV-AUC & $\pm$Std & Acc. & '
+              r'Prec.\ (F) & Recall (F) & F1 (F) & Prec.\ (S) & Recall (S) & F1 (S) & Score \\')
+
+    tex = (
+        r'\begin{table}[htbp]' + '\n'
+        r'\caption{Comprehensive Performance Metrics for All Non-Temporal Model Configurations'
+        r' (Improved Feature Set)}' + '\n'
+        r'\label{tab:model_comparison}' + '\n'
+        r'\resizebox{\textwidth}{!}{%' + '\n'
+        r'\begin{tabular}{llccccccccccc}' + '\n'
+        r'\toprule' + '\n'
+        + header + '\n'
+        r'\midrule' + '\n'
+        + '\n'.join(rows_tex) + '\n'
+        r'\bottomrule' + '\n'
+        r'\end{tabular}%' + '\n'
+        r'}' + '\n'
+        r'\smallskip' + '\n\n'
+        r'{\footnotesize \textit{Note.} F~=~Failure class; S~=~Success class; '
+        r'AUC~=~test-set ROC-AUC; CV-AUC~=~5-fold CV mean; $\pm$Std~=~CV standard deviation; '
+        r'Acc.~=~Accuracy; Prec.~=~Precision; '
+        r'Score~=~composite $0.6 \times \text{AUC} + 0.4 \times \text{Recall\,(F)}$. '
+        r'Bold row indicates recommended model.}' + '\n'
+        r'\end{table}'
+    )
+
+    out = table_dir / 'model_comparison.tex'
+    out.write_text(tex)
+    import logging
+    logging.getLogger(__name__).info("Exported APA table → %s", out)
 
 
 if __name__ == "__main__":

@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
@@ -21,13 +21,10 @@ from sklearn.metrics import (
     accuracy_score, roc_auc_score, confusion_matrix, classification_report,
     roc_curve, precision_recall_curve, average_precision_score
 )
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
-from imblearn.over_sampling import SMOTE
-from imblearn.combine import SMOTEENN, SMOTETomek
+from imblearn.combine import SMOTEENN
 from imblearn.pipeline import Pipeline as ImbPipeline
 
 import warnings
@@ -142,11 +139,6 @@ class TBExperimentPipeline:
         class_weight = 'balanced' if use_weights else None
 
         return {
-            'Logistic Regression': LogisticRegression(
-                max_iter=1000, random_state=self.random_state, class_weight=class_weight),
-            'Random Forest': RandomForestClassifier(
-                n_estimators=200, max_depth=12, random_state=self.random_state,
-                class_weight=class_weight, n_jobs=-1),
             'XGBoost': XGBClassifier(
                 n_estimators=200, max_depth=6, learning_rate=0.05,
                 random_state=self.random_state,
@@ -156,23 +148,16 @@ class TBExperimentPipeline:
                 n_estimators=200, max_depth=6, learning_rate=0.05,
                 random_state=self.random_state, class_weight=class_weight,
                 n_jobs=-1, verbose=-1),
-            'Gradient Boosting': GradientBoostingClassifier(
-                n_estimators=200, max_depth=5, learning_rate=0.05,
-                random_state=self.random_state, subsample=0.8),
-            'SVM (RBF)': SVC(
-                kernel='rbf', probability=True, random_state=self.random_state,
-                class_weight=class_weight, C=1.0, gamma='scale'),
+            'Random Forest': RandomForestClassifier(
+                n_estimators=200, max_depth=12, random_state=self.random_state,
+                class_weight=class_weight, n_jobs=-1),
         }
 
     def run_experiment(self, name, sampler_name, model_dict, X_train, y_train, X_test, y_test, preprocessor):
         results = []
         sampler = None
-        if sampler_name == 'SMOTE':
-            sampler = SMOTE(random_state=self.random_state)
-        elif sampler_name == 'SMOTE - ENN':
+        if sampler_name == 'SMOTE - ENN':
             sampler = SMOTEENN(random_state=self.random_state)
-        elif sampler_name == 'SMOTE - Tomek':
-            sampler = SMOTETomek(random_state=self.random_state)
 
         cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=self.random_state)
 
@@ -234,55 +219,52 @@ class TBExperimentPipeline:
     def generate_figures(self, master_df, best_pipeline, X_test, y_test):
         logger.info("Generating evaluation figures → %s", self.fig_dir)
         plt.style.use('seaborn-v0_8-whitegrid')
-        FIGSIZE = (8, 5)
+        from matplotlib.patches import Patch
 
-        # --- per-model best rows (highest ROC-AUC for each model) ---
-        best_per_model = master_df.sort_values('ROC-AUC', ascending=False).groupby('Model').first().reset_index()
+        # Best per model (highest ROC-AUC for each model)
+        best_per_model = (master_df.sort_values('ROC-AUC', ascending=False)
+                          .groupby('Model').first().reset_index())
 
-        # ── Figure 1: ROC Curves ──────────────────────────────────────────
-        fig, ax = plt.subplots(figsize=FIGSIZE)
-        ax.plot([0, 1], [0, 1], 'k--', linewidth=0.8, label='Random chance')
+        # ── Figure A: ROC + PR side-by-side ──────────────────────────────
+        fig, (ax_roc, ax_pr) = plt.subplots(1, 2, figsize=(12, 5))
+
+        ax_roc.plot([0, 1], [0, 1], 'k--', linewidth=0.8, label='Random chance')
+        prevalence = (y_test == 0).mean()
+        ax_pr.axhline(prevalence, color='k', linestyle='--', linewidth=0.8,
+                      label=f'No-skill ({prevalence:.2f})')
+
         for _, row in best_per_model.iterrows():
             pipe = row['_pipeline']
             y_proba = pipe.predict_proba(X_test)[:, 1]
             fpr, tpr, _ = roc_curve(y_test, y_proba)
             auc = roc_auc_score(y_test, y_proba)
-            ax.plot(fpr, tpr, linewidth=1.5, label=f"{row['Model']} (AUC={auc:.4f})")
-        ax.set_xlabel('False Positive Rate')
-        ax.set_ylabel('True Positive Rate')
-        ax.set_title('ROC Curves — Best Configuration per Model')
-        ax.legend(loc='lower right', fontsize=8)
-        fig.tight_layout()
-        fig.savefig(self.fig_dir / 'fig_roc_curves.pdf', bbox_inches='tight', dpi=150)
-        plt.close(fig)
-        logger.info("Saved fig_roc_curves.pdf")
-
-        # ── Figure 2: Precision-Recall Curves ────────────────────────────
-        prevalence = y_test.mean()
-        fig, ax = plt.subplots(figsize=FIGSIZE)
-        ax.axhline(prevalence, color='k', linestyle='--', linewidth=0.8,
-                   label=f'No-skill baseline ({prevalence:.2f})')
-        for _, row in best_per_model.iterrows():
-            pipe = row['_pipeline']
-            y_proba = pipe.predict_proba(X_test)[:, 1]
+            ax_roc.plot(fpr, tpr, linewidth=1.5, label=f"{row['Model']} (AUC={auc:.4f})")
             prec, rec, _ = precision_recall_curve(y_test, y_proba)
             ap = average_precision_score(y_test, y_proba)
-            ax.plot(rec, prec, linewidth=1.5, label=f"{row['Model']} (AP={ap:.4f})")
-        ax.set_xlabel('Recall')
-        ax.set_ylabel('Precision')
-        ax.set_title('Precision-Recall Curves — Best Configuration per Model')
-        ax.legend(loc='upper right', fontsize=8)
-        fig.tight_layout()
-        fig.savefig(self.fig_dir / 'fig_pr_curves.pdf', bbox_inches='tight', dpi=150)
-        plt.close(fig)
-        logger.info("Saved fig_pr_curves.pdf")
+            ax_pr.plot(rec, prec, linewidth=1.5, label=f"{row['Model']} (AP={ap:.4f})")
 
-        # ── Figure 3: Confusion Matrix (best model on test set) ──────────
+        ax_roc.set_xlabel('False Positive Rate')
+        ax_roc.set_ylabel('True Positive Rate')
+        ax_roc.set_title('(a) ROC Curves — Best Config per Model')
+        ax_roc.legend(loc='lower right', fontsize=8)
+
+        ax_pr.set_xlabel('Recall')
+        ax_pr.set_ylabel('Precision')
+        ax_pr.set_title('(b) Precision-Recall Curves — Best Config per Model')
+        ax_pr.legend(loc='upper right', fontsize=8)
+
+        fig.tight_layout()
+        fig.savefig(self.fig_dir / 'fig_roc_pr_curves.pdf', bbox_inches='tight', dpi=150)
+        plt.close(fig)
+        logger.info("Saved fig_roc_pr_curves.pdf")
+
+        # ── Figure B: Confusion Matrix (standalone) ───────────────────────
         y_pred_best = best_pipeline.predict(X_test)
         cm = confusion_matrix(y_test, y_pred_best)
         cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
-        labels = [f"{v}\n({p:.1%})" for v, p in zip(cm.flatten(), cm_norm.flatten())]
-        labels = np.array(labels).reshape(2, 2)
+        labels = np.array([
+            f"{v}\n({p:.1%})" for v, p in zip(cm.flatten(), cm_norm.flatten())
+        ]).reshape(2, 2)
 
         fig, ax = plt.subplots(figsize=(6, 5))
         sns.heatmap(cm, annot=labels, fmt='', cmap='Blues', ax=ax,
@@ -296,31 +278,33 @@ class TBExperimentPipeline:
         plt.close(fig)
         logger.info("Saved fig_confusion_matrix.pdf")
 
-        # ── Figure 4: CV AUC Boxplot ──────────────────────────────────────
-        cv_rows = []
-        for _, row in master_df.iterrows():
-            cv_rows.append({'Model': row['Model'], 'CV-AUC Mean': row['CV-AUC Mean']})
-        cv_df = pd.DataFrame(cv_rows)
-        model_order = (cv_df.groupby('Model')['CV-AUC Mean']
-                       .median().sort_values(ascending=False).index.tolist())
+        # ── Figure C: CV bar chart + Feature Importance side-by-side ──────
+        fig, (ax_cv, ax_feat) = plt.subplots(1, 2, figsize=(12, 5))
 
-        fig, ax = plt.subplots(figsize=FIGSIZE)
-        cv_df_grouped = [cv_df[cv_df['Model'] == m]['CV-AUC Mean'].values for m in model_order]
-        ax.boxplot(cv_df_grouped, labels=model_order, patch_artist=True,
-                   boxprops=dict(facecolor='steelblue', alpha=0.6))
-        ax.set_xlabel('Model')
-        ax.set_ylabel('5-Fold CV ROC-AUC')
-        ax.set_title('Cross-Validation ROC-AUC Distribution per Model')
-        plt.xticks(rotation=20, ha='right')
-        fig.tight_layout()
-        fig.savefig(self.fig_dir / 'fig_cv_boxplot.pdf', bbox_inches='tight', dpi=150)
-        plt.close(fig)
-        logger.info("Saved fig_cv_boxplot.pdf")
+        # CV mean ± std horizontal bar chart, sorted by mean descending
+        cv_labels = [f"{row['Model']}\n({row['Sampler']})" for _, row in master_df.iterrows()]
+        cv_means = master_df['CV-AUC Mean'].values
+        cv_stds = master_df['CV-AUC Std'].values
+        order = np.argsort(cv_means)
+        cv_labels = [cv_labels[i] for i in order]
+        cv_means = cv_means[order]
+        cv_stds = cv_stds[order]
+        colors = ['steelblue' if 'None' in lbl else 'coral' for lbl in cv_labels]
 
-        # ── Figure 5: Feature Importance ──────────────────────────────────
+        ax_cv.barh(range(len(cv_labels)), cv_means, xerr=cv_stds,
+                   color=colors, alpha=0.8, capsize=4)
+        ax_cv.set_yticks(range(len(cv_labels)))
+        ax_cv.set_yticklabels(cv_labels, fontsize=8)
+        ax_cv.set_xlabel('5-Fold CV ROC-AUC (Mean ± Std)')
+        ax_cv.set_title('(c) Cross-Validation Performance')
+        ax_cv.legend(handles=[
+            Patch(facecolor='steelblue', alpha=0.8, label='No Sampling'),
+            Patch(facecolor='coral', alpha=0.8, label='SMOTE-ENN'),
+        ], loc='lower right', fontsize=8)
+
+        # Feature importance
         best_clf = best_pipeline.steps[-1][1]
         feature_names = None
-
         try:
             feature_names = list(best_pipeline[:-1].get_feature_names_out())
         except Exception:
@@ -334,20 +318,23 @@ class TBExperimentPipeline:
 
         if importances is not None and feature_names is not None:
             n = min(15, len(importances))
-            importances = importances / importances.sum()
-            idx = np.argsort(importances)[-n:]
-            fig, ax = plt.subplots(figsize=FIGSIZE)
-            ax.barh(range(n), importances[idx], color='steelblue', alpha=0.8)
-            ax.set_yticks(range(n))
-            ax.set_yticklabels([feature_names[i] for i in idx], fontsize=8)
-            ax.set_xlabel('Normalized Importance')
-            ax.set_title(f'Top {n} Feature Importances — Best Model')
-            fig.tight_layout()
-            fig.savefig(self.fig_dir / 'fig_feature_importance.pdf', bbox_inches='tight', dpi=150)
-            plt.close(fig)
-            logger.info("Saved fig_feature_importance.pdf")
+            imp_norm = importances / importances.sum()
+            idx = np.argsort(imp_norm)[-n:]
+            ax_feat.barh(range(n), imp_norm[idx], color='steelblue', alpha=0.8)
+            ax_feat.set_yticks(range(n))
+            ax_feat.set_yticklabels([feature_names[i] for i in idx], fontsize=8)
+            ax_feat.set_xlabel('Normalized Importance')
+            ax_feat.set_title(f'(d) Top {n} Feature Importances — Best Model')
         else:
-            logger.warning("Could not extract feature importances from best model — skipping fig_feature_importance.pdf")
+            ax_feat.text(0.5, 0.5, 'Feature importances not available',
+                         ha='center', va='center', transform=ax_feat.transAxes)
+            ax_feat.set_title('(d) Feature Importances')
+            logger.warning("Could not extract feature importances — panel (d) left blank")
+
+        fig.tight_layout()
+        fig.savefig(self.fig_dir / 'fig_cv_feature_importance.pdf', bbox_inches='tight', dpi=150)
+        plt.close(fig)
+        logger.info("Saved fig_cv_feature_importance.pdf")
 
         logger.info("All figures saved to %s", self.fig_dir)
 
