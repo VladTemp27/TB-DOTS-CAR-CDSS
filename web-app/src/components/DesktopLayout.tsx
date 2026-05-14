@@ -76,7 +76,7 @@ export function DesktopLayout({ children }: Props) {
           </button>
           <div className="px-3">
             <p className="text-xs text-ink-muted">AI-assisted diagnostic tool</p>
-            <p className="text-xs text-ink-muted mt-0.5">v1.0 — For clinical use only</p>
+            <p className="text-xs text-ink-muted mt-0.5">v1.0 — For demonstration use only</p>
           </div>
         </div>
       </aside>

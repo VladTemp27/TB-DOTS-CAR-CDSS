@@ -4,12 +4,7 @@ import { AppHeader } from '../components/AppHeader'
 import { StepProgress } from '../components/StepProgress'
 import { getChoices, getCitiesForProvince } from '../lib/inference'
 import { PageFooter } from '../components/PageFooter'
-
-const DRAFT_KEY = 'tb_intake_draft'
-
-function loadDraft() {
-  try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '{}') } catch { return {} }
-}
+import { createDraftPatientId, loadIntakeDraft, saveIntakeDraft } from '../lib/intakeDraft'
 
 const inputCls = 'w-full min-h-[44px] border border-border rounded-xl px-3 py-2.5 text-sm text-ink-base bg-surface placeholder-ink-muted focus:border-primary outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1'
 const selectCls = `${inputCls} bg-surface`
@@ -17,12 +12,13 @@ const labelCls = 'block text-sm font-medium text-ink-secondary mb-1'
 
 export function PatientIntakeStep1() {
   const navigate = useNavigate()
-  const draft = loadDraft()
+  const draft = loadIntakeDraft()
+  const initialMedicalId = draft.medicalId ?? draft.draftPatientId ?? createDraftPatientId()
 
   const [name, setName] = useState(draft.name ?? '')
-  const [age, setAge] = useState<string>(draft.age ?? '')
+  const [age, setAge] = useState<string>(draft.age ? String(draft.age) : '')
   const [sex, setSex] = useState(draft.sex ?? '')
-  const [medicalId, setMedicalId] = useState(draft.medicalId ?? `MED-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`)
+  const [medicalId, setMedicalId] = useState(initialMedicalId)
   const [province, setProvince] = useState(draft.province ?? '')
   const [city, setCity] = useState(draft.city ?? '')
   const [registrationGroup, setRegistrationGroup] = useState(draft.registrationGroup ?? '')
@@ -35,8 +31,18 @@ export function PatientIntakeStep1() {
   const valid = name && age && sex && province && registrationGroup
 
   function handleContinue() {
-    const updated = { ...draft, name, age: Number(age), sex, medicalId, province, city, registrationGroup }
-    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(updated))
+    const updated = {
+      ...draft,
+      draftPatientId: draft.draftPatientId ?? medicalId,
+      name,
+      age: Number(age),
+      sex,
+      medicalId,
+      province,
+      city,
+      registrationGroup,
+    }
+    saveIntakeDraft(updated)
     navigate('/patient/new/lab')
   }
 

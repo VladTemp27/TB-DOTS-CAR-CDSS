@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { CheckCircle2 } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { StepProgress } from '../components/StepProgress'
@@ -36,12 +36,15 @@ const REGIMENS: Array<{ id: RegimenId; name: string; drugs: string; duration: st
 export function TreatmentSelection() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
+  const location = useLocation()
+  const fromIntake = Boolean((location.state as { fromIntake?: boolean } | null)?.fromIntake)
   const [patient, setPatient] = useState<Patient | null>(null)
   const [loadingPatient, setLoadingPatient] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const [selected, setSelected] = useState<RegimenId | ''>('')
   const [startDate, setStartDate] = useState('')
+  const valid = !!selected && !!startDate
 
   useEffect(() => {
     let cancelled = false
@@ -70,11 +73,22 @@ export function TreatmentSelection() {
   }, [id])
 
   async function handleProceed() {
-    if (!id || !selected) return
+    if (!id || !valid) return
     const p = patient ?? (await getPatient(id))
     if (p) {
       p.treatmentRegimen = selected || undefined
-      p.treatmentStartDate = startDate
+      p.treatmentStartDate = startDate || undefined
+      savePatient(p)
+    }
+    navigate(`/patient/${id}`)
+  }
+
+  async function handleSkip() {
+    if (!id) return
+    const p = patient ?? (await getPatient(id))
+    if (p) {
+      p.treatmentRegimen = undefined
+      p.treatmentStartDate = startDate || undefined
       await savePatient(p)
     }
     navigate(`/patient/${id}`)
@@ -159,14 +173,20 @@ export function TreatmentSelection() {
       </div>
 
       <PageFooter>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
           <button onClick={() => navigate(-1)}
             className="flex-1 border border-border text-ink-secondary py-3.5 rounded-xl font-semibold text-sm">
             ← Back
           </button>
+          {fromIntake && (
+            <button onClick={handleSkip}
+              className="flex-1 text-ink-secondary py-3.5 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors">
+              Skip for now
+            </button>
+          )}
           <button
             onClick={handleProceed}
-            disabled={!selected}
+            disabled={!valid}
             className="flex-[2] bg-primary text-white py-3.5 rounded-xl font-semibold text-sm disabled:opacity-40"
           >
             Proceed to Outcome →
