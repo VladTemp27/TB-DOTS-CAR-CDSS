@@ -14,7 +14,7 @@ import pandas as pd
 from pathlib import Path
 from experiment_pipeline import TBExperimentPipeline
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score, accuracy_score, classification_report
+from sklearn.metrics import roc_auc_score, accuracy_score, classification_report, matthews_corrcoef
 
 
 def main():
@@ -92,10 +92,11 @@ def main():
             yv_proba = pipe.predict_proba(xv)[:, 1]
             report = classification_report(yv, yv_pred, output_dict=True, zero_division=0)
             logger.info(
-                "  %-22s / %-12s  Val-AUC=%.4f  Val-Acc=%.4f  Val-Recall(Fail)=%.4f",
+                "  %-22s / %-12s  Val-AUC=%.4f  Val-Acc=%.4f  Val-MCC=%.4f  Val-Recall(Fail)=%.4f",
                 row['Model'], row['Sampler'],
                 roc_auc_score(yv, yv_proba),
                 accuracy_score(yv, yv_pred),
+                matthews_corrcoef(yv, yv_pred),
                 report['0']['recall'],
             )
         except Exception as e:
@@ -159,7 +160,7 @@ def main():
 
 def _export_model_comparison(master_df, best_model_row, table_dir):
     cols = ['Model', 'Sampler', 'ROC-AUC', 'CV-AUC Mean', 'CV-AUC Std', 'Accuracy',
-            'Precision (Fail)', 'Recall (Fail)', 'F1 (Fail)',
+            'MCC', 'Precision (Fail)', 'Recall (Fail)', 'F1 (Fail)',
             'Precision (Succ)', 'Recall (Succ)', 'F1 (Succ)']
     df = (master_df[cols + ['_score']]
           .sort_values('ROC-AUC', ascending=False)
@@ -182,7 +183,7 @@ def _export_model_comparison(master_df, best_model_row, table_dir):
         line = ' & '.join(cells) + r' \\'
         rows_tex.append(line)
 
-    header = (r'Model & Sampler & AUC & CV-AUC & $\pm$Std & Acc. & '
+    header = (r'Model & Sampler & AUC & CV-AUC & $\pm$Std & Acc. & MCC & '
               r'Prec.\ (F) & Recall (F) & F1 (F) & Prec.\ (S) & Recall (S) & F1 (S) & Score \\')
 
     tex = (
@@ -191,7 +192,7 @@ def _export_model_comparison(master_df, best_model_row, table_dir):
         r' (Improved Feature Set)}' + '\n'
         r'\label{tab:model_comparison}' + '\n'
         r'\resizebox{\textwidth}{!}{%' + '\n'
-        r'\begin{tabular}{llccccccccccc}' + '\n'
+        r'\begin{tabular}{llcccccccccccc}' + '\n'
         r'\toprule' + '\n'
         + header + '\n'
         r'\midrule' + '\n'
@@ -202,7 +203,7 @@ def _export_model_comparison(master_df, best_model_row, table_dir):
         r'\smallskip' + '\n\n'
         r'{\footnotesize \textit{Note.} F~=~Failure class; S~=~Success class; '
         r'AUC~=~test-set ROC-AUC; CV-AUC~=~5-fold CV mean; $\pm$Std~=~CV standard deviation; '
-        r'Acc.~=~Accuracy; Prec.~=~Precision; '
+        r'Acc.~=~Accuracy; MCC~=~Matthews Correlation Coefficient; Prec.~=~Precision; '
         r'Score~=~composite $0.6 \times \text{AUC} + 0.4 \times \text{Recall\,(F)}$. '
         r'Bold row indicates recommended model.}' + '\n'
         r'\end{table}'
