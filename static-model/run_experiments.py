@@ -177,8 +177,10 @@ def _export_model_comparison(master_df, best_model_row, table_dir):
                    row['Sampler'] == best_model_row['Sampler'])
         score = 0.6 * float(row['ROC-AUC']) + 0.4 * float(row['Recall (Fail)'])
         cells = [row['Model'], row['Sampler']] + [fmt(row[c]) for c in cols[2:]] + [f"{score:.4f}"]
+        if is_best:
+            cells = [r'\textbf{' + c + '}' for c in cells]
         line = ' & '.join(cells) + r' \\'
-        rows_tex.append(r'\textbf{' + line.replace(r' \\', r'} \\') if is_best else line)
+        rows_tex.append(line)
 
     header = (r'Model & Sampler & AUC & CV-AUC & $\pm$Std & Acc. & '
               r'Prec.\ (F) & Recall (F) & F1 (F) & Prec.\ (S) & Recall (S) & F1 (S) & Score \\')
