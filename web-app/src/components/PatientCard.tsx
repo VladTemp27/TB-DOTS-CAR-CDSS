@@ -33,6 +33,11 @@ export function PatientCard({ patient, monthNumber }: Props) {
             {patient.medicalId}
             {monthNumber != null && ` · Month ${monthNumber} of 6`}
           </p>
+          {!patient.treatmentRegimen && (
+            <span className="inline-block mt-1.5 text-xs bg-risk-med/10 text-risk-med font-semibold px-2 py-0.5 rounded-full">
+              No Regimen Selected
+            </span>
+          )}
         </div>
         <div className="text-right">
           <p className={`text-2xl font-bold font-display tabular-nums ${text}`}>{Math.round(prob * 100)}%</p>
