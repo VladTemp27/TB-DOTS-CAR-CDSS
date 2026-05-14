@@ -200,7 +200,7 @@ def standardize_microscopy(df):
     logger.info("standardize_microscopy: %d rows mapped to 'Unknown'", n_unmapped)
 
     return df
-
+    
 
 # -----------------------------
 # BIN RDT RESULT (31 variants → 3 classes)
