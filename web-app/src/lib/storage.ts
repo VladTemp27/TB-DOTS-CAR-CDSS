@@ -3,7 +3,14 @@ import type { PatientFeatures, ContributionResult } from './inference'
 export interface MonthlyRecord {
   month: number
   weight?: number
+  height?: number
   smearResult?: string
+  smearTbLamp?: 0 | 1
+  xpertMtbRif?: 0 | 1
+  monthlyDosesTaken?: number
+  monthlyMissedDoses?: number
+  cumulativeDosesTaken?: number
+  pctAdherence?: number
   adherence: 'full' | 'partial' | 'poor'
   failureProbability: number
   timestamp: number

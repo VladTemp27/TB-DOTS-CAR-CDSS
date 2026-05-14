@@ -41,7 +41,14 @@ export function MonthlyCheckin() {
   }, [id])
 
   const [weight, setWeight] = useState('')
+  const [height, setHeight] = useState('')
   const [smearResult, setSmearResult] = useState('')
+  const [smearTbLamp, setSmearTbLamp] = useState('')
+  const [xpertMtbRif, setXpertMtbRif] = useState('')
+  const [monthlyDosesTaken, setMonthlyDosesTaken] = useState('')
+  const [monthlyMissedDoses, setMonthlyMissedDoses] = useState('')
+  const [cumulativeDosesTaken, setCumulativeDosesTaken] = useState('')
+  const [pctAdherence, setPctAdherence] = useState('')
   const [adherence, setAdherence] = useState<Adherence | ''>('')
   const [xrayFiles, setXrayFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
@@ -60,11 +67,25 @@ export function MonthlyCheckin() {
       const result = await predictWithContributions(updatedFeatures)
 
       const parsedWeight = parseFloat(weight)
+      const parsedHeight = parseFloat(height)
+      const parsedSmearTbLamp = smearTbLamp === '1' ? 1 : smearTbLamp === '0' ? 0 : undefined
+      const parsedXpertMtbRif = xpertMtbRif === '1' ? 1 : xpertMtbRif === '0' ? 0 : undefined
+      const parsedMonthlyDoses = parseInt(monthlyDosesTaken, 10)
+      const parsedMonthlyMissed = parseInt(monthlyMissedDoses, 10)
+      const parsedCumulativeDoses = parseInt(cumulativeDosesTaken, 10)
+      const parsedPctAdherence = parseFloat(pctAdherence)
       const now = Date.now()
       await addMonthlyRecord(id, {
         month: monthNumber,
         weight: Number.isFinite(parsedWeight) ? parsedWeight : undefined,
+        height: Number.isFinite(parsedHeight) ? parsedHeight : undefined,
         smearResult: smearResult || undefined,
+        smearTbLamp: parsedSmearTbLamp as 0 | 1 | undefined,
+        xpertMtbRif: parsedXpertMtbRif as 0 | 1 | undefined,
+        monthlyDosesTaken: Number.isFinite(parsedMonthlyDoses) ? parsedMonthlyDoses : undefined,
+        monthlyMissedDoses: Number.isFinite(parsedMonthlyMissed) ? parsedMonthlyMissed : undefined,
+        cumulativeDosesTaken: Number.isFinite(parsedCumulativeDoses) ? parsedCumulativeDoses : undefined,
+        pctAdherence: Number.isFinite(parsedPctAdherence) ? parsedPctAdherence : undefined,
         adherence,
         failureProbability: result.failureProbability,
         timestamp: now,
@@ -169,9 +190,24 @@ export function MonthlyCheckin() {
                 <input
                   id="weight"
                   type="number"
+                  step="0.1"
                   placeholder="e.g. 52.5"
                   value={weight}
                   onChange={e => setWeight(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="height">
+                  Height (cm)
+                </label>
+                <input
+                  id="height"
+                  type="number"
+                  step="0.1"
+                  placeholder="e.g. 162.5"
+                  value={height}
+                  onChange={e => setHeight(e.target.value)}
                   className={inputCls}
                 />
               </div>
@@ -187,6 +223,108 @@ export function MonthlyCheckin() {
                 >
                   <option value="">Not performed</option>
                   {microChoices.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Dose Tracking */}
+          <div className="bg-surface border border-border rounded-2xl p-4 lg:p-5 space-y-3">
+            <h3 className="text-sm font-semibold text-ink-base">Dose Tracking</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="monthlyDosesTaken">
+                  Monthly Doses Taken
+                </label>
+                <input
+                  id="monthlyDosesTaken"
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 28"
+                  value={monthlyDosesTaken}
+                  onChange={e => setMonthlyDosesTaken(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="monthlyMissedDoses">
+                  Monthly Missed Doses
+                </label>
+                <input
+                  id="monthlyMissedDoses"
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 2"
+                  value={monthlyMissedDoses}
+                  onChange={e => setMonthlyMissedDoses(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="cumulativeDosesTaken">
+                  Cumulative Doses Taken
+                </label>
+                <input
+                  id="cumulativeDosesTaken"
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 84"
+                  value={cumulativeDosesTaken}
+                  onChange={e => setCumulativeDosesTaken(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="pctAdherence">
+                  Adherence (%)
+                </label>
+                <input
+                  id="pctAdherence"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  placeholder="e.g. 93.3"
+                  value={pctAdherence}
+                  onChange={e => setPctAdherence(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Lab Results */}
+          <div className="bg-surface border border-border rounded-2xl p-4 lg:p-5 space-y-3">
+            <h3 className="text-sm font-semibold text-ink-base">Lab Results</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="smearTbLamp">
+                  Smear TB LAMP
+                </label>
+                <select
+                  id="smearTbLamp"
+                  value={smearTbLamp}
+                  onChange={e => setSmearTbLamp(e.target.value)}
+                  className={inputCls + ' bg-surface'}
+                >
+                  <option value="">Not performed</option>
+                  <option value="0">Negative (0)</option>
+                  <option value="1">Positive (1)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="xpertMtbRif">
+                  Xpert MTB/RIF
+                </label>
+                <select
+                  id="xpertMtbRif"
+                  value={xpertMtbRif}
+                  onChange={e => setXpertMtbRif(e.target.value)}
+                  className={inputCls + ' bg-surface'}
+                >
+                  <option value="">Not performed</option>
+                  <option value="0">Negative (0)</option>
+                  <option value="1">Positive (1)</option>
                 </select>
               </div>
             </div>
@@ -219,7 +357,7 @@ export function MonthlyCheckin() {
           </div>
 
           <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 text-xs text-blue-700">
-            Follow-up Guide: Record weight and smear at each monthly visit. Adherence gaps are a top predictor of treatment failure.
+            Follow-up Guide: Record weight, height, dose tracking, and lab results at each monthly visit. Adherence gaps and positive lab results are top predictors of treatment failure.
           </div>
         </div>
       </div>

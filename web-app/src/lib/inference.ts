@@ -72,6 +72,20 @@ export interface PatientFeatures {
   cityMunicipality: string
   treatmentHealthFacility: string
   screeningDiagnosingHealthFacility: string
+  // Extended fields for temporal model — stored in DB but not fed to static ONNX model
+  xpertMtbRif?: string
+  drugResistanceStatus?: string
+  baselineHeightCm?: number
+  baselineWeightKg?: number
+  bpSystolic?: number
+  bpDiastolic?: number
+  heartRate?: number
+  o2Sat?: number
+  coMorbidities?: string
+  chestXRayAtNotification?: string
+  civilStatus?: string
+  nationality?: string
+  diagnosis?: string
 }
 
 // Model input names in the order they appear in the ONNX graph

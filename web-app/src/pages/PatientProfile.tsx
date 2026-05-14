@@ -172,9 +172,16 @@ export function PatientProfile() {
                     <thead>
                       <tr className="text-xs text-ink-muted border-b border-border sticky top-0 bg-surface">
                         <th className="text-left pb-2 font-semibold">Month</th>
-                        <th className="text-left pb-2 font-semibold">Weight</th>
+                        <th className="text-left pb-2 font-semibold">Wt</th>
+                        <th className="text-left pb-2 font-semibold">Ht</th>
                         <th className="text-left pb-2 font-semibold">Smear</th>
-                        <th className="text-left pb-2 font-semibold">Adherence</th>
+                        <th className="text-left pb-2 font-semibold">TB LAMP</th>
+                        <th className="text-left pb-2 font-semibold">Xpert</th>
+                        <th className="text-left pb-2 font-semibold">Doses</th>
+                        <th className="text-left pb-2 font-semibold">Missed</th>
+                        <th className="text-left pb-2 font-semibold">Cumul</th>
+                        <th className="text-left pb-2 font-semibold">Adh%</th>
+                        <th className="text-left pb-2 font-semibold">Adh</th>
                         <th className="text-right pb-2 font-semibold">Risk</th>
                       </tr>
                     </thead>
@@ -182,8 +189,15 @@ export function PatientProfile() {
                       {patient.monthlyRecords.map((r, i) => (
                         <tr key={r.timestamp} className={`border-b border-border/50 ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
                           <td className="py-2 text-ink-secondary">M{r.month}</td>
-                          <td className="py-2 text-ink-secondary">{r.weight ? `${r.weight} kg` : '—'}</td>
+                          <td className="py-2 text-ink-secondary tabular-nums">{r.weight ?? '—'}</td>
+                          <td className="py-2 text-ink-secondary tabular-nums">{r.height ?? '—'}</td>
                           <td className="py-2 text-ink-secondary">{r.smearResult || '—'}</td>
+                          <td className="py-2 text-ink-secondary">{r.smearTbLamp != null ? r.smearTbLamp : '—'}</td>
+                          <td className="py-2 text-ink-secondary">{r.xpertMtbRif != null ? r.xpertMtbRif : '—'}</td>
+                          <td className="py-2 text-ink-secondary tabular-nums">{r.monthlyDosesTaken ?? '—'}</td>
+                          <td className="py-2 text-ink-secondary tabular-nums">{r.monthlyMissedDoses ?? '—'}</td>
+                          <td className="py-2 text-ink-secondary tabular-nums">{r.cumulativeDosesTaken ?? '—'}</td>
+                          <td className="py-2 text-ink-secondary tabular-nums">{r.pctAdherence != null ? `${r.pctAdherence}%` : '—'}</td>
                           <td className={`py-2 capitalize font-medium
                             ${r.adherence === 'full' ? 'text-risk-low'
                               : r.adherence === 'partial' ? 'text-risk-med'
