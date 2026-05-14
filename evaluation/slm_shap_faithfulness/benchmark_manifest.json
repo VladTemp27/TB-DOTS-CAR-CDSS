@@ -1,0 +1,8 @@
+{
+  "benchmark_name": "slm_shap_faithfulness",
+  "version": "1.0.0",
+  "description": "SLM explanation faithfulness-to-SHAP benchmark",
+  "modes": ["artifact", "runtime"],
+  "output_keys": ["patients", "summary"],
+  "summary_keys": ["total_cases", "passed", "pass_rate", "mode"]
+}

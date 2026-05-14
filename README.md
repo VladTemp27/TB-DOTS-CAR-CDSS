@@ -1,6 +1,8 @@
-## TB-DOTS CAR CDSS
+# TB-DOTS CAR CDSS — SLM Benchmark
 
-The temporal-model work is now split into versioned folders so the repository is easier to learn from:
+The temporal-model work is split into versioned folders so the repository is easier to learn from:
+
+## Temporal Model
 
 ### Folder Map
 
@@ -18,3 +20,8 @@ Start with [v1/TEMPORAL_MODEL_RESULTS.md](v1/TEMPORAL_MODEL_RESULTS.md) to under
 - v2 has the larger dataset, better preprocessing, richer temporal features, and stronger validation.
 - The version split is intentional: v1 is the archive, v2 is the active reference point.
 
+---
+
+## SLM Faithfulness Benchmark
+
+SLM explanation faithfulness-to-SHAP tooling lives in `evaluation/slm_shap_faithfulness/`.

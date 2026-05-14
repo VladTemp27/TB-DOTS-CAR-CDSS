@@ -536,6 +536,84 @@ def scale_full_arrays(X_static, X_temporal, train_idx):
     }
 
 
+def build_features_at_month(X_temporal, X_static, up_to_month, temporal_names, static_names):
+    """
+    Build a flat feature matrix using data up to `up_to_month`.
+
+    Features include:
+    1. Static baseline features (always the same)
+    2. Flattened raw temporal features up to month t
+    3. Aggregate stats (mean, std, min, max) over available months
+    4. Trend (linear slope) of key features
+    5. Latest month's values
+    6. Month indicator (how much data is available)
+
+    Returns: X_flat (n_patients, n_features), feature_name_list
+    """
+    n_patients = X_temporal.shape[0]
+    n_temporal_feats = X_temporal.shape[2]  # 8
+    valid_months = up_to_month + 1
+
+    feature_list = []
+    feature_name_list = []
+
+    # 1. Static features (always included)
+    feature_list.append(X_static)
+    feature_name_list.extend(static_names)
+
+    # 2. Flattened temporal features for months 0..up_to_month
+    temporal_flat = X_temporal[:, :valid_months, :].reshape(n_patients, -1)
+    for m in range(valid_months):
+        for feat in temporal_names:
+            feature_name_list.append(f"M{m}_{feat}")
+    feature_list.append(temporal_flat)
+
+    # 3. Aggregate statistics over available months
+    temporal_slice = X_temporal[:, :valid_months, :]  # (N, valid_months, 8)
+    for agg_name, agg_fn in [("mean", np.mean), ("std", np.std),
+                              ("min", np.min), ("max", np.max)]:
+        agg = agg_fn(temporal_slice, axis=1)  # (N, 8)
+        feature_list.append(agg)
+        for feat in temporal_names:
+            feature_name_list.append(f"{agg_name}_{feat}")
+
+    # 4. Trend features (linear slope) for key temporal features
+    if valid_months >= 2:
+        slopes = np.zeros((n_patients, n_temporal_feats))
+        x_time = np.arange(valid_months, dtype=np.float32)
+        for i in range(n_patients):
+            for j in range(n_temporal_feats):
+                vals = temporal_slice[i, :, j]
+                if np.std(vals) > 1e-8:
+                    slope = np.polyfit(x_time, vals, 1)[0]
+                else:
+                    slope = 0.0
+                slopes[i, j] = slope
+        feature_list.append(slopes)
+        for feat in temporal_names:
+            feature_name_list.append(f"trend_{feat}")
+    else:
+        feature_list.append(np.zeros((n_patients, n_temporal_feats)))
+        for feat in temporal_names:
+            feature_name_list.append(f"trend_{feat}")
+
+    # 5. Latest month's values
+    latest = X_temporal[:, up_to_month, :]  # (N, 8)
+    feature_list.append(latest)
+    for feat in temporal_names:
+        feature_name_list.append(f"latest_{feat}")
+
+    # 6. Month indicator
+    month_indicator = np.full((n_patients, 1), up_to_month, dtype=np.float32)
+    feature_list.append(month_indicator)
+    feature_name_list.append("months_available")
+
+    X_flat = np.hstack(feature_list).astype(np.float32)
+    X_flat = np.nan_to_num(X_flat, nan=0.0)
+
+    return X_flat, feature_name_list
+
+
 def evaluate_binary_predictions(y_true, y_prob, threshold=0.5):
     """Return standard binary metrics for a probability threshold."""
     y_true = np.asarray(y_true).astype(int)
