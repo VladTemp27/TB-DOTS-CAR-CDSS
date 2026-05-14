@@ -99,6 +99,9 @@
     "treatment_start_date",
     "intensive_phase_start_date"
   ],
+  "Days_To_Treatment": [
+    "days_to_treatment"
+  ],
   "Diagnosis_Type": [
     "diagnosis_TB Disease",
     "diagnosis_TB Infection"
