@@ -412,10 +412,12 @@ Of the 44 features identified with missing data, 15 were excluded via column exc
 The listwise deletion pathway was not activated, as the dataset-level MCAR test was rejected and no individual variable simultaneously satisfied all three conditions of confirmed MCAR mechanism, fewer than 15\% missing observations, and a post-deletion sample size exceeding 500. Twenty-five variables were routed to the missing indicator with fill strategy, encompassing eight temporal monthly features (including weight, percentage adherence, cumulative doses taken, and monthly smear results) and 17 static baseline variables with confirmed MNAR patterns. Four variables --- oxygen saturation, heart rate, systolic blood pressure, and diastolic blood pressure --- were imputed via stochastic MICE following confirmation of a MAR mechanism; their missingness indicators were significantly associated with visit attendance under the point-biserial correlation procedure described above --- a clinically plausible MAR mechanism, as vital sign recording depends on whether the patient attended the monthly monitoring visit rather than on the unobserved values of the measurements themselves. The concentration of stochastic imputation on this small subset of high-value features reflects the diagnostic-first design of the pipeline, which reserves computationally intensive probabilistic imputation for variables where the statistical assumptions required for its validity are met \citep{ref31, ref33}.
 
 \input{temporal/tables/raw_missingness_summary}
+\FloatBarrier
 
 Table~\ref{tab:raw_missingness_summary} presents the complete missingness profile of all features in the temporal dataset prior to preprocessing. Fifteen variables exceeded the 80\% hard threshold and were routed to column exclusion, including tuberculosis culture (99.8\%), other laboratory tests (99.8\%), and tuberculin skin test (93.5\%). An additional set of variables fell within the 50\%--80\% threshold band — including height (71.7\%), weight (71.7\%), smear microscopy (55.6\%), and risk factor fields (91.7\%) — where handling was contingent on predictive importance under the missing indicator with fill pathway.
 
 \input{temporal/tables/retention_stats_by_month}
+\FloatBarrier
 
 \begin{figure}[t]
 \caption{Patient Retention Cascade Across Treatment Months}
@@ -423,10 +425,12 @@ Table~\ref{tab:raw_missingness_summary} presents the complete missingness profil
 \centering
 \includegraphics[width=\columnwidth]{temporal/figures/temporal_persistence_cascade.pdf}
 \end{figure}
+\FloatBarrier
 
 Patient retention across the treatment course further clarifies the missingness mechanism. At treatment initiation (M0), 95.5\% of patients had available data, declining to 83.1\% at M5, then dropping sharply to 62.3\% at M6 and 24.4\% at M7. Beyond M7, fewer than 4\% of patients remained observable. This monotonic decay confirms that missingness in the temporal features is driven by treatment dropout rather than random absence, directly supporting the missing indicator with fill pathway's use of forward-fill with a missing indicator for temporal variables \citep{ref36}. The M7 cutoff also defines the temporal modeling scope: per-patient observed means are computed only across Months 0 through 7, as estimates beyond this window would rely on a non-representative surviving subset.
 
 \input{temporal/tables/vitals_descriptive_stats}
+\FloatBarrier
 
 Table~\ref{tab:vitals_descriptive_stats} reports the descriptive statistics and distributional properties of the vital sign features in the raw temporal dataset. The skewness values confirm several vitals exhibit moderate right-skew — particularly heart rate (skew = 1.52) and respiratory rate (skew = 1.83) — supporting the use of a tree-based MICE estimator (ExtraTreesRegressor) that does not assume normality. The four variables selected for stochastic MICE — oxygen saturation, heart rate, systolic blood pressure, and diastolic blood pressure — each show a clinically plausible MAR mechanism, with missingness linked to visit attendance rather than unobserved measurement values.
 
@@ -447,6 +451,7 @@ The final validated dataset comprised 7,389 complete patient records encompassin
     \centering
     \includegraphics[width=\columnwidth]{figures/age_sex_pyramid.pdf}
 \end{figure}
+\FloatBarrier
 
 Resampling using SMOTE combined with Edited Nearest Neighbors (SMOTE+ENN) was applied exclusively to the training set. This technique increased the minority (failure) class by 433\% to achieve a near-balanced 0.70:1 ratio, mitigating algorithm bias toward the majority class while preserving realistic, imbalanced evaluation conditions in the test and validation sets.
 
@@ -462,6 +467,7 @@ Conversely, adverse outcomes accounted for a critical minority of the dataset. P
     \centering
     \includegraphics[width=0.7\textwidth]{figures/treatment_outcomes_pie.pdf}
 \end{figure}
+\FloatBarrier
 
 \subsection{Longitudinal Trends (2015--2025)}
 
@@ -475,6 +481,7 @@ An analysis of annual treatment outcomes from 2015 to 2025 revealed significant 
 \end{enumerate}
 
 \input{tables/outcome_trends_by_year.tex}
+\FloatBarrier
 
 \subsection{Diagnostic and Treatment Intervals}
 
@@ -489,6 +496,7 @@ The temporal intervals between screening, diagnosis, and treatment initiation we
 These skewed distributions demonstrate that while the median programmatic response is efficient, the long tails represent significant delays for high-risk patients. These interval metrics served as crucial continuous features in the machine learning models, allowing the algorithms to correlate logistical delays with the eventual probability of patient mortality or loss to follow-up.
 
 \input{tables/time_interval_summary.tex}
+\FloatBarrier
 
 \subsection{Correlation Analysis}
 
@@ -498,6 +506,7 @@ These skewed distributions demonstrate that while the median programmatic respon
     \centering
     \includegraphics[width=\columnwidth]{figures/numerical_pearson_correlation.pdf}
 \end{figure}
+\FloatBarrier
 
 The Pearson correlation matrix (Figure~\ref{fig:numerical_pearson}) reveals the pairwise relationships among age, clinical delay intervals, and diagnosis timing. Age exhibited weak negative correlations with the time intervals ($|r| < 0.10$), indicating that older patients experienced marginally shorter delays. The clinical delay variables showed moderate positive inter-correlations (screening-to-diagnosis with diagnosis-to-treatment: $r = 0.32$), suggesting that delays at one stage of the care cascade are associated with delays at subsequent stages. Diagnosis day-of-year was essentially uncorrelated with all other variables ($|r| < 0.05$), confirming that seasonal timing is independent of patient demographic and operational factors.
 
@@ -507,6 +516,7 @@ The Pearson correlation matrix (Figure~\ref{fig:numerical_pearson}) reveals the 
     \centering
     \includegraphics[width=\columnwidth]{figures/categorical_cramersv_correlation.pdf}
 \end{figure}
+\FloatBarrier
 
 The Cram\'{e}r's V matrix (Figure~\ref{fig:categorical_cramersv}) quantifies pairwise associations among the categorical feature set. Most pairwise associations fell in the moderate range ($V \approx 0.3$--$0.5$), indicating meaningful but not redundant categorical structure. Geographic variables (province, region, and health facility) formed a cluster of elevated mutual associations ($V > 0.6$), as expected given the hierarchical nesting of administrative units. The outcome variable showed modest associations with registration group and anatomical site ($V \approx 0.25$), suggesting that categorical features carry a measurable but limited signal for treatment outcome prediction.
 
@@ -596,6 +606,7 @@ Table \ref{tab:temporal_performance} presents the performance metrics of all tem
 \centering
 \includegraphics[width=\columnwidth]{temporal/figures/vitals_pearson_correlation.pdf}
 \end{figure}
+\FloatBarrier
 
 Pairwise correlations among vital signs within the temporal monitoring dataset confirm that several clinical measurements are moderately associated, supporting the use of MICE. The strongest observed correlation was between age and heart rate ($r = -0.32$), followed by oxygen saturation and heart rate ($r = -0.30$), and systolic with diastolic blood pressure ($r = 0.24$). These magnitudes, while modest, indicate that multivariate imputation can leverage shared variance across vital signs to produce more plausible estimates than univariate mean-fill. Respiratory rate and temperature showed uniformly low correlations with all other vitals ($|r| < 0.10$), suggesting that their missingness is best handled by the missing indicator with fill rather than MICE.
 
@@ -605,6 +616,7 @@ Pairwise correlations among vital signs within the temporal monitoring dataset c
 \centering
 \includegraphics[width=\columnwidth]{temporal/figures/categorical_cardinality_audit.pdf}
 \end{figure}
+\FloatBarrier
 
 The cardinality audit of raw categorical features (Figure~\ref{fig:categorical_cardinality}) confirms that data entry inconsistency was widespread across the temporal dataset. Several features exhibited far more unique values than expected under standardized coding: \texttt{chest\_x\_ray\_at\_case\_notification} contained over 300 unique free-text entries, \texttt{co\_morbidities} exceeded 150 variants, and \texttt{prior\_history\_of\_tb} and \texttt{drug\_resistance\_status} each had more than 20 distinct raw representations. Even nominally binary fields such as \linebreak[0]\texttt{sex} and \texttt{outcome} showed 5 to 12 unique raw values due to inconsistent abbreviation conventions across facilities.
 
@@ -616,6 +628,7 @@ This heterogeneity directly motivated the Stage 4 categorical harmonization step
 \centering
 \includegraphics[width=\columnwidth]{temporal/figures/categorical_cramersv_correlation.pdf}
 \end{figure}
+\FloatBarrier
 
 Cram\'{e}r's V associations among raw categorical variables in the temporal dataset reveal widespread strong associations, with numerous pairwise values exceeding 0.80. These inflated coefficients are driven primarily by \texttt{chest\_x\_ray\_at\_case\_notification}, which contains over 300 unique free-text entries in the raw data, rather than by genuine clinical association. Similarly, \texttt{co\_morbidities} contributed artificially elevated associations due to inconsistent coding across facilities. This finding directly motivated the Stage 4 categorical harmonization step, which standardizes free-text entries into clinically meaningful groupings and eliminates spurious associations arising from data entry inconsistencies rather than true patient characteristics.
 
@@ -625,6 +638,7 @@ Cram\'{e}r's V associations among raw categorical variables in the temporal data
 \centering
 \includegraphics[width=\columnwidth]{temporal/figures/categorical_cramersv_imputed.pdf}
 \end{figure}
+\FloatBarrier
 
 The imputed Cram\'{e}r's V matrix (Figure~\ref{fig:cramers_imputed}) confirms that the preprocessing pipeline reduced spurious categorical associations, with median off-diagonal V dropping from approximately 0.46 to 0.07. Three columns from the raw matrix — \texttt{prior\_history\_of\_tb}, \texttt{dat\_supported}, and \texttt{nationality} — are absent because they lacked sufficient variance or non-missing pairs in the cleaned data to compute reliable associations.
 
@@ -634,6 +648,7 @@ The imputed Cram\'{e}r's V matrix (Figure~\ref{fig:cramers_imputed}) confirms th
 \centering
 \includegraphics[width=\columnwidth]{temporal/figures/temporal_feature_correlation.pdf}
 \end{figure}
+\FloatBarrier
 
 The temporal feature correlation matrix (Figure~\ref{fig:temporal_feature_corr}) reveals the relational structure among key treatment variables aggregated over the M0--M7 window. Adherence metrics — including \texttt{percentage\_adherence}, \texttt{doses\_taken\_per\_month}, and \texttt{cumulative\_doses\_taken} — form a tight, strongly inter-correlated cluster ($r > 0.85$), confirming internal measurement consistency. Anthropometric features (\texttt{weight}, \texttt{height}) are orthogonal to all adherence measures ($r \sim 0$), indicating that body-size variation is independent of treatment compliance in this cohort. Retention features (\texttt{last\_month\_attended}, \texttt{total\_observed\_months}) show only weak positive associations with adherence ($r \approx 0.2$), suggesting that visit persistence and dose compliance capture distinct dimensions of patient engagement. \linebreak[0] Diagnostic variables such as \texttt{smear\_microscopy\_result} exhibit near-zero correlations with adherence and retention, consistent with their role as outcome indicators rather than behavioral predictors. Xpert MTB/RIF does not appear in the matrix because all observed values in the temporal subset were identical (zero variance), producing undefined Pearson coefficients.
 
@@ -643,8 +658,10 @@ The temporal feature correlation matrix (Figure~\ref{fig:temporal_feature_corr})
 \centering
 \includegraphics[width=\columnwidth]{temporal/figures/temporal_lag_heatmap.pdf}
 \end{figure}
+\FloatBarrier
 
 \input{temporal/tables/lag_correlation_matrix}
+\FloatBarrier
 
 The month-to-month stability of adherence behavior in the temporal dataset provides empirical support for the choice of temporal model architecture. Early treatment months exhibited near-perfect lag-1 correlations (M0--M1: $r = 0.92$, $p < 0.001$; M1--M2: $r = 1.00$, $p < 0.001$), indicating that adherence is highly autocorrelated in the initial treatment phase. Correlation remained above $r = 0.99$ through M5--M6, then declined at M6--M7 ($r = 0.62$, $p < 0.001$) before becoming non-significant at M7--M8 ($r = 0.21$, $p = 0.69$), where only six patient pairs remained available. This sustained autocorrelation confirms that adherence carries meaningful sequential structure, justifying the use of recurrent architectures (RNN, LSTM) that model temporal dependencies \citep{ref12}. The decline after M6 also aligns with the retention cascade, suggesting that dropout-compromised patients exhibit increasingly erratic adherence before loss to follow-up.
 
