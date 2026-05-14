@@ -780,12 +780,14 @@ def harmonize_categoricals(df: pd.DataFrame) -> pd.DataFrame:
     if "bacteriologic_status" in df.columns:
         bact_map = {
             "bc": "Bacteriologically Confirmed",
+            "bacteriologically confirmed": "Bacteriologically Confirmed",
             "bacteriologically-confirmed tb": "Bacteriologically Confirmed",
             "bacteriologically- confirmed tb": "Bacteriologically Confirmed",
             "bacteriologically -confirmed tb": "Bacteriologically Confirmed",
             "bacteriologically- confirmed ptb": "Bacteriologically Confirmed",
             "bacteriologically confirmed tb": "Bacteriologically Confirmed",
             "cd": "Clinically Diagnosed",
+            "clinically diagnosed": "Clinically Diagnosed",
             "clinically-diagnosed tb": "Clinically Diagnosed",
             "clinically diagnosed tb": "Clinically Diagnosed",
         }
@@ -828,6 +830,8 @@ def harmonize_categoricals(df: pd.DataFrame) -> pd.DataFrame:
             "treatment completed": "Treatment Completed",
             "tx completed": "Treatment Completed",
             "treatment complete": "Treatment Completed",
+            "lost to follow-up": "Lost to Follow-Up",
+            "lost to follow up": "Lost to Follow-Up",
             "ltfu": "Lost to Follow-Up",
             "died": "Died",
             "not evaluated - transferred": "Not Evaluated",

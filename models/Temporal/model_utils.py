@@ -38,19 +38,20 @@ pp = _load_preprocessing_module()
 
 SUCCESS_OUTCOMES = {"Cured", "Treatment Completed"}
 TRAINING_DROP_COLUMNS = {"data_year", "source_file"}
-TEMPORAL_V2_FEATURE_POLICY = "temporal_v2_medical_temporal_leakage_v2"
+TEMPORAL_V2_FEATURE_POLICY = "temporal_v2_cleaned_output_facility_v1"
 TEMPORAL_V2_DROP_COLUMNS = TRAINING_DROP_COLUMNS | {
     # Outcome-time leakage: valid for retrospective timelines, not prediction inputs.
     "date_of_outcome",
+    "is_missing_outcome",
     # Administrative identifiers can let flexible models memorize records/sites.
     "no",
-    "facility",
     "name_of_diagnosing_facility",
     "name_of_treatment_unit",
+    # Date of birth is redundant with age and unnecessarily identifying.
+    "date_of_birth",
     # Late/final treatment process fields are not available at early prediction months.
     "regimen_type_at_end_of_treatment",
     "regimen_type_at_6th_month_of_treatment",
-    "intensive_phase_start_date",
     "intensive_phase_end_date",
     "continuation_phase_start_date",
     "continuation_phase_end_date",
@@ -75,18 +76,21 @@ def get_temporal_v2_drop_feature_cols() -> set[str]:
 
 
 def _resolve_source_csv(csv_path: str | None) -> Path:
-    """Resolve the raw combined dataset path used by the model notebooks.
+    """Resolve the cleaned temporal dataset path used by the model notebooks.
 
-    The notebook helpers still pass the old cleaned CSV path, so this keeps the
-    public function signature stable while steering the loader to the combined
-    raw dataset that should now be preprocessed on demand.
+    The v2 notebooks historically passed ``combined_complete_dataset.csv``.
+    Keep that call stable but route it to the audited missing-data output.
     """
-    default_path = REPO_ROOT / "dataset" / "temporal" / "combined_complete_dataset.csv"
+    default_path = REPO_ROOT / "dataset" / "temporal" / "output" / "cleaned_human_readable.csv"
     if csv_path is None:
         return default_path
 
     requested_path = Path(csv_path)
-    if requested_path.name == "cleaned_human_readable.csv":
+    if not requested_path.is_absolute():
+        requested_path = REPO_ROOT / requested_path
+    if requested_path.exists():
+        return requested_path
+    if requested_path.name in {"combined_complete_dataset.csv", "cleaned_human_readable.csv"}:
         return default_path
     return requested_path
 
@@ -104,6 +108,15 @@ def _build_label_array(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     valid_mask = outcome_series.notna()
     y = outcome_series.loc[valid_mask].map(lambda value: 1.0 if value in SUCCESS_OUTCOMES else 0.0)
     return y.to_numpy(dtype=np.float32), valid_mask.to_numpy(dtype=bool)
+
+
+def _filter_observed_outcomes(df: pd.DataFrame) -> pd.DataFrame:
+    """Keep only patients whose outcome was observed, not imputed."""
+    if "is_missing_outcome" not in df.columns:
+        return df
+
+    observed_mask = pd.to_numeric(df["is_missing_outcome"], errors="coerce").fillna(1).eq(0)
+    return df.loc[observed_mask].reset_index(drop=True)
 
 
 def _convert_datetime_columns_to_numeric(df: pd.DataFrame) -> pd.DataFrame:
@@ -209,6 +222,7 @@ def load_cleaned_csv(csv_path: str):
 
     df = pd.read_csv(p)
     df.columns = [pp.standardize_column_name(c) for c in df.columns]
+    df = _filter_observed_outcomes(df)
     df = pp.clean_and_coerce_types(df)
     df = pp.harmonize_categoricals(df)
     df = pp.drop_uninformative_columns(df)
