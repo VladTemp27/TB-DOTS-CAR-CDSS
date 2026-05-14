@@ -105,6 +105,7 @@ pnpm-debug.log*
 ## ─── ML models ────────────────────────────────────────────────────────────────
 # GGUF model weights — too large for git (fetch separately)
 models/*.gguf
+*.gguf
 
 ## ─── Superpowers / AI tooling ────────────────────────────────────────────────
 .superpowers/
