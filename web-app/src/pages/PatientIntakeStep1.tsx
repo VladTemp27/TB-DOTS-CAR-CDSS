@@ -129,14 +129,17 @@ export function PatientIntakeStep1() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label className={labelCls} htmlFor="civilStatus">Civil Status</label>
-                <input
+                <select
                   id="civilStatus"
-                  type="text"
-                  placeholder="e.g. Single, Married"
                   value={civilStatus}
                   onChange={e => setCivilStatus(e.target.value)}
-                  className={inputCls}
-                />
+                  className={inputCls + ' bg-surface'}
+                >
+                  <option value="">Select Civil Status</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Divorced">Divorced</option>
+                </select>
               </div>
               <div>
                 <label className={labelCls} htmlFor="nationality">Nationality</label>

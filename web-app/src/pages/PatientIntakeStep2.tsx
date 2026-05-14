@@ -203,14 +203,27 @@ export function PatientIntakeStep2() {
               </div>
               <div>
                 <label className={labelCls} htmlFor="drugResistance">Drug Resistance Status</label>
-                <input
+                <select
                   id="drugResistance"
-                  type="text"
-                  placeholder="e.g. DS-TB, MDR-TB, XDR-TB"
                   value={drugResistanceStatus}
                   onChange={e => setDrugResistanceStatus(e.target.value)}
-                  className={inputCls}
-                />
+                  className={inputCls + ' bg-surface'}
+                >
+                  <option value="">Select Drug Resistance Status</option>
+                  <option value="DS-TB">DS-TB</option>
+                  <option value="MDR-TB">MDR-TB</option>
+                  <option value="XDR-TB">XDR-TB</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Baseline Vitals & Measurements */}
+          <div className="bg-surface border border-border rounded-2xl p-4 lg:p-6 space-y-3">
+            <h3 className="text-sm font-semibold text-ink-base">Baseline Vitals &amp; Measurements</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              <div>
+                  <option value="1">Divorced</option>
               </div>
             </div>
           </div>
@@ -260,8 +273,27 @@ export function PatientIntakeStep2() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label className={labelCls} htmlFor="coMorbidities">Co-morbidities</label>
-                <input id="coMorbidities" type="text" placeholder="e.g. Diabetes, HIV, None"
-                  value={coMorbidities} onChange={e => setCoMorbidities(e.target.value)} className={inputCls} />
+                <select
+                  id="coMorbidities"
+                  value={coMorbidities}
+                  onChange={e => setCoMorbidities(e.target.value)}
+                  className={inputCls + ' bg-surface'}
+                >
+                  <option value="">Select Co-morbidities</option>
+                  <option value="Diabetes">Diabetes</option>
+                  <option value="HIV">HIV</option>
+                  <option value="None">None</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="chestXRay">Chest X-ray at Notification</label>
+                <select id="chestXRay" value={chestXRayAtNotification} onChange={e => setChestXRayAtNotification(e.target.value)} className={selectCls}>
+                  <option value="">Select (optional)</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                  <option value="Married">Married</option>
+                  <option value="Divorced">Divorced</option>
+                </select>
               </div>
               <div>
                 <label className={labelCls} htmlFor="chestXRay">Chest X-ray at Notification</label>
@@ -275,8 +307,17 @@ export function PatientIntakeStep2() {
             </div>
             <div>
               <label className={labelCls} htmlFor="diagnosis">Diagnosis</label>
-              <input id="diagnosis" type="text" placeholder="e.g. Pulmonary TB, MDR-TB"
-                value={diagnosis} onChange={e => setDiagnosis(e.target.value)} className={inputCls} />
+              <select
+                  id="diagnosis"
+                  value={diagnosis}
+                  onChange={e => setDiagnosis(e.target.value)}
+                  className={inputCls + ' bg-surface'}
+                >
+                  <option value="">Select Diagnosis</option>
+                  <option value="Pulmonary TB">Pulmonary TB</option>
+                  <option value="MDR-TB">MDR-TB</option>
+                  <option value="None">None</option>
+              </select>
             </div>
           </div>
 

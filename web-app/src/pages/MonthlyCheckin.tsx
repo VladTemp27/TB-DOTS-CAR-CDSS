@@ -55,6 +55,9 @@ export function MonthlyCheckin() {
 
   const microChoices  = getChoices('Microscopy_Result')
   const monthNumber   = (patient?.monthlyRecords.length ?? 0) + 1
+  const previousCumulative = (patient?.monthlyRecords ?? []).reduce(
+    (sum, r) => sum + (r.monthlyDosesTaken ?? 0), 0
+  )
 
   async function handleGenerate() {
     if (!patient || !id || !adherence) return
@@ -234,7 +237,7 @@ export function MonthlyCheckin() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="monthlyDosesTaken">
-                  Monthly Doses Taken
+                  Doses Taken
                 </label>
                 <input
                   id="monthlyDosesTaken"
@@ -242,13 +245,18 @@ export function MonthlyCheckin() {
                   min="0"
                   placeholder="e.g. 28"
                   value={monthlyDosesTaken}
-                  onChange={e => setMonthlyDosesTaken(e.target.value)}
+                  onChange={e => {
+                    setMonthlyDosesTaken(e.target.value)
+                    const parsed = parseInt(e.target.value, 10)
+                    const total = previousCumulative + (Number.isFinite(parsed) ? parsed : 0)
+                    setCumulativeDosesTaken(total > 0 ? String(total) : '')
+                  }}
                   className={inputCls}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="monthlyMissedDoses">
-                  Monthly Missed Doses
+                  Missed Doses
                 </label>
                 <input
                   id="monthlyMissedDoses"
@@ -270,8 +278,8 @@ export function MonthlyCheckin() {
                   min="0"
                   placeholder="e.g. 84"
                   value={cumulativeDosesTaken}
-                  onChange={e => setCumulativeDosesTaken(e.target.value)}
-                  className={inputCls}
+                  readOnly
+                  className={inputCls + ' bg-gray-50 cursor-not-allowed'}
                 />
               </div>
               <div>
@@ -284,10 +292,10 @@ export function MonthlyCheckin() {
                   min="0"
                   max="100"
                   step="0.1"
-                  placeholder="e.g. 93.3"
+                  placeholder="Auto-calculated"
                   value={pctAdherence}
-                  onChange={e => setPctAdherence(e.target.value)}
-                  className={inputCls}
+                  readOnly
+                  className={inputCls + ' bg-gray-50 cursor-not-allowed'}
                 />
               </div>
             </div>
@@ -332,7 +340,7 @@ export function MonthlyCheckin() {
 
           {/* Adherence */}
           <div role="group" aria-labelledby="adherence-label">
-            <p id="adherence-label" className="block text-sm font-medium text-ink-secondary mb-2">Adherence This Month *</p>
+            <p id="adherence-label" className="block text-sm font-medium text-ink-secondary mb-2">Adherence *</p>
             <div className="flex gap-3">
               {adherenceOptions.map(({ value, label, sublabel, Icon, selectedCls }) => (
                 <button
