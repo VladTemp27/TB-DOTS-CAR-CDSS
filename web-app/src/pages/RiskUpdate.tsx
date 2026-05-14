@@ -129,7 +129,7 @@ export function RiskUpdate() {
 
       <PageFooter>
         <div className="flex gap-3">
-          <button onClick={() => navigate(-1)}
+          <button onClick={() => navigate(`/patient/${id}/chart`)}
             className="flex-1 border border-border text-ink-secondary py-3.5 rounded-xl font-semibold text-sm">
             ← Back
           </button>

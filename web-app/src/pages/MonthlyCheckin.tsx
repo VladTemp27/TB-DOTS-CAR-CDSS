@@ -82,7 +82,7 @@ export function MonthlyCheckin() {
         timestamp: now,
       })
 
-      navigate(`/patient/${id}/risk-update`, { state: { result, monthNumber } })
+      navigate(`/patient/${id}/risk-update`, { state: { result, monthNumber }, replace: true })
     } catch (err) {
       console.error(err)
       alert('Inference failed.')

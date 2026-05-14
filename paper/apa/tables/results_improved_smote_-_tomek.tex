@@ -1,0 +1,19 @@
+\begin{table}[htbp]
+\caption{Performance Results — Improved / SMOTE - Tomek}
+\label{tab:improved_smote_-_tomek}
+\begin{tabular}{lcccccc}
+\toprule
+
+Model & ROC-AUC & CV-AUC Mean & CV-AUC Std & Recall (Fail) & F1 (Fail) & Accuracy \\
+\midrule
+
+Logistic Regression & 0.6360 & 0.6394 & 0.0238 & 0.5973 & 0.2857 & 0.5870 \\
+Random Forest & 0.6827 & 0.6849 & 0.0108 & 0.3213 & 0.2928 & 0.7854 \\
+XGBoost & 0.6829 & 0.6855 & 0.0134 & 0.7240 & 0.3131 & 0.5607 \\
+LightGBM & 0.6775 & 0.6862 & 0.0171 & 0.1765 & 0.2371 & 0.8429 \\
+Gradient Boosting & 0.6770 & 0.6917 & 0.0144 & 0.1810 & 0.2326 & 0.8348 \\
+SVM (RBF) & 0.6091 & 0.5817 & 0.0121 & 0.5792 & 0.2706 & 0.5682 \\
+\bottomrule
+
+\end{tabular}
+\end{table}
