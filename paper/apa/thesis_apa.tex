@@ -234,16 +234,18 @@ This study uses a dataset of records of PTB patients from the Cordillera Adminis
   node distance=0.45cm and 0.6cm,
   mainbox/.style={rectangle, draw, rounded corners=2pt, text width=5.5cm,
     minimum height=0.65cm, align=center, font=\normalsize, fill=gray!10},
-  splitbox/.style={rectangle, draw, rounded corners=2pt, text width=2.4cm,
+  splitbox/.style={rectangle, draw, rounded corners=2pt, text width=3.2cm,
     minimum height=0.65cm, align=center, font=\normalsize, fill=gray!10},
   arrow/.style={-{Stealth[scale=0.7]}, thick}
 ]
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
   \node[mainbox, fill=gray!25] (raw)      {Raw Records: DOH-CAR TB-DOTS (2015--2025)};
   \node[mainbox, below=of raw]  (harm)    {Pseudonymization \& Schema Harmonization};
   \node[mainbox, below=of harm] (eda)     {Exploratory Analysis \& Feature Engineering};
   \node[mainbox, below=of eda]  (mdh)     {Diagnostic Missing Data Handling};
-  \node[splitbox, below left=0.7cm and 1.4cm of mdh]  (static)   {\textbf{Static Models}\\XGBoost, LightGBM, RF};
-  \node[splitbox, below right=0.7cm and 1.4cm of mdh] (temporal)  {\textbf{Temporal Models}\\RNN, LSTM};
+  \node[splitbox, below left=0.7cm and 2.0cm of mdh]  (static)   {\textbf{Static Models}\\XGBoost, LightGBM, RF};
+  \node[splitbox, below right=0.7cm and 2.0cm of mdh] (temporal)  {\textbf{Temporal Models}\\RNN, LSTM};
   \node[mainbox, below=2.4cm of mdh]  (shap)  {Ensemble Prediction \& SHAP Interpretability};
   \node[mainbox, below=of shap, fill=blue!10] (cdss) {Clinical Decision Support System (CDSS)};
   \draw[arrow] (raw)  -- (harm);
