@@ -25,16 +25,38 @@ _MAGNITUDE_MAP = (
 
 # Feature names to recognize — multi-word first to avoid partial matches
 _KNOWN_FEATURES: tuple[str, ...] = (
+    # Multi-word first to prevent partial matches on substrings
     "Days To Treatment",
-    "Treatment Category",
-    "Patient Category",
+    "Days to Treatment",
+    "Registration Group",
+    "Case Registration Group",
+    "Bacteriologic Status",
+    "Microscopy Result",
+    "Smear Microscopy",
+    "Treatment Adherence",
+    "Body Weight",
     "Smear Result",
+    "Smear/TB Lamp",
+    "Xpert Result",
+    "Xpert MTB/RIF",
+    "Monthly Doses",
+    "Cumulative Doses",
+    "Missed Doses",
+    "Months Available",
+    # Single-word last
     "Age",
     "Sex",
-    "BMI",
-    "Province",
     "Weight",
     "Height",
+)
+
+_MIXED_WORDS = (
+    "mixed effect",
+    "mixed",
+    "varied",
+    "variable",
+    "inconsistent",
+    "both increased and decreased",
 )
 
 
@@ -87,6 +109,11 @@ def parse_explanation(
             for phrase in _DECREASE_WORDS:
                 if re.search(r"\b" + re.escape(phrase) + r"\b", context_lower):
                     direction = "decrease"
+                    break
+        if direction is None:
+            for phrase in _MIXED_WORDS:
+                if re.search(r"\b" + re.escape(phrase) + r"\b", context_lower):
+                    direction = "mixed"
                     break
 
         if direction is None:
