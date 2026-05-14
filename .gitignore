@@ -127,5 +127,3 @@ start.sh
 # Backend data (SQLite + X-ray blobs)
 data/
 
-# Compiled paper PDF
-paper/apa/thesis_apa.pdf
