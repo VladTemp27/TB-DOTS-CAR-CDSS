@@ -63,12 +63,15 @@ def load_test_patients(config: PipelineConfig) -> TestCohort:
     """
     import pandas as pd
 
-    # Single entry point: load, split, encode/impute (but NOT scale)
+    # Single entry point: load, split, encode/impute (but NOT scale).
+    # Must pass the same drop_feature_cols used during training so feature count
+    # matches the saved model (399 features for temporal_v2_cleaned_output_facility_v1).
     data = mu.prepare_default_model_inputs(
         str(config.csv_path),
         val_frac=config.val_frac,
         test_frac=config.test_frac,
         random_state=config.random_seed,
+        drop_feature_cols=mu.get_temporal_v2_drop_feature_cols(),
     )
 
     # Key names confirmed by reading _build_model_arrays in model_utils.py
