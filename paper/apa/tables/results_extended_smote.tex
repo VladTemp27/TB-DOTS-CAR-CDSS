@@ -1,0 +1,19 @@
+\begin{table}[htbp]
+\caption{Performance Results — Extended / SMOTE}
+\label{tab:extended_smote}
+\begin{tabular}{lcccccc}
+\toprule
+
+Model & ROC-AUC & CV-AUC Mean & CV-AUC Std & Recall (Fail) & F1 (Fail) & Accuracy \\
+\midrule
+
+Logistic Regression & 0.6404 & 0.6391 & 0.0293 & 0.5837 & 0.2873 & 0.5995 \\
+Random Forest & 0.6758 & 0.6718 & 0.0068 & 0.1719 & 0.2262 & 0.8373 \\
+XGBoost & 0.6901 & 0.6721 & 0.0092 & 0.6335 & 0.3294 & 0.6433 \\
+LightGBM & 0.6917 & 0.6668 & 0.0147 & 0.0950 & 0.1561 & 0.8579 \\
+Gradient Boosting & 0.6832 & 0.6754 & 0.0093 & 0.1176 & 0.1891 & 0.8605 \\
+SVM (RBF) & 0.6114 & 0.5810 & 0.0122 & 0.5837 & 0.2783 & 0.5814 \\
+\bottomrule
+
+\end{tabular}
+\end{table}
