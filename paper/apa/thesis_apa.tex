@@ -791,6 +791,61 @@ The temporal feature correlation matrix (Figure~\ref{fig:temporal_feature_corr})
 
 The month-to-month stability of adherence behavior in the temporal dataset provides empirical support for the choice of temporal model architecture. Early treatment months exhibited near-perfect lag-1 correlations (M0--M1: $r = 0.92$, $p < 0.001$; M1--M2: $r = 1.00$, $p < 0.001$), indicating that adherence is highly autocorrelated in the initial treatment phase. Correlation remained above $r = 0.99$ through M5--M6, then declined at M6--M7 ($r = 0.62$, $p < 0.001$) before becoming non-significant at M7--M8 ($r = 0.21$, $p = 0.69$), where only six patient pairs remained available. This sustained autocorrelation confirms that adherence carries meaningful sequential structure, justifying the use of recurrent architectures (RNN, LSTM) that model temporal dependencies \citep{ref12}. The decline after M6 also aligns with the retention cascade, suggesting that dropout-compromised patients exhibit increasingly erratic adherence before loss to follow-up.
 
+\subsection{Clinical Decision Support System (CDSS) Implementation}
+
+The validated predictive models were operationalized through a Clinical Decision Support System (CDSS) designed to provide actionable insights at the point of care. The system processes patient data to generate four primary clinical artifacts that bridge the gap between machine learning outputs and clinical practice in the CAR.
+
+\subsubsection{Automated Patient Profiling and Risk Stratification}
+
+Upon data entry, the system generates a synthesized view of the patient’s clinical standing. As shown in Figure \ref{fig:patient_overview}, the \textit{Patient Overview} consolidates demographic data and baseline health indicators into a single diagnostic dashboard. This is immediately followed by a \textit{Risk Analysis} (Figure \ref{fig:risk_analysis}), which presents the model's calculated probability of treatment failure. By categorizing patients into risk tiers, the system allows health administrators to prioritize resources for high-risk individuals before treatment completion.
+
+\begin{figure}[H]
+    \centering
+    \caption{CDSS Patient Overview Dashboard Interface}
+    \label{fig:patient_overview}
+    \includegraphics[width=0.85\textwidth]{figures/agent/patient_overview_tab.pdf}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \caption{Automated Risk Analysis and Failure Probability Projection}
+    \label{fig:risk_analysis}
+    \includegraphics[width=0.85\textwidth]{figures/agent/risk_analysis.pdf}
+\end{figure}
+
+\subsubsection{Explainable AI and Intervention Planning}
+
+To address the requirement for model interpretability, the \textit{Full Breakdown} report (Figure \ref{fig:full_breakdown}) utilizes SHAP to visualize why a specific risk score was assigned. This transparency is crucial for clinician trust, as it highlights specific variables—such as low BMI or history of TB—driving the individual prediction. 
+
+Finally, the system bridges the gap between prediction and action through the \textit{First Step} protocol (Figure \ref{fig:first_step}). The Risk Factor Analysis provides a standardized set of initial clinical recommendations based on identified risk factors, ensuring that the predictive output leads to immediate patient-level intervention.
+
+\begin{figure}[H]
+    \centering
+    \caption{SHAP-based Predictive Factor Breakdown for Individual Patients}
+    \label{fig:full_breakdown}
+    \includegraphics[width=0.85\textwidth]{figures/agent/full_breakdown.pdf}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \caption{Initial Clinical Intervention and Management Protocol (First Step)}
+    \label{fig:first_step}
+    \includegraphics[width=0.85\textwidth]{figures/agent/first_step.pdf}
+\end{figure}
+
+\subsubsection{Large Language Model (LLM) Integration for Clinical Context}
+
+Beyond the quantitative feature importance provided by SHAP, the system utilizes \textit{Med-Gemma}—a fine-tuned medical large language model—to provide a qualitative narrative of the identified risk factors. As shown in Figure \ref{fig:med_gemma_analysis}, this component resides within the Risk Factor Analysis interface and functions as a clinical bridge, translating statistical weights into natural language explanations. 
+
+By analyzing the specific patient profile (e.g., age, co-morbidities, and sputum conversion), Med-Gemma generates context-aware summaries that highlight why certain factors are clinically concerning. This integration ensures that the CDSS does not merely present a risk percentage but also provides a "clinical second opinion" that aligns with established medical literature, further enhancing the transparency of the predictive engine.
+
+\begin{figure}[H]
+    \centering
+    \caption{Med-Gemma Clinical Narrative and Risk Factor Explanation}
+    \label{fig:med_gemma_analysis}
+    \includegraphics[width=0.85\textwidth]{figures/agent/med_gemma.pdf} 
+\end{figure}
+
 % ======================== DISCUSSION ========================
 \FloatBarrier
 \section{Discussion}
@@ -802,6 +857,8 @@ The corrected v2 iteration improved the methodological defensibility of temporal
 The study contributes in several ways. By integrating temporal monitoring data with static baseline features, it demonstrates that patient-level longitudinal information improves predictive performance over static data alone. The application of SMOTE-ENN and advanced data augmentation techniques for Bi-LSTM effectively addresses the extreme class imbalance inherent in TB treatment outcomes, enhancing the model's capacity to detect high-risk patients. Furthermore, the findings suggest that predictive models have practical value for clinical decision support systems, enabling clinicians to identify patients at risk of treatment failure early and prioritize interventions accordingly.
 
 These findings suggest that the v2 temporal modeling outputs may serve as a basis for further evaluation within TB monitoring workflows, particularly for earlier identification of patients who may require closer review. For deployment-oriented performance, the v2 tree models (particularly Random Forest and LightGBM with SMOTE-ENN) provide a strong balance of Failure detection and overall correctness, while the Hybrid Bi-LSTM baseline may be useful when a more conservative screening stance is desired. However, any use in clinical or programmatic settings should first undergo external validation, prospective testing, and review by healthcare professionals to assess safety, calibration, and workflow fit. Future research should focus on larger, multi-region datasets to enhance generalization, evaluate temporal calibration over time, and explore hybrid modeling approaches that combine deep temporal representations with tree-based learners. Additionally, enhancing interpretability of temporal dynamics (e.g., attention over treatment months) may improve clinician trust and adoption.
+
+The integration of these CDSS artifacts represents a shift from retrospective reporting to proactive clinical management within the DOH-CAR TB-DOTS program. While traditional NTP protocols typically identify treatment failure only after it has occurred, the predictive outputs allow for pre-emptive intervention during the critical early months of therapy. The use of the \textit{Full Breakdown} report specifically addresses the "black-box" nature of ensemble models, empowering healthcare workers to validate the AI's logic against their clinical experience. Furthermore, the \textit{First Step} document ensures that high predictive accuracy translates directly into improved patient care pathways, potentially reducing the incidence of MDR-TB emergence caused by unrecognized non-adherence. The integration of SHAP and Med-Gemma directly addresses the skepticism often associated with AI in healthcare. By providing both a statistical breakdown and a medical narrative, the CDSS facilitates a 'human-in-the-loop' approach. This ensures that the DOH-CAR health workers can cross-reference the model’s findings with their own expertise, thereby increasing the likelihood of successful clinical adoption and improved patient outcomes.
 
 \subsection{Recommendations}
 
