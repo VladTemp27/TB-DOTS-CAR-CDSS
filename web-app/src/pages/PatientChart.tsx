@@ -251,7 +251,7 @@ export function PatientChart() {
                         <td className="py-2 text-ink-secondary tabular-nums">{record.monthlyDosesTaken ?? '—'}</td>
                         <td className="py-2 text-ink-secondary tabular-nums">{record.monthlyMissedDoses ?? '—'}</td>
                         <td className="py-2 text-ink-secondary tabular-nums">{record.cumulativeDosesTaken ?? '—'}</td>
-                        <td className="py-2 text-ink-secondary tabular-nums">{record.pctAdherence != null ? `${record.pctAdherence}%` : '—'}</td>
+                        <td className="py-2 text-ink-secondary tabular-nums">{record.pctAdherence != null ? `${record.pctAdherence.toFixed(2)}%` : '—'}</td>
                         <td className={`py-2 capitalize font-medium
                           ${record.adherence === 'full' ? 'text-risk-low'
                             : record.adherence === 'partial' ? 'text-risk-med'

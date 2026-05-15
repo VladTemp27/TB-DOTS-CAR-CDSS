@@ -222,7 +222,7 @@ export function PatientProfile() {
                           <td className="py-2 text-ink-secondary tabular-nums">{r.monthlyDosesTaken ?? '—'}</td>
                           <td className="py-2 text-ink-secondary tabular-nums">{r.monthlyMissedDoses ?? '—'}</td>
                           <td className="py-2 text-ink-secondary tabular-nums">{r.cumulativeDosesTaken ?? '—'}</td>
-                          <td className="py-2 text-ink-secondary tabular-nums">{r.pctAdherence != null ? `${r.pctAdherence}%` : '—'}</td>
+                          <td className="py-2 text-ink-secondary tabular-nums">{r.pctAdherence != null ? `${r.pctAdherence.toFixed(2)}%` : '—'}</td>
                           <td className={`py-2 capitalize font-medium
                             ${r.adherence === 'full' ? 'text-risk-low'
                               : r.adherence === 'partial' ? 'text-risk-med'
