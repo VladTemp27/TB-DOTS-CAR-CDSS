@@ -555,17 +555,6 @@ Figure~\ref{fig:roc_pr} presents the Receiver Operating Characteristic (ROC) cur
 \end{figure}
 \FloatBarrier
 
-Figure~\ref{fig:confusion_matrix} presents the confusion matrix for the best-performing model on the held-out test set, displaying the raw counts alongside row-normalized percentages. The matrix makes explicit the clinical trade-off between sensitivity (correctly identified failure cases) and specificity (correctly identified success cases), which is the primary decision axis for deploying the model in a CDSS alert system.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.55\textwidth]{figures/fig_confusion_matrix.pdf}
-  \caption{Confusion matrix for the best-performing model on the test set.
-           Raw counts are shown with row-normalized percentages in parentheses.}
-  \label{fig:confusion_matrix}
-\end{figure}
-\FloatBarrier
-
 Figure~\ref{fig:cv_feat} presents the cross-validation stability of all six model configurations~(c) and the top 15 feature importances from the best-performing classifier~(d). Panel~(c) shows the 5-fold CV ROC-AUC mean with standard deviation bars for each model--sampler combination, color-coded by sampling strategy; configurations with narrower error bars indicate more stable generalization. Panel~(d) ranks the most predictive features by normalized importance, providing clinically interpretable signals for which patient attributes drive the risk prediction.
 
 \begin{figure}[htbp]
