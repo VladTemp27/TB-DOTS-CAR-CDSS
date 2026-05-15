@@ -102,6 +102,52 @@ export async function addMonthlyRecord(id: string, record: MonthlyRecord): Promi
   })
 }
 
+export type TemporalRiskInput = {
+  month: number
+  weight?: number
+  height?: number
+  smearTbLamp?: 0 | 1
+  xpertMtbRif?: 0 | 1
+  monthlyDosesTaken?: number
+  monthlyMissedDoses?: number
+}
+
+export type TemporalRiskResult = {
+  label: 0 | 1
+  failureProbability: number
+  successProbability: number
+  threshold: number
+  modelName: string
+  month: number
+  monthsUsed?: number[]
+}
+
+export type TemporalRiskSaveInput = TemporalRiskInput & TemporalRiskResult & {
+  rawFailureProbability?: number
+  rawSuccessProbability?: number
+  ruleFailureFloor?: number
+  previousFailureProbability?: number
+  adjustedFailureProbability?: number
+  seqLen?: number
+  riskPolicy?: string
+}
+
+export async function generateTemporalRisk(patientId: string, input: TemporalRiskInput): Promise<TemporalRiskResult> {
+  return api<TemporalRiskResult>(`/api/patients/${encodeURIComponent(patientId)}/temporal-risk`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+}
+
+export async function saveTemporalRiskRecord(patientId: string, input: TemporalRiskSaveInput): Promise<TemporalRiskResult> {
+  return api<TemporalRiskResult>(`/api/patients/${encodeURIComponent(patientId)}/temporal-risk-record`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+}
+
 export function generateId(): string {
   return `MED-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`
 }

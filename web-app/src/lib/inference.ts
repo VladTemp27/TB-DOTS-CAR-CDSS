@@ -219,6 +219,14 @@ export function getChoices(col: CatKey): string[] {
   return Object.keys(map).sort()
 }
 
+// Province choices filtered to actual provinces only (excludes MTBN clinic entries and NCR districts)
+export function getProvinceChoices(): string[] {
+  const map = encodingsData['Province'] as Record<string, number>
+  return Object.keys(map)
+    .filter(p => !p.endsWith('- MTBN') && !p.startsWith('NCR '))
+    .sort()
+}
+
 // Get the cities/municipalities valid for a given province (UI-only, no effect on model encoding)
 export function getCitiesForProvince(province: string): string[] {
   if (!province) return []

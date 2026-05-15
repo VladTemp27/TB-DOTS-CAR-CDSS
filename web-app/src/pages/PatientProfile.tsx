@@ -70,6 +70,7 @@ export function PatientProfile() {
     : patient.treatmentRegimen === 'xdr' ? 'XDR-TB Regimen'
     : 'No Regimen Selected'
   const hasTreatment = !!patient.treatmentRegimen
+  const monthlyRecords = [...patient.monthlyRecords].sort((a, b) => a.month - b.month)
 
   return (
     <div className="min-h-screen bg-bg flex flex-col">
@@ -145,18 +146,18 @@ export function PatientProfile() {
 
           {/* Right column: risk trend + monthly records */}
           <div className="space-y-4">
-            {patient.predictions.length > 1 && (
+            {monthlyRecords.length > 0 && (
               <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
                 <p className="text-sm font-semibold text-ink-base mb-3">Risk Trend Over Time</p>
                 <div className="flex gap-2 overflow-x-auto pb-1">
-                  {patient.predictions.map((pr, i) => {
-                    const p = Math.round(pr.failureProbability * 100)
-                    const isLast = i === patient.predictions.length - 1
+                  {monthlyRecords.map((record, i) => {
+                    const p = Math.round(record.failureProbability * 100)
+                    const isLast = i === monthlyRecords.length - 1
                     return (
-                      <div key={pr.timestamp} className={`flex flex-col items-center min-w-[52px] border rounded-xl p-2
+                      <div key={record.timestamp} className={`flex flex-col items-center min-w-[52px] border rounded-xl p-2
                         ${isLast ? 'border-risk-high/40 bg-risk-high/5' : 'border-border bg-gray-50'}`}>
-                        <p className="text-xs text-ink-muted">M{i}</p>
-                        <p className={`text-sm font-bold font-display tabular-nums ${riskColor(pr.failureProbability).text}`}>{p}%</p>
+                        <p className="text-xs text-ink-muted">M{record.month}</p>
+                        <p className={`text-sm font-bold font-display tabular-nums ${riskColor(record.failureProbability).text}`}>{p}%</p>
                       </div>
                     )
                   })}
@@ -222,7 +223,7 @@ export function PatientProfile() {
                           <td className="py-2 text-ink-secondary tabular-nums">{r.monthlyDosesTaken ?? '—'}</td>
                           <td className="py-2 text-ink-secondary tabular-nums">{r.monthlyMissedDoses ?? '—'}</td>
                           <td className="py-2 text-ink-secondary tabular-nums">{r.cumulativeDosesTaken ?? '—'}</td>
-                          <td className="py-2 text-ink-secondary tabular-nums">{r.pctAdherence != null ? `${r.pctAdherence}%` : '—'}</td>
+                          <td className="py-2 text-ink-secondary tabular-nums">{r.pctAdherence != null ? `${r.pctAdherence.toFixed(2)}%` : '—'}</td>
                           <td className={`py-2 capitalize font-medium
                             ${r.adherence === 'full' ? 'text-risk-low'
                               : r.adherence === 'partial' ? 'text-risk-med'
