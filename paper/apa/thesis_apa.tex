@@ -966,5 +966,106 @@ The authors would like to express their sincere gratitude to Saint Louis Univers
 The following pages reproduce the original iCreate 2026 supplementary material in its source format for archival completeness.
 \includepdf[pages=-,pagecommand={\thispagestyle{fancy}}]{iCreate.pdf}
 
+\clearpage
+\section{Appendix B: CDSS Web Application Walkthrough}
+\label{app:walkthrough}
+
+This appendix presents a sequential walkthrough of the deployed CDSS web application, following the order in which a clinical user would traverse the system: authentication, patient intake, profile review, longitudinal monitoring, and risk explanation. Several interfaces shown here also appear in the body of the paper; they are reproduced in this appendix for continuity of the walkthrough.
+
+\subsection*{B.1 Authentication and Dashboard}
+
+\begin{figure}[H]
+    \centering
+    \caption{CDSS login screen.}
+    \label{fig:app_login}
+    \includegraphics[width=0.85\textwidth]{figures/agent/login.pdf}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \caption{Main dashboard listing enrolled patients.}
+    \label{fig:app_dashboard}
+    \includegraphics[width=0.85\textwidth]{figures/agent/dashboard.pdf}
+\end{figure}
+
+\subsection*{B.2 Patient Intake Workflow}
+
+The intake workflow consists of five sequential steps. The Lab Results step (Step 2) is omitted here as it was not captured in the available screenshot set.
+
+\begin{figure}[H]
+    \centering
+    \caption{Patient intake Step 1: Demographics.}
+    \label{fig:app_step1}
+    \includegraphics[width=0.85\textwidth]{figures/agent/first_step.pdf}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \caption{Patient intake Step 3: Chest X-ray upload.}
+    \label{fig:app_step3}
+    \includegraphics[width=0.85\textwidth]{figures/agent/third_step.pdf}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \caption{Patient intake Step 4: Diagnostic result.}
+    \label{fig:app_step4}
+    \includegraphics[width=0.85\textwidth]{figures/agent/fourth_step.pdf}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \caption{Patient intake Step 5: Treatment regimen selection.}
+    \label{fig:app_step5}
+    \includegraphics[width=0.85\textwidth]{figures/agent/fifth_step.pdf}
+\end{figure}
+
+\subsection*{B.3 Patient Profile and Records}
+
+\begin{figure}[H]
+    \centering
+    \caption{Patient profile overview tab.}
+    \label{fig:app_overview}
+    \includegraphics[width=0.85\textwidth]{figures/agent/patient_overview_tab.pdf}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \caption{Complete patient chart with longitudinal record.}
+    \label{fig:app_chart}
+    \includegraphics[width=0.85\textwidth]{figures/agent/patient_chart.pdf}
+\end{figure}
+
+\subsection*{B.4 Longitudinal Monitoring}
+
+\begin{figure}[H]
+    \centering
+    \caption{Monthly check-in log for adherence and follow-up imaging.}
+    \label{fig:app_monthly}
+    \includegraphics[width=0.85\textwidth]{figures/agent/log_monthly.pdf}
+\end{figure}
+
+\subsection*{B.5 Risk Prediction and Explainability}
+
+\begin{figure}[H]
+    \centering
+    \caption{Updated risk analysis after monthly follow-up.}
+    \label{fig:app_risk}
+    \includegraphics[width=0.85\textwidth]{figures/agent/risk_analysis.pdf}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \caption{SHAP-based full breakdown of contributing factors.}
+    \label{fig:app_breakdown}
+    \includegraphics[width=0.85\textwidth]{figures/agent/full_breakdown.pdf}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \caption{Med-Gemma clinical narrative explaining risk factors.}
+    \label{fig:app_medgemma}
+    \includegraphics[width=0.85\textwidth]{figures/agent/med_gemma.pdf}
+\end{figure}
 
 \end{document}
