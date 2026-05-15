@@ -424,6 +424,44 @@ Each model configuration is evaluated using five-fold stratified cross-validatio
 
 In addition to the composite selection metric, the Matthews Correlation Coefficient (MCC) is reported for each configuration as a supplementary diagnostic measure. Unlike accuracy or class-specific F1-score, MCC accounts simultaneously for all four quadrants of the confusion matrix and remains informative under severe class imbalance, yielding a coefficient in $[-1, +1]$ where $+1$ represents perfect prediction, $0$ is equivalent to random classification, and $-1$ indicates complete inverse prediction \citep{chicco2020advantages}. Reporting MCC alongside the composite selection score enables direct assessment of the performance trade-off introduced by aggressive resampling strategies such as SMOTE-ENN, which may increase failure recall at the cost of excess false positives that inflate overall prediction error.
 
+\subsubsection{Performance Evaluation}
+
+Model performance is assessed using a comprehensive set of metrics designed to capture different aspects of classification quality under class imbalance. Because treatment failure constitutes only 13.8\% of the cohort, reliance on any single metric --- particularly accuracy --- can be misleading; a trivial classifier predicting ``Success'' for every patient would achieve 86.2\% accuracy while detecting zero failures. Accordingly, the evaluation framework computes discriminative, threshold-dependent, and calibration-aware metrics in parallel.
+
+All metrics are derived from the confusion matrix, where treatment failure is defined as the positive class. For each model, four confusion-matrix quadrants are computed on the held-out test set: true positives (TP, actual failures correctly predicted), false negatives (FN, actual failures missed), false positives (FP, actual successes incorrectly flagged as failures), and true negatives (TN, actual successes correctly identified). From these, the following metrics are calculated:
+
+\textbf{Accuracy} ($\frac{TP + TN}{TP + TN + FP + FN}$) measures the overall proportion of correct predictions. Although intuitive, accuracy is reported with the explicit caveat that it is dominated by the majority class under 86:14 imbalance.
+
+\textbf{Precision} ($\frac{TP}{TP + FP}$), also called positive predictive value, quantifies the proportion of failure alerts that correspond to actual failures. Low precision means a high rate of false alarms, which erodes clinician trust in the CDSS.
+
+\textbf{Recall} ($\frac{TP}{TP + FN}$), also called sensitivity or true positive rate, measures the proportion of actual failures that the model successfully detects. In the TB-DOTS context, a missed failure carries higher clinical cost than a false alert because undetected treatment breakdown can lead to disease progression, drug resistance, and continued community transmission.
+
+\textbf{Specificity} ($\frac{TN}{TN + FP}$), the true negative rate, measures the proportion of actual successes correctly identified. High specificity ensures that patients on track are not unnecessarily flagged for review.
+
+\textbf{F1 Score} ($2 \times \frac{Precision \times Recall}{Precision + Recall}$) is the harmonic mean of precision and recall, providing a single metric that penalizes extreme imbalance between the two. F1 is particularly informative when comparing models under different resampling strategies.
+
+\textbf{Balanced Accuracy} ($\frac{Recall + Specificity}{2}$) averages the sensitivity and specificity, yielding a metric that is robust to class imbalance by construction. A balanced accuracy of 0.50 is equivalent to random guessing regardless of the class distribution.
+
+\textbf{Area Under the Receiver Operating Characteristic Curve (ROC-AUC)} evaluates the model's discriminative ability across all possible decision thresholds. The ROC curve plots the true positive rate against the false positive rate at each threshold, and the AUC summarizes the curve as a single scalar. An ROC-AUC of 1.0 indicates perfect separation; 0.5 indicates random chance. ROC-AUC is threshold-independent and serves as the primary ranking metric for model comparison, but it can be optimistic under severe class imbalance because the false positive rate is dominated by the large majority class.
+
+\textbf{Area Under the Precision-Recall Curve (PR-AUC)} addresses this limitation by plotting precision against recall across thresholds, ignoring true negatives entirely. PR-AUC is therefore more informative than ROC-AUC when the positive class is rare \citep{davis2006relationship}. The no-skill baseline for PR-AUC equals the prevalence of the positive class (0.138), providing a natural reference point.
+
+\textbf{Matthews Correlation Coefficient (MCC)} is computed as:
+\[
+MCC = \frac{TP \times TN - FP \times FN}{\sqrt{(TP+FP)(TP+FN)(TN+FP)(TN+FN)}}
+\]
+MCC accounts for all four confusion-matrix quadrants simultaneously and remains informative under class imbalance, yielding a coefficient in $[-1, +1]$ where $+1$ is perfect prediction, $0$ is random, and $-1$ is complete inverse prediction \citep{chicco2020advantages}. Unlike accuracy or F1, MCC is symmetric with respect to class swapping and does not inflate under majority-class dominance.
+
+\textbf{Threshold optimization.} Because the default 0.50 decision threshold may not align with clinical objectives under severe imbalance, an optimal threshold search is conducted for each model. Candidate thresholds from 0.10 to 0.90 are evaluated using composite objective functions that encode different clinical priorities: \textit{balanced} (40\% F1, 30\% recall, 30\% specificity), \textit{failure\_recall} (55\% failure recall, 25\% balanced accuracy, 20\% F1), and \textit{specificity} (50\% specificity, 30\% F1, 20\% recall). Each model's reported metrics use the threshold that maximizes the clinically relevant objective.
+
+\textbf{Model selection} uses a composite score weighting discriminative performance and clinical utility:
+\[
+S = 0.6 \times \text{ROC-AUC} + 0.4 \times \text{Recall(Failure)}
+\]
+This formulation prioritizes overall ranking ability (AUC) while explicitly rewarding sensitivity to the minority failure class. The top configuration by this score is selected as the recommended model.
+
+\textbf{Validation strategy.} Performance is estimated at three levels to control for overfitting and assess generalization. Five-fold stratified cross-validation on the training set provides mean and standard deviation of ROC-AUC across folds, assessing stability. The held-out test set (20\%) provides the primary evaluation reported in all metrics above, using data the model has never seen during training or preprocessing. A final holdout validation set (10\%) is used exclusively for the recommended model to confirm that the test-set performance is not an artifact of a single split. All preprocessing steps --- scaling, encoding, imputation --- are fitted on the training set only and applied to the test and validation sets, ensuring that no information from the evaluation sets influences model training.
+
 To ensure reproducibility and eliminate transcription errors, all experiments are executed through a centralized pipeline that standardizes training, cross-validation, and evaluation, and automatically exports all performance metrics and visualizations directly to native \LaTeX{} format for inclusion in this manuscript.
 
 \subsection{Development of a Clinical Decision Support Tool}
