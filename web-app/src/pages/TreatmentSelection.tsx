@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { CheckCircle2 } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { StepProgress } from '../components/StepProgress'
 import { getPatient, savePatient } from '../lib/storage'
@@ -9,27 +8,24 @@ import type { Patient } from '../lib/storage'
 
 type RegimenId = 'hrze' | 'mdr' | 'xdr'
 
-const REGIMENS: Array<{ id: RegimenId; name: string; drugs: string; duration: string; successRate: string }> = [
+const REGIMENS: Array<{ id: RegimenId; name: string; drugs: string; duration: string }> = [
   {
     id: 'hrze',
     name: 'Drug-Susceptible TB (HRZE)',
     drugs: 'Isoniazid, Rifampicin, Pyrazinamide, Ethambutol',
     duration: '6 months',
-    successRate: '~85%',
   },
   {
     id: 'mdr',
     name: 'MDR-TB Regimen',
     drugs: 'Fluoroquinolone-based regimen with 2nd-line drugs',
     duration: '9–12 months',
-    successRate: '~60%',
   },
   {
     id: 'xdr',
     name: 'XDR-TB Regimen',
     drugs: 'Newer agents: Bedaquiline, Linezolid, Pretomanid',
     duration: '6–9 months',
-    successRate: '~50%',
   },
 ]
 
@@ -135,21 +131,11 @@ export function TreatmentSelection() {
                     : 'border-border bg-surface hover:border-primary/30'}`}
                 aria-pressed={selected === r.id}
               >
-                {selected === r.id && (
-                  <CheckCircle2
-                    size={18}
-                    className="text-primary absolute top-3 right-3"
-                    aria-hidden="true"
-                  />
-                )}
                 <p className="font-semibold text-ink-base text-sm pr-6">{r.name}</p>
                 <p className="text-xs text-ink-secondary mt-1.5 leading-relaxed">{r.drugs}</p>
                 <div className="flex gap-2 mt-2 flex-wrap">
                   <span className="text-xs text-ink-muted bg-gray-100 rounded-full px-2 py-0.5">
                     {r.duration}
-                  </span>
-                  <span className="text-xs text-risk-low bg-risk-low/10 rounded-full px-2 py-0.5 font-medium">
-                    {r.successRate} success
                   </span>
                 </div>
               </button>
