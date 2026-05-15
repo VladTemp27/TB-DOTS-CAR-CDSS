@@ -67,7 +67,7 @@ export function RiskUpdate() {
   const { text } = riskColor(prob)
 
   const topContribs = (result?.contributions ?? latestPrediction?.contributions ?? []).slice(0, 3)
-  const derivedMonthNumber = monthNumber || patient?.monthlyRecords.at(-1)?.month || 1
+  const derivedMonthNumber = monthNumber ?? patient?.monthlyRecords.at(-1)?.month ?? 1
 
   const riskGradient = isHigh
     ? 'bg-gradient-to-br from-risk-high/5 to-risk-high/15 border-risk-high/40'

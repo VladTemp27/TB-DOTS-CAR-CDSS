@@ -151,6 +151,26 @@ class XrayMetadata(CamelModel):
     created_at: int = Field(alias="createdAt")
 
 
+class TemporalRiskRequest(CamelModel):
+    month: int
+    weight: float | None = None
+    height: float | None = None
+    smear_tb_lamp: int | None = Field(default=None, alias="smearTbLamp")
+    xpert_mtb_rif: int | None = Field(default=None, alias="xpertMtbRif")
+    monthly_doses_taken: int | None = Field(default=None, alias="monthlyDosesTaken")
+    monthly_missed_doses: int | None = Field(default=None, alias="monthlyMissedDoses")
+
+
+class TemporalRiskResponse(CamelModel):
+    label: Literal[0, 1]
+    failure_probability: float = Field(alias="failureProbability")
+    success_probability: float = Field(alias="successProbability")
+    threshold: float
+    model_name: str = Field(alias="modelName")
+    month: int
+    months_used: list[int] | None = Field(default=None, alias="monthsUsed")
+
+
 class InterpretRequest(BaseModel):
     patient_name: str
     age: int
