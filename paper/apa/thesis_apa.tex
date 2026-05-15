@@ -276,7 +276,7 @@ Crucially, to prevent data leakage, the non-temporal dataset is partitioned into
 
 \subsubsection*{Temporal Monitoring Dataset}
 
-The temporal monitoring dataset is a longitudinal subset of 599 patients for whom complete month-by-month treatment monitoring records were available. Unlike the DOH-CAR consolidated registry, this dataset was not centrally available; instead, it was \textit{manually gathered and encoded by the study's Pharmacy Co-authors} directly from facility treatment monitoring forms. Raw data spanned 35 Excel workbooks (one per facility-year cycle), which were consolidated into a single dataset via a custom combination script prior to preprocessing.
+The temporal monitoring dataset is a longitudinal subset of 599 patients for whom complete month-by-month treatment monitoring records were available. Unlike the DOH-CAR consolidated registry, this dataset was not centrally available; instead, it was \textit{manually gathered and encoded by the study's Pharmacy Co-authors} directly from paper-based Treatment Cards and Master Lists maintained at various TB-DOTS treatment centers in Baguio City, Benguet. Pharmacy Co-authors physically accessed facility records, transcribed patient monitoring data --- including demographics, monthly vital signs, percentage adherence, doses taken and missed, smear microscopy (TB-LAMP) and Xpert MTB/RIF results, and treatment outcomes --- and encoded them into a master \texttt{RAW DATA.xlsx} workbook organized as one sheet per barangay or facility unit. This master workbook spanned 35 facility-year cycles across the 2015--2025 period. A custom consolidation script (\texttt{combine\_raw\_dataset.py}) merged all per-barangay sheets into a unified dataset, normalizing facility names against a canonical alias map to resolve inconsistent entry conventions across sources before the main preprocessing pipeline.
 
 The dataset is structured in wide format, with one row per patient and columns encoding monthly observations from treatment Month 0 (M0) through Month 12 (M12). Temporal features tracked at each monthly visit include: percentage adherence (\texttt{pct\_adherence}), monthly doses taken, monthly missed doses, cumulative doses taken, body weight, height, smear microscopy result (TB-LAMP), and Xpert MTB/RIF result. Alongside these monthly columns, each patient record carries static baseline features including demographics, baseline vital signs (heart rate, blood pressure, oxygen saturation, temperature, respiratory rate), comorbidities, treatment regimen at start, and diagnostic classification. After preprocessing, the cleaned dataset contains 599 rows and 269 columns.
 
@@ -285,7 +285,7 @@ The temporal preprocessing pipeline is implemented in eight stages specifically 
 \begin{enumerate}[noitemsep, topsep=2pt]
   \item \textbf{Schema Validation \& Column Standardization.} All column names are standardized to \texttt{snake\_case}; duplicate and entirely null columns are flagged and deduplicated.
   \item \textbf{Identifier Removal.} Four patient- and facility-identifying columns (\texttt{no}, \texttt{source\_file}, \texttt{name\_of\_diagnosing\_facility}, \texttt{name\_of\_treatment\_unit}) are retained in the export file for traceability but are explicitly excluded from all model inputs to enforce patient privacy.
-  \item \textbf{Data Cleaning \& Type Coercion.} All columns are parsed to correct data types with clinical validation: future dates of birth are corrected (e.g., year 2063 \textrightarrow{} 1963), blood pressure strings in \texttt{120/80} format are split into separate systolic and diastolic fields, oxygen saturation percent-suffix strings are stripped and parsed, and impossible clinical values are clipped (e.g., temperature to 30--45$^\circ$C; BP to 60/30--220/140 mmHg).
+  \item \textbf{Data Cleaning \& Type Coercion.} All columns are parsed to correct data types with clinical validation. Specialized parsers handle domain-specific formats: weight strings (\texttt{45kg}, \texttt{56.5 kg}) are converted to numeric kilograms; height strings similarly parsed to centimeters; blood pressure entries in \texttt{120/80} format are split into separate systolic and diastolic fields; oxygen saturation values in decimal-fraction (0.95), percent-suffix (\texttt{95\%}), and raw-integer formats are unified to a 0--100 scale; and adherence percentages are stripped of trailing \texttt{\%} signs. Date fields undergo a dedicated correction pass: future dates of birth are corrected (e.g., year 2063 \textrightarrow{} 1963), transposed-digit errors are detected (e.g., 2990 \textrightarrow{} 1990), and chronological ordering is enforced (treatment start $\geq$ diagnosis date). All continuous clinical variables are winsorized to physiologically plausible bounds---temperature clipped to 30--45$^\circ$C, systolic BP to 60--220 mmHg, diastolic BP to 30--140 mmHg, heart rate to 20--250 bpm, oxygen saturation to 70--100\%, weight to 10--180 kg, height to 80--220 cm, and respiratory rate to 4--60 breaths/min.
   \item \textbf{Categorical Harmonization.} Inconsistent categorical entries are mapped to canonical labels---outcome variants, sex designations, regimen types, comorbidity flags, and civil status are all standardized to a fixed set of valid categories, reducing per-field cardinality from hundreds of free-text variants to the expected small canonical sets.
   \item \textbf{Drop Uninformative Columns.} Near-entirely null or redundant columns (e.g., \texttt{nationality\_raw} after merging into \texttt{nationality}) are flagged in the output rather than silently deleted, maintaining auditability of the cleaning decisions.
   \item \textbf{Wide \textrightarrow{} Long Temporal Restructuring.} The wide-format dataset is melted into two structures: a static baseline table (\texttt{df\_static}, one row per patient) and a temporal table (\texttt{df\_temporal}, one row per patient-month), with columns \texttt{[patient\_id, month, weight, height, pct\_adherence, monthly\_doses\_taken, monthly\_missed\_doses, cumulative\_doses\_taken, smear\_tb\_lamp, xpert\_mtb\_rif]}.
@@ -389,6 +389,63 @@ Variables classified as MNAR and all temporal features, regardless of mechanism,
 The four clinical vital signs confirmed MAR and ranking above the median importance threshold (oxygen saturation, heart rate, systolic blood pressure, diastolic blood pressure) are imputed using stochastic Multiple Imputation by Chained Equations with an ExtraTreesRegressor as the conditional model---a nonparametric, tree-based estimator that captures non-linear relationships in mixed-type clinical data without requiring variable standardization, analogous to the missForest framework \citep{ref35}. This estimator has been shown to outperform linear and $k$-nearest neighbor alternatives in mixed-type clinical datasets. To address the fraction of missing information (FMI) for each variable, the number of MICE iterations is scaled as $\max(20, \min(100, \lfloor \text{miss\_rate} \times 100 \rfloor))$, ensuring sufficient convergence for high-sparsity features while bounding computational cost; this scaling follows an analogous principle to Von Hippel's recommendation that the number of imputations should approximate the percentage of missing information \citep{ref38}, applied here to iteration counts rather than the number of imputed datasets. Stochastic rather than deterministic imputation is used to preserve the natural distributional variance of the imputed variables rather than collapsing them to conditional means \citep{ref1}.
 
 \FloatBarrier
+
+\subsection{Data Quality Assurance}
+
+To ensure the reliability of the supervised learning pipeline, a multi-layered data quality assurance protocol is applied spanning schema validation, clinical bounds checking, temporal consistency verification, and post-processing validation.
+
+\subsubsection*{Schema and Column Validation}
+
+All column names are standardized to a consistent \texttt{snake\_case} convention by stripping whitespace, converting to lowercase, and mapping special characters to their word equivalents (e.g., \texttt{M0 \%Adherence} becomes \texttt{m0\_pct\_adherence}). Duplicate columns and entirely null columns are flagged and deduplicated prior to modeling. Four patient- and facility-identifying columns are retained in the export file for traceability but explicitly excluded from all model inputs to enforce privacy.
+
+\subsubsection*{Clinical Range Validation}
+
+Every continuous clinical variable is checked against physiologically plausible bounds. Values outside these ranges are winsorized (clipped to the boundary) rather than discarded, preserving sample size while preventing extreme entry errors from distorting model training:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Variable & Lower & Upper \\
+\midrule
+Age & 0 years & 110 years \\
+Weight & 10 kg & 180 kg \\
+Height & 80 cm & 220 cm \\
+Systolic blood pressure & 60 mmHg & 220 mmHg \\
+Diastolic blood pressure & 30 mmHg & 140 mmHg \\
+Heart rate & 20 bpm & 250 bpm \\
+Respiratory rate & 4 breaths/min & 60 breaths/min \\
+Temperature & 30$^\circ$C & 45$^\circ$C \\
+Oxygen saturation & 70\% & 100\% \\
+\midrule
+\multicolumn{3}{l}{\footnotesize All continuous temporal variables (weight, adherence,} \\
+\multicolumn{3}{l}{\footnotesize doses, smear and Xpert results) are similarly clipped.} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection*{Date Integrity Correction}
+
+Date fields are subject to a dedicated correction pass that handles common clinical registry recording errors. Future dates of birth (year exceeding the data year) are corrected by subtracting 100 years; dates of birth prior to 1920 are adjusted forward by 100 years if the resulting age falls within a plausible 0--110 year range. Transposed-digit errors (e.g., 2990 entered instead of 1990) are detected by comparing against adjacent records. Chronological consistency is enforced across date pairs: treatment start date must not precede the date of diagnosis, and outcome dates must not precede treatment start. Missing date fields are imputed with the cohort median date for that variable.
+
+\subsubsection*{Temporal Consistency}
+
+To prevent temporal data leakage, all missing value fills in the longitudinal structure are performed using forward-fill only---a patient's Month 4 observation can be carried forward to Month 5, but no future Month 6 measurement can inform an earlier time step that the model must predict without that knowledge. A monotonicity repair pass is applied after MICE imputation to correct any decreases in \texttt{cumulative\_doses\_taken} introduced by the multivariate imputer, ensuring that the cumulative dose variable remains non-decreasing for each patient across treatment months.
+
+\subsubsection*{Categorical Harmonization Audit}
+
+A cardinality audit of raw categorical features confirmed widespread data entry inconsistency: \texttt{chest\_x\_ray\_at\_case\_notification} contained over 300 unique free-text entries, \texttt{co\_morbidities} exceeded 150 variants, and nominally binary fields such as \texttt{sex} and \texttt{outcome} showed 5 to 12 unique raw representations due to inconsistent abbreviation conventions across treatment centers. These findings motivated a 17-field categorical harmonization pass that maps free-text and inconsistently coded entries into standardized categories before analysis.
+
+\subsubsection*{Missing Data Diagnostics and Feature Importance}
+
+The missing data diagnostic-first pipeline (detailed in the Missing Data Handling subsection) provides an additional validation layer. Little's MCAR test is applied at the dataset level, per-column missingness mechanisms are classified using Spearman rank correlations (for temporal dropout detection) and point-biserial correlations (for MAR/MNAR discrimination), and a Random Forest model trained on available cases ranks feature predictive importance to inform the routing of each variable to the appropriate handling pathway.
+
+\subsubsection*{Post-Processing Verification}
+
+Before the cleaned dataset is released for model consumption, an automated validation routine confirms that: (1) identifier columns are retained for traceability, (2) no scaled or normalized values are present (all values remain in original clinical units), (3) categorical labels are preserved as human-readable strings rather than integer encodings, and (4) no one-hot encoded columns have been introduced. This verification ensures that encoding, scaling, and tensor construction are deferred entirely to the model-specific scripts that operate post train-test split.
+
+\subsubsection*{Leakage Prevention and Reproducibility}
+
+All validation steps are designed to prevent information from the test set from influencing model training. The patient-level stratified split is performed before any data transformation---scalers, imputers, and encoders are fitted exclusively on the training set and applied to the test and validation sets via \texttt{reindex()} to guarantee identical column sets. The temporal fill is forward-only with explicit exclusion of backward-fill operations. To ensure reproducibility, the train-test split is fully deterministic (seeded random state), and fitted scaler parameters are verified via SHA-256 hash to confirm identical preprocessing across independent runs. An audit trail (\texttt{missing\_data\_report.json}) records the per-column decision pathway, missingness mechanism classification, and handling rationale for every variable.
 
 \subsection{Identification of Variables Associated With Treatment Outcomes}
 
