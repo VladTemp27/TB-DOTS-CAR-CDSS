@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { StepProgress } from '../components/StepProgress'
-import { getChoices, getCitiesForProvince } from '../lib/inference'
+import { getChoices, getCitiesForProvince, getProvinceChoices } from '../lib/inference'
 import { PageFooter } from '../components/PageFooter'
 import { createDraftPatientId, loadIntakeDraft, saveIntakeDraft } from '../lib/intakeDraft'
 
@@ -26,7 +26,7 @@ export function PatientIntakeStep1() {
   const [nationality, setNationality] = useState(draft.nationality ?? '')
 
   const sexChoices = getChoices('Sex')
-  const provinceChoices = getChoices('Province')
+  const provinceChoices = getProvinceChoices()
   const cityChoices = getCitiesForProvince(province)
   const regGroupChoices = getChoices('Registration_Group')
 
