@@ -1,0 +1,23 @@
+\begin{table}[htbp]
+\caption{Comparison of the Non-Temporal and Temporal Monitoring Datasets}
+\label{tab:dataset_comparison}
+\small
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.26\textwidth}
+                >{\raggedright\arraybackslash}p{0.33\textwidth}
+                >{\raggedright\arraybackslash}p{0.33\textwidth}}
+\toprule
+\textbf{Attribute} & \textbf{Non-Temporal Dataset} & \textbf{Temporal Monitoring Dataset} \\
+\midrule
+Records (patients) & 7,389 & 599 \\[2pt]
+Coverage period & 2015--2025 & 2015--2025 (patient subset) \\[2pt]
+Data source & DOH-CAR centralised TB-DOTS registry & Facility treatment monitoring forms (35 raw Excel workbooks) \\[2pt]
+Collection method & Routine national TB-DOTS programme reporting & Manual transcription and encoding by Pharmacy Co-authors \\[2pt]
+Structure & Cross-sectional: one row per patient & Longitudinal: one row per patient-month (M0--M12) \\[2pt]
+Static features & Demographics, diagnostics, outcomes & Demographics, diagnostics, baseline vitals, outcomes \\[2pt]
+Temporal features & None & Monthly adherence, doses taken/missed, weight, height, smear microscopy, Xpert MTB/RIF (M0--M12) \\[2pt]
+Post-preprocessing columns & 28 & 269 \\[2pt]
+Post-preprocessing rows retained & 7,388 & 599 (zero deleted) \\[2pt]
+Primary model use & Static tree-based classifiers (XGBoost, LightGBM, Random Forest) & Temporal deep learning models (Bi-LSTM) and tree-based temporal baselines \\
+\bottomrule
+\end{tabular}
+\end{table}
