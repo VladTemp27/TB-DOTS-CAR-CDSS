@@ -398,38 +398,13 @@ To ensure the reliability of the supervised learning pipeline, a multi-layered d
 
 All column names are standardized to a consistent \texttt{snake\_case} convention by stripping whitespace, converting to lowercase, and mapping special characters to their word equivalents (e.g., \texttt{M0 \%Adherence} becomes \texttt{m0\_pct\_adherence}). Duplicate columns and entirely null columns are flagged and deduplicated prior to modeling. Four patient- and facility-identifying columns are retained in the export file for traceability but explicitly excluded from all model inputs to enforce privacy.
 
-\subsubsection*{Clinical Range Validation}
-
-Every continuous clinical variable is checked against physiologically plausible bounds. Values outside these ranges are winsorized (clipped to the boundary) rather than discarded, preserving sample size while preventing extreme entry errors from distorting model training:
-
-\begin{center}
-\begin{tabular}{lll}
-\toprule
-Variable & Lower & Upper \\
-\midrule
-Age & 0 years & 110 years \\
-Weight & 10 kg & 180 kg \\
-Height & 80 cm & 220 cm \\
-Systolic blood pressure & 60 mmHg & 220 mmHg \\
-Diastolic blood pressure & 30 mmHg & 140 mmHg \\
-Heart rate & 20 bpm & 250 bpm \\
-Respiratory rate & 4 breaths/min & 60 breaths/min \\
-Temperature & 30$^\circ$C & 45$^\circ$C \\
-Oxygen saturation & 70\% & 100\% \\
-\midrule
-\multicolumn{3}{l}{\footnotesize All continuous temporal variables (weight, adherence,} \\
-\multicolumn{3}{l}{\footnotesize doses, smear and Xpert results) are similarly clipped.} \\
-\bottomrule
-\end{tabular}
-\end{center}
-
 \subsubsection*{Date Integrity Correction}
 
 Date fields are subject to a dedicated correction pass that handles common clinical registry recording errors. Future dates of birth (year exceeding the data year) are corrected by subtracting 100 years; dates of birth prior to 1920 are adjusted forward by 100 years if the resulting age falls within a plausible 0--110 year range. Transposed-digit errors (e.g., 2990 entered instead of 1990) are detected by comparing against adjacent records. Chronological consistency is enforced across date pairs: treatment start date must not precede the date of diagnosis, and outcome dates must not precede treatment start. Missing date fields are imputed with the cohort median date for that variable.
 
 \subsubsection*{Temporal Consistency}
 
-To prevent temporal data leakage, all missing value fills in the longitudinal structure are performed using forward-fill only---a patient's Month 4 observation can be carried forward to Month 5, but no future Month 6 measurement can inform an earlier time step that the model must predict without that knowledge. A monotonicity repair pass is applied after MICE imputation to correct any decreases in \texttt{cumulative\_doses\_taken} introduced by the multivariate imputer, ensuring that the cumulative dose variable remains non-decreasing for each patient across treatment months.
+To prevent temporal data leakage, all missing value fills in the longitudinal structure are performed using forward-fill only, a patient's Month 4 observation can be carried forward to Month 5, but no future Month 6 measurement can inform an earlier time step that the model must predict without that knowledge. A monotonicity repair pass is applied after MICE imputation to correct any decreases in \texttt{cumulative\_doses\_taken} introduced by the multivariate imputer, ensuring that the cumulative dose variable remains non-decreasing for each patient across treatment months.
 
 \subsubsection*{Categorical Harmonization Audit}
 
