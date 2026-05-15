@@ -4,7 +4,7 @@ import provinceCitiesData from '../data/province_cities.json'
 
 ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.25.1/dist/'
 
-const MODEL_URL = '/model/tb_outcome_prediction.ort'
+const MODEL_URL = '/model/tb_outcome_prediction.onnx'
 
 let session: ort.InferenceSession | null = null
 
@@ -35,20 +35,13 @@ export interface ContributionResult extends PredictionResult {
   contributions: ContributionItem[]
 }
 
-type Encodings = typeof encodingsData
-type CatKey = keyof Encodings['__categorical']
-type NumKey = keyof Encodings['__numeric_scaler']
+type CatKey = keyof typeof encodingsData
 
-// Scale a raw numeric value using the consolidation scaler params
-function scaleNumeric(value: number, col: NumKey): number {
-  const { mean, std } = encodingsData.__numeric_scaler[col]
-  return (value - mean) / std
-}
-
-// Look up the scaled float for a categorical choice
+// Look up the integer label code for a categorical value.
+// The ONNX model embeds preprocessing (SimpleImputer + StandardScaler) so we
+// pass raw values: integer codes for categoricals, real numbers for numerics.
 function encodeCategorical(col: CatKey, label: string): number {
-  const map = encodingsData.__categorical[col] as Record<string, number>
-  // Exact match first, then case-insensitive, then 0 (unknown)
+  const map = encodingsData[col] as Record<string, number>
   if (label in map) return map[label]
   const lower = label.toLowerCase()
   for (const [k, v] of Object.entries(map)) {
@@ -74,9 +67,10 @@ export interface PatientFeatures {
   screeningDiagnosingHealthFacility: string
 }
 
-// Model input names in the order they appear in the ONNX graph
+// ONNX input names match the training DataFrame column names (spaces → underscores).
+// Note: age column is named 'Age_Final' in the training data.
 const MODEL_INPUT_NAMES = [
-  'Age', 'Days_To_Treatment', 'Year', 'Sex', 'Anatomical_Site',
+  'Age_Final', 'Days_To_Treatment', 'Year', 'Sex', 'Anatomical_Site',
   'Registration_Group', 'Bacteriologic_Status', 'Microscopy_Result',
   'Source_of_Patient', 'Type', 'Province', 'City_Municipality',
   'Treatment_Health_Facility', 'Screening_Diagnosing_Health_Facility',
@@ -84,12 +78,15 @@ const MODEL_INPUT_NAMES = [
 
 type ModelFeeds = Record<string, ort.Tensor>
 
-// Build named input feeds — one float64 tensor per feature, matching the model schema
+// Build named input feeds — one float32 tensor per feature.
+// Numerics are passed as raw values (age in years, days, year number);
+// the embedded ColumnTransformer handles StandardScaling internally.
+// Categoricals are passed as integer label codes from feature_encodings.json.
 function buildFeeds(f: PatientFeatures): ModelFeeds {
   const values: number[] = [
-    scaleNumeric(f.age, 'Age'),
-    scaleNumeric(f.daysToTreatment, 'Days_To_Treatment'),
-    scaleNumeric(f.year, 'Year'),
+    f.age,
+    f.daysToTreatment,
+    f.year,
     encodeCategorical('Sex', f.sex),
     encodeCategorical('Anatomical_Site', f.anatomicalSite),
     encodeCategorical('Registration_Group', f.registrationGroup),
@@ -105,7 +102,7 @@ function buildFeeds(f: PatientFeatures): ModelFeeds {
 
   const feeds: ModelFeeds = {}
   for (let i = 0; i < MODEL_INPUT_NAMES.length; i++) {
-    feeds[MODEL_INPUT_NAMES[i]] = new ort.Tensor('float64', Float64Array.from([values[i]]), [1, 1])
+    feeds[MODEL_INPUT_NAMES[i]] = new ort.Tensor('float32', Float32Array.from([values[i]]), [1, 1])
   }
   return feeds
 }
@@ -172,18 +169,18 @@ export async function predictWithContributions(features: PatientFeatures): Promi
   const baseFailureProb = await runFeeds(sess, baseFeeds)
 
   console.log('Base failure probability:', baseFailureProb, 'Calculating feature contributions...')
-  
+
   const contributions = []
   for (let i = 0; i < FEATURE_NAMES.length; i++) {
     const name = FEATURE_NAMES[i]
     // Clone feeds and zero out one input
     const masked: ModelFeeds = { ...baseFeeds }
     const inputKey = MODEL_INPUT_NAMES[i]
-    masked[inputKey] = new ort.Tensor('float64', Float64Array.from([0]), [1, 1])
-    
+    masked[inputKey] = new ort.Tensor('float32', Float32Array.from([0]), [1, 1])
+
     const maskedProb = await runFeeds(sess, masked)
-    const delta = maskedProb - baseFailureProb // positive = feature reduces risk (protective)
-    
+    const delta = maskedProb - baseFailureProb // positive = removing feature increases failure risk (protective)
+
     contributions.push({
       feature: name,
       delta: Math.abs(delta),
@@ -204,7 +201,7 @@ export async function predictWithContributions(features: PatientFeatures): Promi
 
 // Get all category choices for a given feature
 export function getChoices(col: CatKey): string[] {
-  const map = encodingsData.__categorical[col] as Record<string, number>
+  const map = encodingsData[col] as Record<string, number>
   return Object.keys(map).sort()
 }
 

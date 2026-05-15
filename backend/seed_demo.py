@@ -368,7 +368,7 @@ def _validate_demo_patients(demo: list[_DemoPatient]) -> None:
 
         enc = json.loads(enc_path.read_text())
         for feature_key, enc_key in CATEGORICAL_FEATURE_TO_ENCODING.items():
-            ui_choices[feature_key] = set(enc.get("__categorical", {}).get(enc_key, {}).keys())
+            ui_choices[feature_key] = set(enc.get(enc_key, {}).keys())
 
     for d in demo:
         if not d.name.strip():

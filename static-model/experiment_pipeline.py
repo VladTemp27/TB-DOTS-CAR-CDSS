@@ -19,7 +19,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import (
     accuracy_score, roc_auc_score, confusion_matrix, classification_report,
-    roc_curve, precision_recall_curve, average_precision_score
+    roc_curve, precision_recall_curve, average_precision_score, matthews_corrcoef
 )
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
@@ -186,8 +186,11 @@ class TBExperimentPipeline:
             report = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
             auc = roc_auc_score(y_test, y_proba)
             acc = accuracy_score(y_test, y_pred)
+            mcc = matthews_corrcoef(y_test, y_pred)
             f1_fail = report['0']['f1-score']
             recall_fail = report['0']['recall']
+            cm = confusion_matrix(y_test, y_pred, labels=[0, 1])
+            tp_fail, fn_fail, fp_fail, tn_fail = cm[0,0], cm[0,1], cm[1,0], cm[1,1]
 
             # 5-fold stratified cross-validation on training data
             cv_aucs = cross_val_score(pipe, X_train, y_train, cv=cv,
@@ -204,6 +207,11 @@ class TBExperimentPipeline:
                 'ROC-AUC': auc,
                 'CV-AUC Mean': cv_aucs.mean(),
                 'CV-AUC Std': cv_aucs.std(),
+                'MCC': mcc,
+                'TP': int(tp_fail),
+                'FN': int(fn_fail),
+                'FP': int(fp_fail),
+                'TN': int(tn_fail),
                 'Precision (Fail)': report['0']['precision'],
                 'Recall (Fail)': recall_fail,
                 'F1 (Fail)': f1_fail,

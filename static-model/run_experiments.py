@@ -14,7 +14,7 @@ import pandas as pd
 from pathlib import Path
 from experiment_pipeline import TBExperimentPipeline
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score, accuracy_score, classification_report
+from sklearn.metrics import roc_auc_score, accuracy_score, classification_report, matthews_corrcoef
 
 
 def main():
@@ -92,10 +92,11 @@ def main():
             yv_proba = pipe.predict_proba(xv)[:, 1]
             report = classification_report(yv, yv_pred, output_dict=True, zero_division=0)
             logger.info(
-                "  %-22s / %-12s  Val-AUC=%.4f  Val-Acc=%.4f  Val-Recall(Fail)=%.4f",
+                "  %-22s / %-12s  Val-AUC=%.4f  Val-Acc=%.4f  Val-MCC=%.4f  Val-Recall(Fail)=%.4f",
                 row['Model'], row['Sampler'],
                 roc_auc_score(yv, yv_proba),
                 accuracy_score(yv, yv_pred),
+                matthews_corrcoef(yv, yv_pred),
                 report['0']['recall'],
             )
         except Exception as e:
@@ -112,11 +113,21 @@ def main():
 
     pipeline.generate_figures(master_df, best_pipeline, X_test_fig, y_test_fig)
 
-    # ONNX → ORT export
+    # ONNX export — full sklearn pipeline (preprocessor + classifier) embedded
+    # Uses onnxmltools to register the XGBoost converter with skl2onnx (XGBoost 3.x compatible)
     try:
-        from skl2onnx import to_onnx
-        from sklearn.pipeline import Pipeline as SKPipeline
         import numpy as np
+        from sklearn.pipeline import Pipeline as SKPipeline
+        from skl2onnx import to_onnx, update_registered_converter
+        from skl2onnx.common.shape_calculator import calculate_linear_classifier_output_shapes
+        from onnxmltools.convert.xgboost.operator_converters.XGBoost import convert_xgboost
+        from xgboost.sklearn import XGBClassifier
+
+        update_registered_converter(
+            XGBClassifier, 'XGBoostXGBClassifier',
+            calculate_linear_classifier_output_shapes, convert_xgboost,
+            options={'nocl': [True, False], 'zipmap': [True, False]},
+        )
 
         steps = [(name, step) for name, step in best_pipeline.steps if name != 'sampler']
         clean_pipe = SKPipeline(steps)
@@ -124,8 +135,11 @@ def main():
         best_features = pipeline.get_features(best_feat_ver)
         X_dummy = pd.DataFrame(np.zeros((1, len(best_features))), columns=best_features)
 
-        onnx_model = to_onnx(clean_pipe, X_dummy[:1], target_opset=12,
-                              options={id(clean_pipe.steps[-1][1]): {'zipmap': False}})
+        onnx_model = to_onnx(
+            clean_pipe, X_dummy[:1].astype(np.float32),
+            target_opset={'': 12, 'ai.onnx.ml': 3},
+            options={id(clean_pipe.steps[-1][1]): {'zipmap': False, 'nocl': True}},
+        )
 
         model_dir = base_dir / "models"
         model_dir.mkdir(parents=True, exist_ok=True)
@@ -133,15 +147,7 @@ def main():
 
         with open(onnx_path, "wb") as f:
             f.write(onnx_model.SerializeToString())
-        logger.info("Serialized ONNX → %s", onnx_path)
-
-        try:
-            from onnxruntime.tools import convert_onnx_models_to_ort
-            convert_onnx_models_to_ort.convert_onnx_models_to_ort(str(model_dir))
-            onnx_path.unlink(missing_ok=True)
-            logger.info("Converted to ORT → %s", model_dir / "tb_outcome_prediction.ort")
-        except Exception as e:
-            logger.warning("ORT conversion failed (keeping .onnx): %s", e)
+        logger.info("Exported ONNX → %s", onnx_path)
 
     except Exception as e:
         logger.warning("Model export failed: %s", e)
@@ -149,12 +155,15 @@ def main():
     # Export model comparison table (APA-formatted, resizeable)
     _export_model_comparison(master_df, best_model_row, pipeline.table_dir)
 
+    # Export confusion matrix counts table
+    _export_confusion_matrix_table(master_df, best_model_row, pipeline.table_dir)
+
     logger.info("All experiments completed. Tables → paper/apa/tables/  Figures → paper/apa/figures/")
 
 
 def _export_model_comparison(master_df, best_model_row, table_dir):
     cols = ['Model', 'Sampler', 'ROC-AUC', 'CV-AUC Mean', 'CV-AUC Std', 'Accuracy',
-            'Precision (Fail)', 'Recall (Fail)', 'F1 (Fail)',
+            'MCC', 'Precision (Fail)', 'Recall (Fail)', 'F1 (Fail)',
             'Precision (Succ)', 'Recall (Succ)', 'F1 (Succ)']
     df = (master_df[cols + ['_score']]
           .sort_values('ROC-AUC', ascending=False)
@@ -172,10 +181,12 @@ def _export_model_comparison(master_df, best_model_row, table_dir):
                    row['Sampler'] == best_model_row['Sampler'])
         score = 0.6 * float(row['ROC-AUC']) + 0.4 * float(row['Recall (Fail)'])
         cells = [row['Model'], row['Sampler']] + [fmt(row[c]) for c in cols[2:]] + [f"{score:.4f}"]
+        if is_best:
+            cells = [r'\textbf{' + c + '}' for c in cells]
         line = ' & '.join(cells) + r' \\'
-        rows_tex.append(r'\textbf{' + line.replace(r' \\', r'} \\') if is_best else line)
+        rows_tex.append(line)
 
-    header = (r'Model & Sampler & AUC & CV-AUC & $\pm$Std & Acc. & '
+    header = (r'Model & Sampler & AUC & CV-AUC & $\pm$Std & Acc. & MCC & '
               r'Prec.\ (F) & Recall (F) & F1 (F) & Prec.\ (S) & Recall (S) & F1 (S) & Score \\')
 
     tex = (
@@ -184,7 +195,7 @@ def _export_model_comparison(master_df, best_model_row, table_dir):
         r' (Improved Feature Set)}' + '\n'
         r'\label{tab:model_comparison}' + '\n'
         r'\resizebox{\textwidth}{!}{%' + '\n'
-        r'\begin{tabular}{llccccccccccc}' + '\n'
+        r'\begin{tabular}{llcccccccccccc}' + '\n'
         r'\toprule' + '\n'
         + header + '\n'
         r'\midrule' + '\n'
@@ -195,7 +206,7 @@ def _export_model_comparison(master_df, best_model_row, table_dir):
         r'\smallskip' + '\n\n'
         r'{\footnotesize \textit{Note.} F~=~Failure class; S~=~Success class; '
         r'AUC~=~test-set ROC-AUC; CV-AUC~=~5-fold CV mean; $\pm$Std~=~CV standard deviation; '
-        r'Acc.~=~Accuracy; Prec.~=~Precision; '
+        r'Acc.~=~Accuracy; MCC~=~Matthews Correlation Coefficient; Prec.~=~Precision; '
         r'Score~=~composite $0.6 \times \text{AUC} + 0.4 \times \text{Recall\,(F)}$. '
         r'Bold row indicates recommended model.}' + '\n'
         r'\end{table}'
@@ -205,6 +216,52 @@ def _export_model_comparison(master_df, best_model_row, table_dir):
     out.write_text(tex)
     import logging
     logging.getLogger(__name__).info("Exported APA table → %s", out)
+
+
+def _export_confusion_matrix_table(master_df, best_model_row, table_dir):
+    cols = ['Model', 'Sampler', 'TP', 'FN', 'FP', 'TN']
+    df = (master_df[cols + ['_score']]
+          .sort_values('_score', ascending=False)
+          .reset_index(drop=True))
+
+    rows_tex = []
+    for _, row in df.iterrows():
+        is_best = (row['Model'] == best_model_row['Model'] and
+                   row['Sampler'] == best_model_row['Sampler'])
+        cells = [row['Model'], row['Sampler'] or 'None',
+                 str(int(row['TP'])), str(int(row['FN'])),
+                 str(int(row['FP'])), str(int(row['TN']))]
+        if is_best:
+            cells = [r'\textbf{' + c + '}' for c in cells]
+        rows_tex.append(' & '.join(cells) + r' \\')
+
+    tex = (
+        r'\begin{table}[htbp]' + '\n'
+        r'\caption{Static Model Confusion Matrix Counts on Test Set}' + '\n'
+        r'\label{tab:static_confusion_matrix}' + '\n'
+        r'\centering' + '\n'
+        r'\small' + '\n'
+        r'\begin{tabular}{llcccc}' + '\n'
+        r'\toprule' + '\n'
+        r'Model & Sampler & TP & FN & FP & TN \\' + '\n'
+        r'\midrule' + '\n'
+        + '\n'.join(rows_tex) + '\n'
+        r'\bottomrule' + '\n'
+        r'\end{tabular}' + '\n\n'
+        r'{\footnotesize \textit{Note.} Failure is treated as the positive class. '
+        r'TP~=~actual Failure predicted as Failure; '
+        r'FN~=~actual Failure predicted as Success; '
+        r'FP~=~actual Success predicted as Failure; '
+        r'TN~=~actual Success predicted as Success. '
+        r'Bold row indicates recommended model. '
+        r'Test set: 1{,}598 samples (221 Failure, 1{,}377 Success).}' + '\n'
+        r'\end{table}'
+    )
+
+    out = table_dir / 'static_confusion_matrix.tex'
+    out.write_text(tex)
+    import logging
+    logging.getLogger(__name__).info("Exported confusion matrix table → %s", out)
 
 
 if __name__ == "__main__":
