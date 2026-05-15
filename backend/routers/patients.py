@@ -296,9 +296,11 @@ def _latest_failure_probability(records: list[PredictionRow]) -> float | None:
     return float(records[-1].failure_probability)
 
 
-def _expected_next_month(records: list[MonthlyRecordRow]) -> int:
+def _expected_next_month(records: list[MonthlyRecordRow], *, allow_baseline: bool = False) -> int:
     months = [int(r.month) for r in records if r.month is not None]
-    return 0 if not months else max(months) + 1
+    if not months:
+        return 0 if allow_baseline else 1
+    return max(months) + 1
 
 
 @router.post("/api/patients/{patient_id}/temporal-risk")
@@ -314,8 +316,8 @@ def temporal_risk_and_save(
     art = load_artifacts()
 
     month = int(body.month)
-    if month < 0 or month > 12:
-        raise HTTPException(status_code=400, detail="month must be in [0, 12]")
+    if month < 1 or month > 12:
+        raise HTTPException(status_code=400, detail="monthly follow-up month must be in [1, 12]")
     if month > 0 and (body.monthly_doses_taken is None or body.monthly_missed_doses is None):
         raise HTTPException(
             status_code=400,
@@ -509,7 +511,7 @@ def save_temporal_risk_record(
     ).all()
     if any(int(r.month) == month for r in records):
         raise HTTPException(status_code=409, detail="Monthly record already exists")
-    expected_month = _expected_next_month(records)
+    expected_month = _expected_next_month(records, allow_baseline=month == 0)
     if month != expected_month:
         raise HTTPException(
             status_code=400,

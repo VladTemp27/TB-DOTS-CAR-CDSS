@@ -58,13 +58,13 @@ export function MonthlyCheckin() {
   const existingMonths = (patient?.monthlyRecords ?? [])
     .map(r => r.month)
     .filter(month => Number.isFinite(month))
-  const monthCount = existingMonths.length === 0 ? 0 : Math.max(...existingMonths) + 1
-  const isM0 = monthCount === 0
+  const monthCount = existingMonths.length === 0 ? 1 : Math.max(...existingMonths) + 1
+  const isM0 = false
   const isAllDone = monthCount > 12
   const priorCumulative = (patient?.monthlyRecords ?? []).reduce(
     (sum, r) => sum + (r.monthlyDosesTaken ?? 0), 0
   )
-  const monthLabel = isM0 ? 'Baseline (M0)' : `Month M${monthCount}`
+  const monthLabel = `Month M${monthCount}`
 
   useEffect(() => {
     if (isM0) {

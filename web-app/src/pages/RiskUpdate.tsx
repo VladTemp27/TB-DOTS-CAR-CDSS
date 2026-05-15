@@ -8,6 +8,18 @@ import type { ContributionResult } from '../lib/inference'
 import { PageFooter } from '../components/PageFooter'
 import type { Patient } from '../lib/storage'
 
+function formatPercent(probability: number): string {
+  const value = probability * 100
+  if (value > 0 && value < 1) return '<1%'
+  return `${Math.round(value)}%`
+}
+
+function formatDelta(delta: number): string {
+  const value = Math.abs(delta * 100)
+  if (value > 0 && value < 1) return '<1%'
+  return `${Math.round(value)}%`
+}
+
 export function RiskUpdate() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
@@ -59,15 +71,18 @@ export function RiskUpdate() {
 
   const latestPrediction = patient?.predictions.at(-1)
   const prob = result?.failureProbability ?? latestPrediction?.failureProbability ?? 0
-  const prevProb = patient && patient.predictions.length > 1
-    ? patient.predictions.at(-2)?.failureProbability
+  const derivedMonthNumber = monthNumber ?? patient?.monthlyRecords.at(-1)?.month ?? 1
+  const previousMonthlyRecord = patient
+    ? [...patient.monthlyRecords]
+      .filter(record => record.month < derivedMonthNumber)
+      .sort((a, b) => b.month - a.month)[0]
     : undefined
+  const prevProb = previousMonthlyRecord?.failureProbability
   const delta = prevProb != null ? prob - prevProb : null
   const isHigh   = prob >= 0.5
   const { text } = riskColor(prob)
 
   const topContribs = (result?.contributions ?? latestPrediction?.contributions ?? []).slice(0, 3)
-  const derivedMonthNumber = monthNumber ?? patient?.monthlyRecords.at(-1)?.month ?? 1
 
   const riskGradient = isHigh
     ? 'bg-gradient-to-br from-risk-high/5 to-risk-high/15 border-risk-high/40'
@@ -89,7 +104,7 @@ export function RiskUpdate() {
 
         <div className={`rounded-2xl border-2 p-5 ${riskGradient}`}>
           <p className={`font-bold text-base ${text} mb-2`}>
-            {isHigh ? 'HIGH RISK' : 'LOW RISK'} — {Math.round(prob * 100)}% Failure Probability
+            {isHigh ? 'HIGH RISK' : 'LOW RISK'} — {formatPercent(prob)} Failure Probability
           </p>
           {delta != null && (
             <p className={`text-sm mb-3 flex items-center gap-1 tabular-nums
@@ -97,7 +112,7 @@ export function RiskUpdate() {
               {delta > 0
                 ? <ArrowUp size={14} aria-hidden="true" />
                 : <ArrowDown size={14} aria-hidden="true" />}
-              {Math.abs(Math.round(delta * 100))}%{' '}
+              {formatDelta(delta)}{' '}
               {delta > 0 ? 'increased' : 'decreased'} since last month
             </p>
           )}

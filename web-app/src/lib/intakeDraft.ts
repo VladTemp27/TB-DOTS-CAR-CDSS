@@ -1,6 +1,7 @@
 import type { ContributionResult, PatientFeatures } from './inference'
-import { addPrediction, savePatient } from './storage'
+import { savePatient, saveTemporalRiskRecord } from './storage'
 import type { Patient } from './storage'
+import { predictTemporalInBrowser } from './temporalInference'
 
 export const INTAKE_DRAFT_KEY = 'tb_intake_draft'
 
@@ -70,6 +71,14 @@ export function hasCommitReadyDraft(draft: IntakeDraft): draft is CommitReadyInt
   return Boolean(draft.draftPatientId && draft.features && draft.result)
 }
 
+function labTo01(value?: string): 0 | 1 | undefined {
+  if (!value) return undefined
+  const normalized = value.trim().toLowerCase()
+  if (['positive', 'pos', '1', '1+', '2+', '3+'].includes(normalized)) return 1
+  if (['negative', 'neg', '0'].includes(normalized)) return 0
+  return undefined
+}
+
 export async function commitIntakePatient(draft: CommitReadyIntakeDraft): Promise<{ id: string; result: ContributionResult }> {
   const patient: Patient = {
     id: draft.draftPatientId,
@@ -83,14 +92,21 @@ export async function commitIntakePatient(draft: CommitReadyIntakeDraft): Promis
   }
 
   await savePatient(patient)
-  await addPrediction(draft.draftPatientId, {
-    label: draft.result.label,
-    failureProbability: draft.result.failureProbability,
-    contributions: draft.result.contributions,
-    featuresUsed: draft.features,
-    timestamp: Date.now(),
+  const baselinePrediction = await predictTemporalInBrowser(patient, {
+    month: 0,
+    weight: draft.features.baselineWeightKg,
+    height: draft.features.baselineHeightCm,
+    smearTbLamp: labTo01(draft.features.microscopyResult),
+    xpertMtbRif: labTo01(draft.features.xpertMtbRif),
   })
+  const savedBaseline = await saveTemporalRiskRecord(draft.draftPatientId, baselinePrediction)
+  const result: ContributionResult = {
+    label: savedBaseline.label,
+    failureProbability: savedBaseline.failureProbability,
+    successProbability: savedBaseline.successProbability,
+    contributions: [],
+  }
 
   clearIntakeDraft()
-  return { id: draft.draftPatientId, result: draft.result }
+  return { id: draft.draftPatientId, result }
 }
