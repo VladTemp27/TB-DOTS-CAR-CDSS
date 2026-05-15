@@ -226,16 +226,6 @@ export function PatientIntakeStep2() {
             <h3 className="text-sm font-semibold text-ink-base">Baseline Vitals &amp; Measurements</h3>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
               <div>
-                  <option value="1">Divorced</option>
-              </div>
-            </div>
-          </div>
-
-          {/* Baseline Vitals & Measurements */}
-          <div className="bg-surface border border-border rounded-2xl p-4 lg:p-6 space-y-3">
-            <h3 className="text-sm font-semibold text-ink-base">Baseline Vitals &amp; Measurements</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-              <div>
                 <label className={labelCls} htmlFor="baseHeight">Height (cm)</label>
                 <input id="baseHeight" type="number" step="0.1" placeholder="e.g. 162.5"
                   value={baselineHeightCm} onChange={e => setBaselineHeightCm(e.target.value)} className={inputCls} />
