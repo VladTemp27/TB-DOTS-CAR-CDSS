@@ -247,7 +247,7 @@ export function MonthlyCheckin() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="weight">
-                  Weight (kg)
+                  Weight (kg) <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="weight"
@@ -262,7 +262,7 @@ export function MonthlyCheckin() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="height">
-                  Height (cm)
+                  Height (cm) <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="height"
@@ -284,14 +284,14 @@ export function MonthlyCheckin() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="monthlyDosesTaken">
-                  Doses Taken
+                  Doses Taken <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="monthlyDosesTaken"
                   type="number"
                   min="0"
-                  required={!isM0}
-                  placeholder={isM0 ? 'Optional at baseline' : 'e.g. 28'}
+                  required
+                  placeholder="e.g. 28"
                   value={monthlyDosesTaken}
                   onChange={e => setMonthlyDosesTaken(e.target.value)}
                   className={inputCls}
@@ -299,14 +299,14 @@ export function MonthlyCheckin() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="monthlyMissedDoses">
-                  Missed Doses
+                  Missed Doses <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="monthlyMissedDoses"
                   type="number"
                   min="0"
-                  required={!isM0}
-                  placeholder={isM0 ? 'Optional at baseline' : 'e.g. 2'}
+                  required
+                  placeholder="e.g. 0"
                   value={monthlyMissedDoses}
                   onChange={e => setMonthlyMissedDoses(e.target.value)}
                   className={inputCls}
@@ -355,7 +355,7 @@ export function MonthlyCheckin() {
 
           {/* Lab Results */}
           <div className="bg-surface border border-border rounded-2xl p-4 lg:p-5 space-y-3">
-            <h3 className="text-sm font-semibold text-ink-base">Lab Results</h3>
+            <h3 className="text-sm font-semibold text-ink-base">Lab Results <span className="text-red-500">*</span> <span className="text-xs font-normal text-ink-muted">(at least one)</span></h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="smearTbLamp">
@@ -398,7 +398,6 @@ export function MonthlyCheckin() {
 
           <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 text-xs text-blue-700">
             Follow-up Guide: Record weight, height, dose tracking, and lab results at each monthly visit.
-            {isM0 && ' At least one lab result (TB LAMP or Xpert) is required for baseline.'}
           </div>
         </div>
       </div>
