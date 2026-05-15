@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { XrayUploadField } from '../components/XrayUploadField'
-import { predictWithContributions } from '../lib/inference'
-import { getPatient, addMonthlyRecord, addPrediction, attachMonthlyXrays } from '../lib/storage'
+import { getPatient, saveTemporalRiskRecord, attachMonthlyXrays } from '../lib/storage'
+import { predictTemporalInBrowser } from '../lib/temporalInference'
 import { PageFooter } from '../components/PageFooter'
 import type { Patient } from '../lib/storage'
 
@@ -55,32 +55,34 @@ export function MonthlyCheckin() {
   const [xrayFiles, setXrayFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
 
-  const monthCount = patient?.monthlyRecords.length ?? 0
-  const isM0 = monthCount === 0
-  const isAllDone = monthCount >= 13
+  const existingMonths = (patient?.monthlyRecords ?? [])
+    .map(r => r.month)
+    .filter(month => Number.isFinite(month))
+  const monthCount = existingMonths.length === 0 ? 1 : Math.max(...existingMonths) + 1
+  const isM0 = false
+  const isAllDone = monthCount > 12
   const priorCumulative = (patient?.monthlyRecords ?? []).reduce(
     (sum, r) => sum + (r.monthlyDosesTaken ?? 0), 0
   )
-  const monthLabel = isM0 ? 'Baseline (M0)' : `Month M${monthCount}`
+  const monthLabel = `Month M${monthCount}`
 
   useEffect(() => {
     if (isM0) {
-      setMonthlyDosesTaken('0')
-      setMonthlyMissedDoses('0')
-      setCumulativeDosesTaken('0')
+      setMonthlyDosesTaken('')
+      setMonthlyMissedDoses('')
+      setCumulativeDosesTaken('')
       setPctAdherence('')
     }
   }, [isM0])
 
   useEffect(() => {
-    if (isM0) return
     const takenNum = parseInt(monthlyDosesTaken, 10)
     const missedNum = parseInt(monthlyMissedDoses, 10)
     const taken = Number.isFinite(takenNum) ? takenNum : 0
     const missed = Number.isFinite(missedNum) ? missedNum : 0
     const total = taken + missed
 
-    setCumulativeDosesTaken(String(priorCumulative + taken))
+    setCumulativeDosesTaken(monthlyDosesTaken ? String(priorCumulative + taken) : '')
 
     if (total > 0) {
       const pct = Math.min(100, Math.max(0, (taken / total) * 100))
@@ -88,7 +90,7 @@ export function MonthlyCheckin() {
     } else {
       setPctAdherence('')
     }
-  }, [isM0, monthlyDosesTaken, monthlyMissedDoses, priorCumulative])
+  }, [monthlyDosesTaken, monthlyMissedDoses, priorCumulative])
 
   async function handleGenerate() {
     if (!patient || !id) return
@@ -112,31 +114,18 @@ export function MonthlyCheckin() {
       setLoading(false)
       return
     }
-
-    const isMissingWeight = (!weight || parseFloat(weight) <= 0) ? 1 : 0
-    const isMissingHeight = (!height || parseFloat(height) <= 0) ? 1 : 0
-    const bothLabsBlank = !smearTbLamp && !xpertMtbRif
-    const isMissingSmearTbLamp = bothLabsBlank ? 1 : 0
-    const isMissingXpertMtbRif = bothLabsBlank ? 1 : 0
-    const isMissingDosesTaken = isM0 ? 0 : (!monthlyDosesTaken ? 1 : 0)
-    const isMissingMissedDoses = isM0 ? 0 : (!monthlyMissedDoses ? 1 : 0)
+    if (!isM0 && (!monthlyDosesTaken || !monthlyMissedDoses)) {
+      alert('Doses taken and missed doses are required after baseline. Enter 0 if none were missed.')
+      setLoading(false)
+      return
+    }
 
     const parsedSmearTbLamp = smearTbLamp === '1' ? 1 : smearTbLamp === '0' ? 0 : undefined
     const parsedXpertMtbRif = xpertMtbRif === '1' ? 1 : xpertMtbRif === '0' ? 0 : undefined
-    const parsedMonthlyDoses = isM0 ? 0 : parseInt(monthlyDosesTaken, 10)
-    const parsedMonthlyMissed = isM0 ? 0 : parseInt(monthlyMissedDoses, 10)
-    const parsedCumulativeDoses = isM0 ? 0 : parseInt(cumulativeDosesTaken, 10)
-    const parsedPctAdherence = pctAdherence ? parseFloat(pctAdherence) : undefined
-    const adherenceCategory = computeAdherence(parsedPctAdherence)
-
-    const updatedFeatures = { ...patient.features }
-    if (parsedSmearTbLamp !== undefined) updatedFeatures.microscopyResult = String(parsedSmearTbLamp)
-
+    const parsedMonthlyDoses = monthlyDosesTaken ? parseInt(monthlyDosesTaken, 10) : undefined
+    const parsedMonthlyMissed = monthlyMissedDoses ? parseInt(monthlyMissedDoses, 10) : undefined
     try {
-      const result = await predictWithContributions(updatedFeatures)
-      const now = Date.now()
-
-      await addMonthlyRecord(id, {
+      const temporalInput = {
         month: monthCount,
         weight: parsedWeight,
         height: parsedHeight,
@@ -144,30 +133,20 @@ export function MonthlyCheckin() {
         xpertMtbRif: parsedXpertMtbRif as 0 | 1 | undefined,
         monthlyDosesTaken: Number.isFinite(parsedMonthlyDoses) ? parsedMonthlyDoses : undefined,
         monthlyMissedDoses: Number.isFinite(parsedMonthlyMissed) ? parsedMonthlyMissed : undefined,
-        cumulativeDosesTaken: Number.isFinite(parsedCumulativeDoses) ? parsedCumulativeDoses : undefined,
-        pctAdherence: parsedPctAdherence,
-        adherence: adherenceCategory,
-        failureProbability: result.failureProbability,
-        timestamp: now,
-        isMissingWeight: isMissingWeight as 0 | 1,
-        isMissingHeight: isMissingHeight as 0 | 1,
-        isMissingSmearTbLamp: isMissingSmearTbLamp as 0 | 1,
-        isMissingXpertMtbRif: isMissingXpertMtbRif as 0 | 1,
-        isMissingMonthlyDosesTaken: isMissingDosesTaken as 0 | 1,
-        isMissingMonthlyMissedDoses: isMissingMissedDoses as 0 | 1,
-      })
+      }
+      const browserPrediction = await predictTemporalInBrowser(patient, temporalInput)
+      const pred = await saveTemporalRiskRecord(id, browserPrediction)
+
+      const result = {
+        label: pred.label,
+        failureProbability: pred.failureProbability,
+        successProbability: pred.successProbability,
+        contributions: [],
+      }
 
       if (xrayFiles.length > 0) {
         await attachMonthlyXrays(id, monthCount, xrayFiles)
       }
-
-      await addPrediction(id, {
-        label: result.label,
-        failureProbability: result.failureProbability,
-        contributions: result.contributions,
-        featuresUsed: updatedFeatures,
-        timestamp: now,
-      })
 
       navigate(`/patient/${id}/risk-update`, { state: { result, monthNumber: monthCount }, replace: true })
     } catch (err) {
@@ -268,7 +247,7 @@ export function MonthlyCheckin() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="weight">
-                  Weight (kg)
+                  Weight (kg) <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="weight"
@@ -283,7 +262,7 @@ export function MonthlyCheckin() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="height">
-                  Height (cm)
+                  Height (cm) <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="height"
@@ -305,32 +284,32 @@ export function MonthlyCheckin() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="monthlyDosesTaken">
-                  Doses Taken
+                  Doses Taken <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="monthlyDosesTaken"
                   type="number"
                   min="0"
-                  placeholder={isM0 ? '0 (Baseline)' : 'e.g. 28'}
+                  required
+                  placeholder="e.g. 28"
                   value={monthlyDosesTaken}
-                  readOnly={isM0}
                   onChange={e => setMonthlyDosesTaken(e.target.value)}
-                  className={isM0 ? readOnlyCls : inputCls}
+                  className={inputCls}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="monthlyMissedDoses">
-                  Missed Doses
+                  Missed Doses <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="monthlyMissedDoses"
                   type="number"
                   min="0"
-                  placeholder={isM0 ? '0 (Baseline)' : 'e.g. 2'}
+                  required
+                  placeholder="e.g. 0"
                   value={monthlyMissedDoses}
-                  readOnly={isM0}
                   onChange={e => setMonthlyMissedDoses(e.target.value)}
-                  className={isM0 ? readOnlyCls : inputCls}
+                  className={inputCls}
                 />
               </div>
               <div>
@@ -376,7 +355,7 @@ export function MonthlyCheckin() {
 
           {/* Lab Results */}
           <div className="bg-surface border border-border rounded-2xl p-4 lg:p-5 space-y-3">
-            <h3 className="text-sm font-semibold text-ink-base">Lab Results</h3>
+            <h3 className="text-sm font-semibold text-ink-base">Lab Results <span className="text-red-500">*</span> <span className="text-xs font-normal text-ink-muted">(at least one)</span></h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-ink-secondary mb-1" htmlFor="smearTbLamp">
@@ -419,7 +398,6 @@ export function MonthlyCheckin() {
 
           <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 text-xs text-blue-700">
             Follow-up Guide: Record weight, height, dose tracking, and lab results at each monthly visit.
-            {isM0 && ' At least one lab result (TB LAMP or Xpert) is required for baseline.'}
           </div>
         </div>
       </div>
