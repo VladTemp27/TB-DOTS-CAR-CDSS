@@ -122,8 +122,26 @@ export type TemporalRiskResult = {
   monthsUsed?: number[]
 }
 
+export type TemporalRiskSaveInput = TemporalRiskInput & TemporalRiskResult & {
+  rawFailureProbability?: number
+  rawSuccessProbability?: number
+  ruleFailureFloor?: number
+  previousFailureProbability?: number
+  adjustedFailureProbability?: number
+  seqLen?: number
+  riskPolicy?: string
+}
+
 export async function generateTemporalRisk(patientId: string, input: TemporalRiskInput): Promise<TemporalRiskResult> {
   return api<TemporalRiskResult>(`/api/patients/${encodeURIComponent(patientId)}/temporal-risk`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+}
+
+export async function saveTemporalRiskRecord(patientId: string, input: TemporalRiskSaveInput): Promise<TemporalRiskResult> {
+  return api<TemporalRiskResult>(`/api/patients/${encodeURIComponent(patientId)}/temporal-risk-record`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),

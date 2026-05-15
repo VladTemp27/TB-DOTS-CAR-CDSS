@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { XrayUploadField } from '../components/XrayUploadField'
-import { getPatient, generateTemporalRisk, attachMonthlyXrays } from '../lib/storage'
+import { getPatient, saveTemporalRiskRecord, attachMonthlyXrays } from '../lib/storage'
+import { predictTemporalInBrowser } from '../lib/temporalInference'
 import { PageFooter } from '../components/PageFooter'
 import type { Patient } from '../lib/storage'
 
@@ -124,7 +125,7 @@ export function MonthlyCheckin() {
     const parsedMonthlyDoses = monthlyDosesTaken ? parseInt(monthlyDosesTaken, 10) : undefined
     const parsedMonthlyMissed = monthlyMissedDoses ? parseInt(monthlyMissedDoses, 10) : undefined
     try {
-      const pred = await generateTemporalRisk(id, {
+      const temporalInput = {
         month: monthCount,
         weight: parsedWeight,
         height: parsedHeight,
@@ -132,7 +133,9 @@ export function MonthlyCheckin() {
         xpertMtbRif: parsedXpertMtbRif as 0 | 1 | undefined,
         monthlyDosesTaken: Number.isFinite(parsedMonthlyDoses) ? parsedMonthlyDoses : undefined,
         monthlyMissedDoses: Number.isFinite(parsedMonthlyMissed) ? parsedMonthlyMissed : undefined,
-      })
+      }
+      const browserPrediction = await predictTemporalInBrowser(patient, temporalInput)
+      const pred = await saveTemporalRiskRecord(id, browserPrediction)
 
       const result = {
         label: pred.label,

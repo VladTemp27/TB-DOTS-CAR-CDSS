@@ -161,6 +161,22 @@ class TemporalRiskRequest(CamelModel):
     monthly_missed_doses: int | None = Field(default=None, alias="monthlyMissedDoses")
 
 
+class TemporalRiskSaveRequest(TemporalRiskRequest):
+    label: Literal[0, 1]
+    failure_probability: float = Field(alias="failureProbability")
+    success_probability: float = Field(alias="successProbability")
+    raw_failure_probability: float | None = Field(default=None, alias="rawFailureProbability")
+    raw_success_probability: float | None = Field(default=None, alias="rawSuccessProbability")
+    rule_failure_floor: float | None = Field(default=None, alias="ruleFailureFloor")
+    previous_failure_probability: float | None = Field(default=None, alias="previousFailureProbability")
+    adjusted_failure_probability: float | None = Field(default=None, alias="adjustedFailureProbability")
+    threshold: float | None = None
+    model_name: str = Field(default="hybrid_bi_lstm_best_onnx", alias="modelName")
+    months_used: list[int] | None = Field(default=None, alias="monthsUsed")
+    seq_len: int | None = Field(default=None, alias="seqLen")
+    risk_policy: str | None = Field(default=None, alias="riskPolicy")
+
+
 class TemporalRiskResponse(CamelModel):
     label: Literal[0, 1]
     failure_probability: float = Field(alias="failureProbability")

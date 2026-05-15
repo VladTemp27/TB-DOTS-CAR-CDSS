@@ -19,6 +19,7 @@ from backend.schemas import (
     PatientCreate,
     PredictionCreate,
     TemporalRiskRequest,
+    TemporalRiskSaveRequest,
 )
 
 from backend.temporal_lstm import load_artifacts, predict_success_probability
@@ -479,6 +480,120 @@ def temporal_risk_and_save(
         "successProbability": float(display_success),
         "threshold": float(art.threshold),
         "modelName": "hybrid_bi_lstm_best",
+        "month": month,
+        "monthsUsed": months_used,
+    }
+
+
+@router.post("/api/patients/{patient_id}/temporal-risk-record")
+def save_temporal_risk_record(
+    patient_id: str, body: TemporalRiskSaveRequest, db: Annotated[Session, Depends(get_db)]
+):
+    p = db.get(PatientRow, patient_id)
+    if p is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    month = int(body.month)
+    if month < 0 or month > 12:
+        raise HTTPException(status_code=400, detail="month must be in [0, 12]")
+    if month > 0 and (body.monthly_doses_taken is None or body.monthly_missed_doses is None):
+        raise HTTPException(
+            status_code=400,
+            detail="Doses taken and missed doses are required after baseline. Enter 0 if none were missed.",
+        )
+
+    records = db.scalars(
+        select(MonthlyRecordRow)
+        .where(MonthlyRecordRow.patient_id == patient_id)
+        .order_by(MonthlyRecordRow.month.asc())
+    ).all()
+    if any(int(r.month) == month for r in records):
+        raise HTTPException(status_code=409, detail="Monthly record already exists")
+    expected_month = _expected_next_month(records)
+    if month != expected_month:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Expected month M{expected_month}, got M{month}",
+        )
+
+    taken = body.monthly_doses_taken
+    missed = body.monthly_missed_doses
+    pct = None
+    if taken is not None and missed is not None:
+        total = taken + missed
+        pct = (taken / total) * 100.0 if total > 0 else None
+
+    prior_cum = sum(int(r.monthly_doses_taken or 0) for r in records)
+    cum = prior_cum + int(taken) if taken is not None else None
+    adherence = "poor"
+    if pct is not None:
+        adherence = "full" if pct >= 90 else "partial" if pct >= 50 else "poor"
+
+    is_missing_weight = 1 if body.weight is None else 0
+    is_missing_height = 1 if body.height is None else 0
+    is_missing_smear = 1 if body.smear_tb_lamp is None else 0
+    is_missing_xpert = 1 if body.xpert_mtb_rif is None else 0
+    is_missing_taken = 1 if taken is None else 0
+    is_missing_missed = 1 if missed is None else 0
+    prob_failure = min(max(float(body.failure_probability), 0.0), 0.95)
+    now = int(time.time() * 1000)
+    months_used = body.months_used or sorted({*[int(r.month) for r in records if r.month is not None], month})
+
+    db.add(
+        MonthlyRecordRow(
+            patient_id=patient_id,
+            month=month,
+            weight=body.weight,
+            height=body.height,
+            smear_tb_lamp=body.smear_tb_lamp,
+            xpert_mtb_rif=body.xpert_mtb_rif,
+            monthly_doses_taken=taken,
+            monthly_missed_doses=missed,
+            cumulative_doses_taken=cum,
+            pct_adherence=pct,
+            adherence=adherence,
+            failure_probability=prob_failure,
+            timestamp=now,
+            is_missing_weight=is_missing_weight,
+            is_missing_height=is_missing_height,
+            is_missing_smear_tb_lamp=is_missing_smear,
+            is_missing_xpert_mtb_rif=is_missing_xpert,
+            is_missing_monthly_doses_taken=is_missing_taken,
+            is_missing_monthly_missed_doses=is_missing_missed,
+        )
+    )
+    db.add(
+        PredictionRow(
+            patient_id=patient_id,
+            label=int(body.label),
+            failure_probability=prob_failure,
+            contributions=[],
+            features_used={
+                "model": body.model_name,
+                "month": month,
+                "successProbability": float(body.success_probability),
+                "rawSuccessProbability": body.raw_success_probability,
+                "rawFailureProbability": body.raw_failure_probability,
+                "ruleFailureFloor": body.rule_failure_floor,
+                "previousFailureProbability": body.previous_failure_probability,
+                "adjustedFailureProbability": body.adjusted_failure_probability,
+                "threshold": body.threshold,
+                "seqLen": body.seq_len,
+                "monthsUsed": months_used,
+                "expectedMonth": expected_month,
+                "riskPolicy": body.risk_policy,
+            },
+            timestamp=now,
+        )
+    )
+    db.commit()
+
+    return {
+        "label": int(body.label),
+        "failureProbability": prob_failure,
+        "successProbability": float(body.success_probability),
+        "threshold": float(body.threshold or 0.0),
+        "modelName": body.model_name,
         "month": month,
         "monthsUsed": months_used,
     }
