@@ -876,7 +876,7 @@ Finally, the system bridges the gap between prediction and action through the \t
 
 Beyond the quantitative feature importance provided by SHAP, the system utilizes \textit{Med-Gemma}—a fine-tuned medical large language model—to provide a qualitative narrative of the identified risk factors. As shown in Figure \ref{fig:med_gemma_analysis}, this component resides within the Risk Factor Analysis interface and functions as a clinical bridge, translating statistical weights into natural language explanations. 
 
-By analyzing the specific patient profile (e.g., age, co-morbidities, and sputum conversion), Med-Gemma generates context-aware summaries that highlight why certain factors are clinically concerning. This integration ensures that the CDSS does not merely present a risk percentage but also provides a "clinical second opinion" that aligns with established medical literature, further enhancing the transparency of the predictive engine.
+By analyzing the specific patient profile (e.g., age, co-morbidities, and sputum conversion), Med-Gemma generates context-aware summaries that translate the statistical outputs of the SHAP-based factor analysis into clinically meaningful insights. Rather than presenting abstract feature weights in isolation, this integration uses Med-Gemma to explain why the specific variables identified by SHAP are concerning in a clinical context. This ensures that the CDSS does not merely present a risk percentage but explicitly deciphers the underlying logic of the predictive engine, significantly enhancing the transparency and interpretability of the results for healthcare providers.
 
 \begin{figure}[H]
     \centering
