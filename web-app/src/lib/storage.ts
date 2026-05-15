@@ -3,12 +3,23 @@ import type { PatientFeatures, ContributionResult } from './inference'
 export interface MonthlyRecord {
   month: number
   weight?: number
-  smearResult?: string
+  height?: number
+  smearTbLamp?: 0 | 1
+  xpertMtbRif?: 0 | 1
+  monthlyDosesTaken?: number
+  monthlyMissedDoses?: number
+  cumulativeDosesTaken?: number
+  pctAdherence?: number
   adherence: 'full' | 'partial' | 'poor'
   failureProbability: number
   timestamp: number
-  // TODO(server): these are IndexedDB keys today; replace with server-side asset IDs
   xrayIds?: string[]
+  isMissingWeight?: 0 | 1
+  isMissingHeight?: 0 | 1
+  isMissingSmearTbLamp?: 0 | 1
+  isMissingXpertMtbRif?: 0 | 1
+  isMissingMonthlyDosesTaken?: 0 | 1
+  isMissingMonthlyMissedDoses?: 0 | 1
 }
 
 export interface PredictionRecord {

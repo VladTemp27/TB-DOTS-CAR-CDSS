@@ -22,6 +22,8 @@ export function PatientIntakeStep1() {
   const [province, setProvince] = useState(draft.province ?? '')
   const [city, setCity] = useState(draft.city ?? '')
   const [registrationGroup, setRegistrationGroup] = useState(draft.registrationGroup ?? '')
+  const [civilStatus, setCivilStatus] = useState(draft.civilStatus ?? '')
+  const [nationality, setNationality] = useState(draft.nationality ?? '')
 
   const sexChoices = getChoices('Sex')
   const provinceChoices = getChoices('Province')
@@ -41,6 +43,8 @@ export function PatientIntakeStep1() {
       province,
       city,
       registrationGroup,
+      civilStatus,
+      nationality,
     }
     saveIntakeDraft(updated)
     navigate('/patient/new/lab')
@@ -119,6 +123,36 @@ export function PatientIntakeStep1() {
                   <option value="">{province ? 'Select city/municipality' : 'Select province first'}</option>
                   {cityChoices.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls} htmlFor="civilStatus">Civil Status</label>
+                <select
+                  id="civilStatus"
+                  value={civilStatus}
+                  onChange={e => setCivilStatus(e.target.value)}
+                  className={inputCls + ' bg-surface'}
+                >
+                  <option value="">Select Civil Status</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Widowed">Widowed</option>
+                  <option value="Separated">Separated</option>
+                  <option value="Divorced">Divorced</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="nationality">Nationality</label>
+                <input
+                  id="nationality"
+                  type="text"
+                  placeholder="e.g. Filipino"
+                  value={nationality}
+                  onChange={e => setNationality(e.target.value)}
+                  className={inputCls}
+                />
               </div>
             </div>
           </div>

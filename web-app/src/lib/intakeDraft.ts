@@ -13,6 +13,8 @@ export interface IntakeDraft {
   province?: string
   city?: string
   registrationGroup?: string
+  civilStatus?: string
+  nationality?: string
   bacteriologicStatus?: string
   microscopyResult?: string
   anatomicalSite?: string
@@ -22,6 +24,18 @@ export interface IntakeDraft {
   screeningFacility?: string
   dateStartedTx?: string
   dateOfDiagnosis?: string
+  // Extended temporal-model fields
+  xpertMtbRif?: string
+  drugResistanceStatus?: string
+  baselineHeightCm?: number
+  baselineWeightKg?: number
+  bpSystolic?: number
+  bpDiastolic?: number
+  heartRate?: number
+  o2Sat?: number
+  coMorbidities?: string
+  chestXRayAtNotification?: string
+  diagnosis?: string
   features?: PatientFeatures
   result?: ContributionResult
 }

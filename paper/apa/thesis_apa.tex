@@ -225,7 +225,6 @@ This study uses a dataset of records of PTB patients from the Cordillera Adminis
 \begin{figure}[H]
 \caption{Data Management and Analysis Process}
 \label{fig:data_management}
-\centering
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[
   node distance=0.5cm and 0.9cm,
@@ -262,13 +261,42 @@ This study uses a dataset of records of PTB patients from the Cordillera Adminis
 
 \subsection{Data Acquisition and Preprocessing}
 
-The study utilizes a retrospective dataset of PTB patients from the Cordillera Administrative Region (CAR), Philippines, covering the period from 2015 to 2025. Data is centrally consolidated by the Department of Health-CAR (DOH-CAR), which manages reports from government TB-DOTS facilities and private practitioners under the Public-Private Mix DOTS (PPMD) scheme \citep{ref6}.
+This study draws on two complementary datasets derived from the Cordillera Administrative Region (CAR), Philippines, both covering the period from 2015 to 2025: (1) a non-temporal (static) consolidated registry maintained by the Department of Health-CAR, used to train the static tree-based classifiers, and (2) a temporal monitoring dataset manually compiled by the study's Pharmacy Co-authors, used to train the longitudinal deep learning and temporal tree-based models. Table~\ref{tab:dataset_comparison} provides a side-by-side overview of both datasets.
 
-The raw dataset comprises demographic variables (e.g., age, sex, civil status), clinical indicators (e.g., BMI, blood pressure), and diagnostic results (e.g., GeneXpert, Smear Microscopy). To ensure data quality for machine learning applications, a reproducible preprocessing pipeline is implemented. This includes schema harmonization to standardize variable formats and units, and the removal of direct identifiers to strictly enforce patient privacy. Missing data, a common challenge in clinical registries, is addressed through a diagnostic-first protocol described in the Missing Data Handling subsection below.
+\input{tables/dataset_comparison.tex}
 
-In addition to schema harmonization and missing data handling, other critical pre-processing activities include data annotation and outlier management. Data annotation is systematically performed to explicitly define the target variable for the predictive models. Based on the standardized National Tuberculosis Program (NTP) criteria, treatment outcomes are consolidated and binarized: patients classified as `Cured' or `Treatment Completed' are annotated as `Success', whereas those marked as `Failed', `Died', or `Lost to Follow-up' are annotated as `Failure'. Furthermore, extreme outliers in continuous clinical variables are evaluated and capped to prevent model distortion during training.
+\subsubsection*{Non-Temporal Dataset}
 
-Crucially, to ensure the integrity of the predictive models and rigorously prevent data leakage, the dataset is partitioned into training and testing sets prior to the application of any data transformation steps. A stratified train-test split is performed to preserve the baseline distribution of treatment success and failure outcomes across both partitions. All subsequent preprocessing mechanisms---most notably feature scaling, normalization, and the multivariate imputation of missing values---are fitted exclusively on the training set. The derived parameters (such as the mean and standard deviation) and imputation rules are then transformed onto the held-out test set. This strict isolation guarantees that the models do not inadvertently learn from the statistical distribution of the testing data, thereby providing a robust, realistic evaluation of their predictive performance on unseen patient records.
+The non-temporal dataset is centrally consolidated by the Department of Health-CAR (DOH-CAR), which manages reports from government TB-DOTS facilities and private practitioners under the Public-Private Mix DOTS (PPMD) scheme \citep{ref6}. It comprises 7,389 patient records with cross-sectional (baseline) features: demographic variables (e.g., age, sex, civil status), clinical indicators (e.g., BMI, blood pressure), and diagnostic results (e.g., GeneXpert, Smear Microscopy). Each record represents one patient at the time of treatment registration, with no longitudinal monitoring data. This dataset serves as the primary training source for the static tree-based classifiers (XGBoost, LightGBM, and Random Forest).
+
+The non-temporal preprocessing pipeline implements schema harmonization to standardize variable formats and units, and pseudonymization to strictly enforce patient privacy. Outcome annotation is performed systematically to define the binary target variable: based on standardized National Tuberculosis Program (NTP) criteria, patients classified as `Cured' or `Treatment Completed' are annotated as `Success', whereas those marked as `Failed', `Died', or `Lost to Follow-up' are annotated as `Failure'. Extreme outliers in continuous clinical variables are evaluated and capped to prevent model distortion during training. Missing data is addressed through the diagnostic-first protocol described in the Missing Data Handling subsection below.
+
+Crucially, to prevent data leakage, the non-temporal dataset is partitioned into training and testing sets prior to the application of any data transformation steps. A stratified train-test split is performed to preserve the baseline distribution of treatment success and failure outcomes across both partitions. All subsequent preprocessing mechanisms---most notably feature scaling, normalization, and the multivariate imputation of missing values---are fitted exclusively on the training set. The derived parameters and imputation rules are then applied to the held-out test set, ensuring that models do not inadvertently learn from the statistical distribution of the testing data.
+
+\subsubsection*{Temporal Monitoring Dataset}
+
+The temporal monitoring dataset is a longitudinal subset of 599 patients for whom complete month-by-month treatment monitoring records were available. Unlike the DOH-CAR consolidated registry, this dataset was not centrally available; instead, it was \textit{manually gathered and encoded by the study's Pharmacy Co-authors} directly from facility treatment monitoring forms. Raw data spanned 35 Excel workbooks (one per facility-year cycle), which were consolidated into a single dataset via a custom combination script prior to preprocessing.
+
+The dataset is structured in wide format, with one row per patient and columns encoding monthly observations from treatment Month 0 (M0) through Month 12 (M12). Temporal features tracked at each monthly visit include: percentage adherence (\texttt{pct\_adherence}), monthly doses taken, monthly missed doses, cumulative doses taken, body weight, height, smear microscopy result (TB-LAMP), and Xpert MTB/RIF result. Alongside these monthly columns, each patient record carries static baseline features including demographics, baseline vital signs (heart rate, blood pressure, oxygen saturation, temperature, respiratory rate), comorbidities, treatment regimen at start, and diagnostic classification. After preprocessing, the cleaned dataset contains 599 rows and 269 columns.
+
+The temporal preprocessing pipeline is implemented in eight stages specifically designed for the wide-format longitudinal structure of this dataset:
+
+\begin{enumerate}[noitemsep, topsep=2pt]
+  \item \textbf{Schema Validation \& Column Standardization.} All column names are standardized to \texttt{snake\_case}; duplicate and entirely null columns are flagged and deduplicated.
+  \item \textbf{Identifier Removal.} Four patient- and facility-identifying columns (\texttt{no}, \texttt{source\_file}, \texttt{name\_of\_diagnosing\_facility}, \texttt{name\_of\_treatment\_unit}) are retained in the export file for traceability but are explicitly excluded from all model inputs to enforce patient privacy.
+  \item \textbf{Data Cleaning \& Type Coercion.} All columns are parsed to correct data types with clinical validation: future dates of birth are corrected (e.g., year 2063 \textrightarrow{} 1963), blood pressure strings in \texttt{120/80} format are split into separate systolic and diastolic fields, oxygen saturation percent-suffix strings are stripped and parsed, and impossible clinical values are clipped (e.g., temperature to 30--45$^\circ$C; BP to 60/30--220/140 mmHg).
+  \item \textbf{Categorical Harmonization.} Inconsistent categorical entries are mapped to canonical labels---outcome variants, sex designations, regimen types, comorbidity flags, and civil status are all standardized to a fixed set of valid categories, reducing per-field cardinality from hundreds of free-text variants to the expected small canonical sets.
+  \item \textbf{Drop Uninformative Columns.} Near-entirely null or redundant columns (e.g., \texttt{nationality\_raw} after merging into \texttt{nationality}) are flagged in the output rather than silently deleted, maintaining auditability of the cleaning decisions.
+  \item \textbf{Wide \textrightarrow{} Long Temporal Restructuring.} The wide-format dataset is melted into two structures: a static baseline table (\texttt{df\_static}, one row per patient) and a temporal table (\texttt{df\_temporal}, one row per patient-month), with columns \texttt{[patient\_id, month, weight, height, pct\_adherence, monthly\_doses\_taken, monthly\_missed\_doses, cumulative\_doses\_taken, smear\_tb\_lamp, xpert\_mtb\_rif]}.
+  \item \textbf{Diagnostic-First Missing Data Handling.} The same four-pathway diagnostic pipeline described in the Missing Data Handling subsection is applied independently to both the static and temporal feature sets. Temporal features are never hard-excluded on sparsity grounds; their structural missingness (later months having fewer observations as patients complete or abandon treatment) is preserved via missingness indicators.
+  \item \textbf{Post-Imputation Clinical Clipping \& Export.} Clinical bounds are re-enforced on all imputed values (e.g., weight to 10--180 kg, pct\_adherence to 0--100). A monotonicity repair pass corrects any MICE-introduced decreases in \texttt{cumulative\_doses\_taken} per patient. The pipeline exports \texttt{cleaned\_human\_readable.csv} (599 rows $\times$ 269 columns) with all original clinical units and categorical labels intact---encoding, scaling, and tensor preparation are deliberately deferred to model-specific scripts post-train-test split to prevent data leakage.
+\end{enumerate}
+
+As with the non-temporal pipeline, the temporal train-test split precedes all scaling, one-hot encoding, outlier capping, and 3-dimensional tensor construction for the recurrent networks. This two-pipeline design ensures that the leakage-prevention principle applied to the static classifiers is equivalently enforced for the temporal deep learning models. Per-patient observed means of temporal features across M0--M7 are summarized in Table~\ref{tab:temporal_feature_descriptive_stats}.
+
+\input{temporal/tables/temporal_feature_descriptive_stats.tex}
+
+\FloatBarrier
 
 \subsection{Exploratory Data Analysis}
 
@@ -282,11 +310,9 @@ Pairwise correlations among continuous variables were computed using Pearson's r
 
 For categorical variables, pairwise association strength was quantified using Cram\'{e}r's V, a chi-square-based measure normalized to the \([0, 1]\) interval. Columns with fewer than two unique non-null values or fewer than ten non-null observations were excluded from the matrix. The categorical set examined included patient demographics (sex, type of TB, anatomical site), and clinical classifications (registration group, bacteriologic status, and microscopy results).
 
-Furthermore, to identify latent subgroups within the study population, the exploratory phase employs cluster analysis. Specifically, algorithms such as K-prototypes are utilized to effectively handle the mixture of categorical and continuous variables across demographic, clinical, and diagnostic dimensions. The optimal number of clusters is determined iteratively using evaluation metrics such as the Silhouette score and the elbow method to detect robust, natural groupings of patients. These clusters reveal distinguishing features such as specific comorbidity profiles, adherence behaviors, and regimen responses.
+Furthermore, to identify latent subgroups within the study population, the exploratory phase employs cluster analysis across demographic, clinical, and diagnostic dimensions. Algorithms such as K-prototypes are used to accommodate the dataset's mixture of categorical and continuous variables. The optimal number of clusters is determined iteratively using evaluation metrics such as the Silhouette score and the elbow method, allowing the analysis to detect robust patient groupings characterized by differences in comorbidity profiles, adherence behaviors, and regimen responses.
 
-Importantly, the resulting cluster assignments are not merely descriptive; they are integrated as engineered features into the subsequent supervised learning models. To operationalize this, the assigned cluster labels are one-hot encoded to serve as supplementary categorical input variables for the tree-based classifiers (XGBoost, LightGBM, and Random Forest) and incorporated into the feature space for the temporal neural networks (RNN and LSTM). This approach enables the algorithms to learn both individual-level attributes and subgroup-level patterns that significantly influence treatment success or failure.
-
-Additionally, the study employs cluster analysis on demographic, clinical, and diagnostic dimensions to detect natural groupings of patients. These clusters reveal distinguishing features such as specific comorbidity profiles, adherence behaviors, and regimen responses. Importantly, the resulting cluster assignments are not merely descriptive; they are integrated as engineered features into the subsequent supervised learning models. This approach enables the algorithms to learn both individual-level attributes and subgroup-level patterns that significantly influence treatment success or failure.
+The resulting cluster assignments are used not only for descriptive interpretation but also as engineered features in subsequent supervised learning models. Cluster labels are one-hot encoded as supplementary categorical inputs for the tree-based classifiers, including XGBoost, LightGBM, and Random Forest, and incorporated into the feature space for the temporal neural networks, including RNN and LSTM models. This enables the models to capture both individual-level predictors and subgroup-level patterns associated with treatment success or failure.
 
 To assess data quality of the temporal monitoring dataset prior to preprocessing, a global missingness audit was conducted across all features. Missing rates were computed per column and ranked in descending order. Features exceeding 80\% missingness were flagged for the column exclusion pathway, while features between 50\% and 80\% missingness were flagged for the missing indicator with fill pathway, contingent on predictive importance. This threshold-based triage follows established missing data handling frameworks and ensures that handling strategies are matched to the severity of missingness rather than applied uniformly \citep{ref31}.
 
@@ -309,7 +335,6 @@ Clinical TB registries exhibit heterogeneous missingness arising from inconsiste
 \begin{figure}[H]
 \caption{Missing Data Handling Decision Logic}
 \label{fig:missing_data_pipeline}
-\centering
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[
   node distance=0.7cm and 1.1cm,
@@ -374,9 +399,11 @@ The framework utilizes Shapley Additive Explanations (SHAP), a post-hoc interpre
 
 Recognizing the dynamic nature of TB treatment, which spans 6 to 12 months, this study incorporates temporal modeling to analyze longitudinal patient monitoring data. Static models trained only on baseline features may fail to capture the evolution of adherence, follow-up attendance, and laboratory measurements throughout treatment. Accordingly, temporal models are evaluated to support month-by-month risk estimation from treatment Month 0 (M0) through Month 12 (M12).
 
-Temporal modeling was implemented in two iterations, denoted as version 1 (v1) and version 2 (v2). Both iterations originate from the same DOH-CAR TB-DOTS temporal dataset lineage, but v2 represents a corrected and improved modeling-ready preparation motivated by methodological review of v1. In v1, an initial temporal pipeline was used as a baseline for modeling, including patient-level stratified splitting and progressive temporal expansion across M0--M12. However, subsequent review identified limitations that could undermine clinical defensibility, including increased risk of outcome leakage from late-treatment fields, inconsistent handling of imputed or unreliable outcome labels, and less rigorously audited cleaning and temporal feature construction.
+The temporal models operate exclusively on the 599-patient longitudinal monitoring dataset described in the Data Acquisition and Preprocessing subsection above (see also Table~\ref{tab:dataset_comparison}). This dataset was manually compiled by the study's Pharmacy Co-authors from facility treatment monitoring forms and is wholly distinct from the 7,389-patient DOH-CAR consolidated registry used by the static classifiers. Following the eight-stage temporal preprocessing pipeline, the cleaned dataset comprises up to 8 usable monthly timesteps per patient (M0--M7); months beyond M7 are excluded from temporal model inputs because fewer than 25\% of patients retained recorded observations at those timepoints (Table~\ref{tab:retention_stats_by_month}), and estimates derived from such a non-representative surviving subset would be statistically unreliable. As with the non-temporal pipeline, all encoding, scaling, and 3-dimensional tensor preparation are deferred to post-split, model-specific scripts to prevent data leakage.
 
-Version 2 (v2) retrained the temporal models after correcting these issues. The v2 workflow uses the audited cleaned temporal dataset output, filters supervised learning to patients with observed treatment outcomes, and explicitly removes leakage-prone and administrative identifier fields (e.g., outcome-date fields and late timeline variables not available at early inference). Temporal predictors are encoded in two forms: sequence inputs for deep temporal models and engineered temporal summaries for tree-based models. The deep temporal architecture uses a Hybrid Bidirectional LSTM (Bi-LSTM) to model long-term dependencies while mitigating vanishing gradients \citep{ref11}, and its recurrent structure is suited for month-to-month dependencies \citep{ref12}. For tree-based temporal baselines, monthly values are flattened and augmented with aggregates, trends, latest-observed values, and missingness indicators, and class imbalance is handled using training-only resampling (e.g., SMOTE-ENN). Finally, a hybrid framing is retained where temporal predictions can be compared alongside strong static learners (e.g., XGBoost) to improve robustness across heterogeneous patient subgroups \citep{ref10}.
+Temporal modeling was implemented in two iterations, denoted as version 1 (v1) and version 2 (v2). Both iterations originate from the same temporal dataset lineage, but v2 represents a corrected and improved modeling-ready preparation motivated by methodological review of v1. In v1, an initial temporal pipeline was used as a baseline for modeling, including patient-level stratified splitting and progressive temporal expansion across M0--M12. However, subsequent review identified limitations that could undermine clinical defensibility, including increased risk of outcome leakage from late-treatment fields, inconsistent handling of imputed or unreliable outcome labels, and less rigorously audited cleaning and temporal feature construction.
+
+Version 2 (v2) retrained the temporal models after correcting these issues. The v2 workflow uses the audited output of the eight-stage cleaning pipeline described in Data Acquisition and Preprocessing, filters supervised learning to patients with observed treatment outcomes, and explicitly removes leakage-prone and administrative identifier fields (e.g., outcome-date fields and late timeline variables not available at early inference). Temporal predictors are encoded in two forms: sequence inputs for deep temporal models and engineered temporal summaries for tree-based models. The deep temporal architecture uses a Hybrid Bidirectional LSTM (Bi-LSTM) to model long-term dependencies while mitigating vanishing gradients \citep{ref11}, and its recurrent structure is suited for the strong month-to-month adherence dependencies empirically confirmed via lag-1 correlation analysis \citep{ref12}. For tree-based temporal baselines, monthly values are flattened and augmented with aggregates, trends, latest-observed values, and missingness indicators, and class imbalance is handled using training-only resampling (e.g., SMOTE-ENN). Finally, a hybrid framing is retained where temporal predictions can be compared alongside strong static learners (e.g., XGBoost) to improve robustness across heterogeneous patient subgroups \citep{ref10}.
 
 \subsection{Supervised Learning Model Development and Validation}
 
@@ -393,6 +420,8 @@ The dataset is partitioned using a stratified 70/20/10 patient-level split into 
 \subsubsection{Cross-Validation and Model Selection}
 
 Each model configuration is evaluated using five-fold stratified cross-validation on the training data to estimate generalization performance, yielding a mean and standard deviation of the area under the receiver operating characteristic curve (ROC-AUC) across folds \citep{hastie2009elements}. Because the primary clinical objective is the early identification of patients at risk of treatment failure, model selection employs a composite scoring metric: $\text{score} = 0.6 \times \text{AUC} + 0.4 \times \text{Recall(Failure)}$. This weighting prioritizes discrimination ability while explicitly rewarding sensitivity to the minority failure class. The best-scoring configuration across all feature versions and resampling strategies is then evaluated on the held-out 10\% validation set to obtain an unbiased estimate of real-world performance.
+
+In addition to the composite selection metric, the Matthews Correlation Coefficient (MCC) is reported for each configuration as a supplementary diagnostic measure. Unlike accuracy or class-specific F1-score, MCC accounts simultaneously for all four quadrants of the confusion matrix and remains informative under severe class imbalance, yielding a coefficient in $[-1, +1]$ where $+1$ represents perfect prediction, $0$ is equivalent to random classification, and $-1$ indicates complete inverse prediction \citep{chicco2020advantages}. Reporting MCC alongside the composite selection score enables direct assessment of the performance trade-off introduced by aggressive resampling strategies such as SMOTE-ENN, which may increase failure recall at the cost of excess false positives that inflate overall prediction error.
 
 To ensure reproducibility and eliminate transcription errors, all experiments are executed through a centralized pipeline that standardizes training, cross-validation, and evaluation, and automatically exports all performance metrics and visualizations directly to native \LaTeX{} format for inclusion in this manuscript.
 
@@ -430,7 +459,6 @@ Table~\ref{tab:raw_missingness_summary} presents the complete missingness profil
 \begin{figure}[t]
 \caption{Patient Retention Cascade Across Treatment Months}
 \label{fig:temporal_persistence}
-\centering
 \includegraphics[width=\columnwidth]{temporal/figures/temporal_persistence_cascade.pdf}
 \end{figure}
 \FloatBarrier
@@ -449,14 +477,12 @@ The final validated dataset comprised 7,389 complete patient records encompassin
 \begin{figure}[t]
     \caption{TB Case Notifications by Year (2015--2025)}
     \label{fig:yearly_case_counts}
-    \centering
     \includegraphics[width=\columnwidth]{figures/yearly_case_counts.pdf}
 \end{figure}
 
 \begin{figure}[t]
     \caption{Age-Sex Pyramid of the Study Cohort}
     \label{fig:age_sex_pyramid}
-    \centering
     \includegraphics[width=\columnwidth]{figures/age_sex_pyramid.pdf}
 \end{figure}
 \FloatBarrier
@@ -472,7 +498,6 @@ Conversely, adverse outcomes accounted for a critical minority of the dataset. P
 \begin{figure}[t]
     \caption{Distribution of Treatment Outcomes Among PTB Patients}
     \label{fig:outcome_distribution}
-    \centering
     \includegraphics[width=0.7\textwidth]{figures/treatment_outcomes_pie.pdf}
 \end{figure}
 \FloatBarrier
@@ -511,7 +536,6 @@ These skewed distributions demonstrate that while the median programmatic respon
 \begin{figure}[H]
     \caption{Pearson Correlation Matrix of Continuous Variables}
     \label{fig:numerical_pearson}
-    \centering
     \includegraphics[width=0.7\columnwidth]{figures/numerical_pearson_correlation.pdf}
 \end{figure}
 \FloatBarrier
@@ -521,7 +545,6 @@ The Pearson correlation matrix (Figure~\ref{fig:numerical_pearson}) reveals the 
 \begin{figure}[H]
     \caption{Cram\'{e}r's V Correlation Matrix of Categorical Variables}
     \label{fig:categorical_cramersv}
-    \centering
     \includegraphics[width=\columnwidth]{figures/categorical_cramersv_correlation.pdf}
 \end{figure}
 \FloatBarrier
@@ -533,6 +556,9 @@ The Cram\'{e}r's V matrix (Figure~\ref{fig:categorical_cramersv}) quantifies pai
 
 \input{tables/model_comparison.tex}
 
+\input{tables/static_confusion_matrix.tex}
+\FloatBarrier
+
 \subsection{Model Performance Visualizations}
 
 \textbf{Feature set selection.} Three candidate feature sets were evaluated: a baseline set of 11 core clinical and demographic variables, an improved set of 14 features that adds three facility-level variables (\texttt{City/Municipality}, \texttt{Treatment Health Facility}, \texttt{Screening/Diagnosing Health Facility}), and an extended set of 21 features incorporating additional temporal diagnostic variables. Cross-validation performance consistently favored the improved set, which encodes geographic and facility-level care quality signals with minimal added complexity. The extended features did not yield consistent AUC gains and introduced variables with higher missingness rates. The improved 14-feature set was therefore used for all final model training and evaluation.
@@ -540,7 +566,6 @@ The Cram\'{e}r's V matrix (Figure~\ref{fig:categorical_cramersv}) quantifies pai
 Figure~\ref{fig:roc_pr} presents the Receiver Operating Characteristic (ROC) curves~(a) and Precision-Recall curves~(b) for the best configuration of each classifier. Panel~(a) summarizes each model's ability to discriminate between treatment success and failure across decision thresholds, with the dashed diagonal representing random chance. Panel~(b) provides a more informative view under class imbalance (approximately 86\% success rate), where the horizontal dashed line marks the no-skill baseline at the failure class prevalence. Together, these two panels reveal both the overall discriminative capacity and the precision--recall trade-off that clinicians must navigate when setting alert thresholds.
 
 \begin{figure}[htbp]
-  \centering
   \includegraphics[width=0.95\textwidth]{figures/fig_roc_pr_curves.pdf}
   \caption{(a) ROC curves and (b) Precision-Recall curves for XGBoost, LightGBM, and
            Random Forest under both sampling conditions. AUC and Average Precision (AP)
@@ -550,21 +575,9 @@ Figure~\ref{fig:roc_pr} presents the Receiver Operating Characteristic (ROC) cur
 \end{figure}
 \FloatBarrier
 
-Figure~\ref{fig:confusion_matrix} presents the confusion matrix for the best-performing model on the held-out test set, displaying the raw counts alongside row-normalized percentages. The matrix makes explicit the clinical trade-off between sensitivity (correctly identified failure cases) and specificity (correctly identified success cases), which is the primary decision axis for deploying the model in a CDSS alert system.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.55\textwidth]{figures/fig_confusion_matrix.pdf}
-  \caption{Confusion matrix for the best-performing model on the test set.
-           Raw counts are shown with row-normalized percentages in parentheses.}
-  \label{fig:confusion_matrix}
-\end{figure}
-\FloatBarrier
-
 Figure~\ref{fig:cv_feat} presents the cross-validation stability of all six model configurations~(c) and the top 15 feature importances from the best-performing classifier~(d). Panel~(c) shows the 5-fold CV ROC-AUC mean with standard deviation bars for each model--sampler combination, color-coded by sampling strategy; configurations with narrower error bars indicate more stable generalization. Panel~(d) ranks the most predictive features by normalized importance, providing clinically interpretable signals for which patient attributes drive the risk prediction.
 
 \begin{figure}[htbp]
-  \centering
   \includegraphics[width=0.95\textwidth]{figures/fig_cv_feature_importance.pdf}
   \caption{(c) 5-fold cross-validation ROC-AUC (mean $\pm$ std) for all six model--sampler
            configurations, color-coded by sampling strategy. (d) Top 15 feature importances
@@ -575,9 +588,11 @@ Figure~\ref{fig:cv_feat} presents the cross-validation stability of all six mode
 
 Table~\ref{tab:model_comparison} presents the full metric breakdown for all six configurations. Models were ranked by a composite clinical score $S = 0.6 \times \text{AUC} + 0.4 \times \text{Recall\,(Failure)}$, which weights discriminative ability alongside sensitivity to treatment failure --- the outcome that CDSS alerts must prioritize.
 
-\textbf{XGBoost with SMOTE-ENN} was selected as the recommended model ($S = 0.699$). It achieved the highest failure-class recall of any configuration (72.9\%), meaning it correctly flagged nearly three-quarters of patients who ultimately failed treatment. Although its overall accuracy was lower (55.5\%) due to SMOTE-ENN's aggressive resampling of the training set, and its test-set AUC was moderate (0.680), this trade-off is clinically justified: in a TB CDSS, a missed failure (false negative) results in undetected treatment breakdown and potential disease progression or drug resistance, whereas a false alert triggers additional clinical review --- a lower-cost error. The model's 5-fold CV AUC of $0.686 \pm 0.015$ confirmed stable generalization, and holdout validation yielded a recall of 68.2\%, confirming the recall advantage persists on unseen data.
+XGBoost with SMOTE-ENN was selected as the recommended model ($S = 0.699$). It achieved the highest failure-class recall of any configuration (72.9\%), meaning it correctly flagged nearly three-quarters of patients who ultimately failed treatment. Although its overall accuracy was lower (55.5\%) due to SMOTE-ENN's aggressive resampling of the training set, and its test-set AUC was moderate (0.680), this trade-off is clinically justified: in a TB CDSS, a missed failure (false negative) results in undetected treatment breakdown and potential disease progression or drug resistance, whereas a false alert triggers additional clinical review --- a lower-cost error. The model's 5-fold CV AUC of $0.686 \pm 0.015$ confirmed stable generalization, and holdout validation yielded a recall of 68.2\%, confirming the recall advantage persists on unseen data.
 
-Among models without resampling, \textbf{XGBoost (no sampling)} achieved the highest test-set AUC (0.712) and CV-AUC ($0.702 \pm 0.009$) across all six configurations, with a competitive failure recall of 56.6\%. This configuration is preferred when a continuous, well-calibrated risk score is needed --- for instance, to rank patients by risk level rather than apply a binary alert threshold. \textbf{LightGBM (no sampling)} performed comparably ($\text{AUC} = 0.708$, recall$= 55.2\%$), providing a useful corroborating model. The three configurations not selected --- Random Forest (both sampling strategies) and LightGBM with SMOTE-ENN --- showed lower composite scores, driven by weaker failure recall relative to their AUC costs.
+Among models without resampling, XGBoost (no sampling) achieved the highest test-set AUC (0.712) and CV-AUC ($0.702 \pm 0.009$) across all six configurations, with a competitive failure recall of 56.6\%. This configuration is preferred when a continuous, well-calibrated risk score is needed --- for instance, to rank patients by risk level rather than apply a binary alert threshold. LightGBM (no sampling) performed comparably ($\text{AUC} = 0.708$, recall$= 55.2\%$), providing a useful corroborating model. The three configurations not selected --- Random Forest (both sampling strategies) and LightGBM with SMOTE-ENN --- showed lower composite scores, driven by weaker failure recall relative to their AUC costs.
+
+The MCC values reported in Table~\ref{tab:model_comparison} reveal the cost of this recall-focused selection. XGBoost with SMOTE-ENN achieved an MCC of 0.175, the lowest among all six test-set configurations. In contrast, XGBoost without resampling yielded the highest MCC (0.258), reflecting its superior balance across all four confusion matrix quadrants. This divergence illustrates a fundamental tension in imbalanced clinical classification: SMOTE-ENN raises failure recall by generating a large volume of synthetic minority-class samples during training, but the resulting model produces proportionally more false positives on the real test distribution, which MCC penalizes symmetrically. Accordingly, the recommended XGBoost with SMOTE-ENN configuration is best suited for a screening-oriented deployment where catching every at-risk patient takes precedence over minimizing false alerts, whereas XGBoost without resampling is the preferred choice when the operational cost of unnecessary clinical reviews is a binding constraint.
 
 \FloatBarrier
 \subsection{Temporal Models Performance}
@@ -629,7 +644,6 @@ The v2 results (Table~\ref{tab:temporal_performance_v2}) reflect the corrected t
 \begin{table}[H]
 \caption{Version 2 (v2) Confusion Matrix Counts of Temporal Models}
 \label{tab:temporal_confusion_v2}
-\centering
 \small
 \begin{tabular}{lcccc}
 \toprule
@@ -653,7 +667,6 @@ Note. Failure is treated as the positive class. TP = actual Failure predicted as
 \begin{table}[H]
 \caption{Methodological Differences Between Temporal Modeling Iterations (v1 vs v2)}
 \label{tab:temporal_v1_v2_method_comparison}
-\centering
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{llll}
 \toprule
@@ -672,7 +685,6 @@ Failure detection on test & Specificity 0.0000 & Specificity 0.8333--1.0000 & v2
 \begin{table}[H]
 \caption{Model-Level Performance Comparison Between Temporal Model v1 and v2 (Test Sets)}
 \label{tab:temporal_v1_v2_model_comparison}
-\centering
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{lccccccc}
 \toprule
@@ -694,28 +706,24 @@ Hybrid Bi-LSTM (Augmented) & 0.9048 & 0.0000 & 0.3684 & 0.7500 & 1.0000 & 0.9474
 \begin{figure}[H]
     \caption{Version 2 (v2) Hybrid Bi-LSTM Per-Month Performance (M0--M12)}
     \label{fig:temporal_v2_lstm_per_month_performance}
-    \centering
     \includegraphics[width=\columnwidth]{figures/temporal_v2_lstm_per_month_performance.png}
 \end{figure}
 
 \begin{figure}[H]
     \caption{Version 2 (v2) XGBoost Per-Month Performance (M0--M12)}
     \label{fig:temporal_v2_xgb_per_month_performance}
-    \centering
     \includegraphics[width=\columnwidth]{figures/temporal_v2_xgb_per_month_performance.png}
 \end{figure}
 
 \begin{figure}[H]
     \caption{Version 2 (v2) LightGBM Per-Month Performance (M0--M12)}
     \label{fig:temporal_v2_lgb_per_month_performance}
-    \centering
     \includegraphics[width=\columnwidth]{figures/temporal_v2_lgb_per_month_performance.png}
 \end{figure}
 
 \begin{figure}[H]
     \caption{Version 2 (v2) Random Forest Per-Month Performance (M0--M12)}
     \label{fig:temporal_v2_rf_per_month_performance}
-    \centering
     \includegraphics[width=\columnwidth]{figures/temporal_v2_rf_per_month_performance.png}
 \end{figure}
 
@@ -727,7 +735,6 @@ Figures~\ref{fig:temporal_v2_lstm_per_month_performance}--\ref{fig:temporal_v2_r
 \begin{figure}[t]
 \caption{Pearson Correlation Matrix of Vital Sign Features in the Temporal Dataset}
 \label{fig:vitals_pearson}
-\centering
 \includegraphics[width=\columnwidth]{temporal/figures/vitals_pearson_correlation.pdf}
 \end{figure}
 \FloatBarrier
@@ -737,7 +744,6 @@ Pairwise correlations among vital signs within the temporal monitoring dataset c
 \begin{figure}[t]
 \caption{Categorical Feature Raw Cardinality — Justification for Stage 4 Harmonization}
 \label{fig:categorical_cardinality}
-\centering
 \includegraphics[width=\columnwidth]{temporal/figures/categorical_cardinality_audit.pdf}
 \end{figure}
 \FloatBarrier
@@ -749,7 +755,6 @@ This heterogeneity directly motivated the Stage 4 categorical harmonization step
 \begin{figure}[t]
 \caption{Cram\'{e}r's V Correlation Matrix of Raw Categorical Variables in the Temporal Dataset}
 \label{fig:cramers_raw}
-\centering
 \includegraphics[width=\columnwidth]{temporal/figures/categorical_cramersv_correlation.pdf}
 \end{figure}
 \FloatBarrier
@@ -759,7 +764,6 @@ Cram\'{e}r's V associations among raw categorical variables in the temporal data
 \begin{figure}[t]
 \caption{Cram\'{e}r's V Correlation Matrix of Imputed Categorical Variables}
 \label{fig:cramers_imputed}
-\centering
 \includegraphics[width=\columnwidth]{temporal/figures/categorical_cramersv_imputed.pdf}
 \end{figure}
 \FloatBarrier
@@ -769,7 +773,6 @@ The imputed Cram\'{e}r's V matrix (Figure~\ref{fig:cramers_imputed}) confirms th
 \begin{figure}[t]
 \caption{Temporal Feature Correlation Matrix of Treatment Variables}
 \label{fig:temporal_feature_corr}
-\centering
 \includegraphics[width=\columnwidth]{temporal/figures/temporal_feature_correlation.pdf}
 \end{figure}
 \FloatBarrier
@@ -779,7 +782,6 @@ The temporal feature correlation matrix (Figure~\ref{fig:temporal_feature_corr})
 \begin{figure}[t]
 \caption{Temporal Lag Correlation of Percentage Adherence Across Consecutive Treatment Months}
 \label{fig:temporal_lag}
-\centering
 \includegraphics[width=\columnwidth]{temporal/figures/temporal_lag_heatmap.pdf}
 \end{figure}
 \FloatBarrier
@@ -801,11 +803,19 @@ The study contributes in several ways. By integrating temporal monitoring data w
 
 These findings suggest that the v2 temporal modeling outputs may serve as a basis for further evaluation within TB monitoring workflows, particularly for earlier identification of patients who may require closer review. For deployment-oriented performance, the v2 tree models (particularly Random Forest and LightGBM with SMOTE-ENN) provide a strong balance of Failure detection and overall correctness, while the Hybrid Bi-LSTM baseline may be useful when a more conservative screening stance is desired. However, any use in clinical or programmatic settings should first undergo external validation, prospective testing, and review by healthcare professionals to assess safety, calibration, and workflow fit. Future research should focus on larger, multi-region datasets to enhance generalization, evaluate temporal calibration over time, and explore hybrid modeling approaches that combine deep temporal representations with tree-based learners. Additionally, enhancing interpretability of temporal dynamics (e.g., attention over treatment months) may improve clinician trust and adoption.
 
+\subsection{Recommendations}
+
+Healthcare facilities and policymakers should consider integrating tree-based models---particularly Random Forest and LightGBM with SMOTE-ENN resampling---into existing DOH-CAR TB-DOTS monitoring programs as a decision-support layer for early risk stratification. These models demonstrated balanced detection of treatment failure on the held-out test set while maintaining high overall accuracy, offering a practical basis for identifying patients who may require closer clinical review. Deployment should be preceded by external validation on independent multi-facility datasets, prospective testing under real-world workflow conditions, and review by healthcare professionals to assess calibration, safety, and fit with existing clinical practice.
+
+The narrative explanation layer warrants a formal faithfulness evaluation at scale before any clinical deployment. A preliminary internal evaluation on the 44-patient test cohort found that the narrative layer consistently failed to echo the model's SHAP attribution when operating without access to the attribution signal: no cases passed the faithfulness criterion under the blind condition (0 of 44), regardless of the SLM backend used. Faithfulness improved substantially when SHAP contribution signals were included in the prompt, confirming that the narrative layer functions as a constrained verbalizer of the model's reasoning rather than an independent reasoner. Based on these findings, it is recommended that future work extend the faithfulness evaluation to a larger, multi-facility patient cohort, incorporate multiple SLM backends, and include clinician-rated readability and trust as paired outcome measures to establish the evidence base needed for safe deployment of the narrative explanation component.
+
 \subsection{Safety Scope and Interpretation Limits}
 
 The narrative explanation layer improves accessibility of model reasoning by translating contribution signals into clinician-readable text, but its outputs must be interpreted within clear safety boundaries. The explanation should be read as describing how factors increased or decreased the model-predicted risk, not as establishing causal mechanisms of disease progression. This distinction is important in high-stakes settings where generative outputs may otherwise be over-interpreted beyond their evidentiary basis \citep{ref42, ref43}.
 
 Accordingly, the system is positioned as decision support: it summarizes model behavior while preserving clinician authority for diagnosis and treatment decisions. This framing is consistent with contemporary reporting and governance guidance for AI-assisted clinical prediction systems, where transparency, bounded use, and human oversight remain central requirements \citep{ref44}.
+
+A preliminary internal evaluation on the 44-patient test cohort supports this bounded framing. When the narrative layer was prompted with patient profile fields alone, without the model's SHAP contribution signals, it failed the faithfulness criterion in every case across the cohort (0 of 44). This indicates that the narrative layer does not reconstruct the model's attribution from clinical context on its own; it depends on the SHAP signal as input. Accordingly, the operational design retains SHAP as the primary explanation surface and treats the narrative output as a readability aid rather than a substitute for the attribution itself.
 
 % ======================== ACKNOWLEDGMENTS ========================
 \FloatBarrier

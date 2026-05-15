@@ -1,0 +1,19 @@
+\begin{table}[htbp]
+\caption{Static Model Confusion Matrix Counts on Test Set}
+\label{tab:static_confusion_matrix}
+\small
+\begin{tabular}{llcccc}
+\toprule
+Model & Sampler & TP & FN & FP & TN \\
+\midrule
+\textbf{XGBoost} & \textbf{SMOTE - ENN} & \textbf{162} & \textbf{59} & \textbf{660} & \textbf{717} \\
+XGBoost & None & 139 & 82 & 383 & 994 \\
+LightGBM & None & 121 & 100 & 373 & 1004 \\
+Random Forest & SMOTE - ENN & 103 & 118 & 300 & 1077 \\
+LightGBM & SMOTE - ENN & 77 & 144 & 185 & 1192 \\
+Random Forest & None & 67 & 154 & 200 & 1177 \\
+\bottomrule
+\end{tabular}
+
+{\footnotesize \textit{Note.} Failure is treated as the positive class. TP~=~actual Failure predicted as Failure; FN~=~actual Failure predicted as Success; FP~=~actual Success predicted as Failure; TN~=~actual Success predicted as Success. Bold row indicates recommended model. Test set: 1{,}598 samples (221 Failure, 1{,}377 Success).}
+\end{table}

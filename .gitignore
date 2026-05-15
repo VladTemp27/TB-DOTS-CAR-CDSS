@@ -105,6 +105,7 @@ pnpm-debug.log*
 ## ─── ML models ────────────────────────────────────────────────────────────────
 # GGUF model weights — too large for git (fetch separately)
 models/*.gguf
+*.gguf
 
 ## ─── Superpowers / AI tooling ────────────────────────────────────────────────
 .superpowers/
@@ -127,4 +128,8 @@ start.sh
 # Backend data (SQLite + X-ray blobs)
 data/
 
+# SLM-SHAP pipeline
+slm_shap_pipeline/cache/
+outputs/slm_shap_pipeline/
 CLAUDE.md
+.claude/settings.json
