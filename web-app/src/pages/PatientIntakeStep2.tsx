@@ -25,6 +25,19 @@ export function PatientIntakeStep2() {
   const [screeningFacility, setScreeningFacility] = useState(draft.screeningFacility ?? '')
   const [dateStartedTx, setDateStartedTx] = useState(draft.dateStartedTx ?? '')
   const [dateOfDiagnosis, setDateOfDiagnosis] = useState(draft.dateOfDiagnosis ?? '')
+
+  // Extended temporal-model fields
+  const [xpertMtbRif, setXpertMtbRif] = useState(draft.xpertMtbRif ?? '')
+  const [drugResistanceStatus, setDrugResistanceStatus] = useState(draft.drugResistanceStatus ?? '')
+  const [baselineHeightCm, setBaselineHeightCm] = useState(draft.baselineHeightCm ? String(draft.baselineHeightCm) : '')
+  const [baselineWeightKg, setBaselineWeightKg] = useState(draft.baselineWeightKg ? String(draft.baselineWeightKg) : '')
+  const [bpSystolic, setBpSystolic] = useState(draft.bpSystolic ? String(draft.bpSystolic) : '')
+  const [bpDiastolic, setBpDiastolic] = useState(draft.bpDiastolic ? String(draft.bpDiastolic) : '')
+  const [heartRate, setHeartRate] = useState(draft.heartRate ? String(draft.heartRate) : '')
+  const [o2Sat, setO2Sat] = useState(draft.o2Sat ? String(draft.o2Sat) : '')
+  const [coMorbidities, setCoMorbidities] = useState(draft.coMorbidities ?? '')
+  const [chestXRayAtNotification, setChestXRayAtNotification] = useState(draft.chestXRayAtNotification ?? '')
+  const [diagnosis, setDiagnosis] = useState(draft.diagnosis ?? '')
   const [loading, setLoading] = useState(false)
 
   const bactChoices         = getChoices('Bacteriologic_Status')
@@ -45,6 +58,13 @@ export function PatientIntakeStep2() {
       ? Math.max(0, (new Date(dateStartedTx).getTime() - new Date(dateOfDiagnosis).getTime()) / 86400000)
       : 7
 
+    const parsedHeight = parseFloat(baselineHeightCm)
+    const parsedWeight = parseFloat(baselineWeightKg)
+    const parsedBpSys = parseFloat(bpSystolic)
+    const parsedBpDia = parseFloat(bpDiastolic)
+    const parsedHr = parseFloat(heartRate)
+    const parsedO2 = parseFloat(o2Sat)
+
     const features: PatientFeatures = {
       age: draft.age ?? 35,
       daysToTreatment,
@@ -60,6 +80,18 @@ export function PatientIntakeStep2() {
       cityMunicipality: draft.city ?? '',
       treatmentHealthFacility: treatmentFacility,
       screeningDiagnosingHealthFacility: screeningFacility,
+      // Extended fields
+      xpertMtbRif: xpertMtbRif || undefined,
+      drugResistanceStatus: drugResistanceStatus || undefined,
+      baselineHeightCm: Number.isFinite(parsedHeight) ? parsedHeight : undefined,
+      baselineWeightKg: Number.isFinite(parsedWeight) ? parsedWeight : undefined,
+      bpSystolic: Number.isFinite(parsedBpSys) ? parsedBpSys : undefined,
+      bpDiastolic: Number.isFinite(parsedBpDia) ? parsedBpDia : undefined,
+      heartRate: Number.isFinite(parsedHr) ? parsedHr : undefined,
+      o2Sat: Number.isFinite(parsedO2) ? parsedO2 : undefined,
+      coMorbidities: coMorbidities || undefined,
+      chestXRayAtNotification: chestXRayAtNotification || undefined,
+      diagnosis: diagnosis || undefined,
     }
 
     try {
@@ -77,6 +109,17 @@ export function PatientIntakeStep2() {
         screeningFacility,
         dateStartedTx,
         dateOfDiagnosis,
+        xpertMtbRif: xpertMtbRif || undefined,
+        drugResistanceStatus: drugResistanceStatus || undefined,
+        baselineHeightCm: Number.isFinite(parsedHeight) ? parsedHeight : undefined,
+        baselineWeightKg: Number.isFinite(parsedWeight) ? parsedWeight : undefined,
+        bpSystolic: Number.isFinite(parsedBpSys) ? parsedBpSys : undefined,
+        bpDiastolic: Number.isFinite(parsedBpDia) ? parsedBpDia : undefined,
+        heartRate: Number.isFinite(parsedHr) ? parsedHr : undefined,
+        o2Sat: Number.isFinite(parsedO2) ? parsedO2 : undefined,
+        coMorbidities: coMorbidities || undefined,
+        chestXRayAtNotification: chestXRayAtNotification || undefined,
+        diagnosis: diagnosis || undefined,
         features,
         result,
       })
@@ -143,6 +186,147 @@ export function PatientIntakeStep2() {
               <select id="caseType" value={type} onChange={e => setType(e.target.value)} className={selectCls}>
                 <option value="">Select</option>
                 {typeChoices.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+
+            {/* Xpert MTB/RIF */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls} htmlFor="xpertMtbRif">Xpert MTB/RIF</label>
+                <select id="xpertMtbRif" value={xpertMtbRif} onChange={e => setXpertMtbRif(e.target.value)} className={selectCls}>
+                  <option value="">Select (optional)</option>
+                  <option value="Positive">Positive</option>
+                  <option value="Negative">Negative</option>
+                  <option value="Not Done">Not Done</option>
+                  <option value="Invalid">Invalid</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="drugResistance">Drug Resistance Status</label>
+                <select
+                  id="drugResistance"
+                  value={drugResistanceStatus}
+                  onChange={e => setDrugResistanceStatus(e.target.value)}
+                  className={inputCls + ' bg-surface'}
+                >
+                  <option value="">Select Drug Resistance Status</option>
+                  <option value="DS-TB">Drug-Susceptible TB (DS-TB)</option>
+                  <option value="Hr-TB">Isoniazid-Monoresistant TB (Hr-TB)</option>
+                  <option value="RR-TB">Rifampicin-Resistant TB (RR-TB)</option>
+                  <option value="MDR-TB">Multi-Drug Resistant TB (MDR-TB)</option>
+                  <option value="Pre-XDR-TB">Pre-Extensively Drug-Resistant TB (Pre-XDR)</option>
+                  <option value="XDR-TB">Extensively Drug-Resistant TB (XDR-TB)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Baseline Vitals & Measurements */}
+          <div className="bg-surface border border-border rounded-2xl p-4 lg:p-6 space-y-3">
+            <h3 className="text-sm font-semibold text-ink-base">Baseline Vitals &amp; Measurements</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              <div>
+                  <option value="1">Divorced</option>
+              </div>
+            </div>
+          </div>
+
+          {/* Baseline Vitals & Measurements */}
+          <div className="bg-surface border border-border rounded-2xl p-4 lg:p-6 space-y-3">
+            <h3 className="text-sm font-semibold text-ink-base">Baseline Vitals &amp; Measurements</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              <div>
+                <label className={labelCls} htmlFor="baseHeight">Height (cm)</label>
+                <input id="baseHeight" type="number" step="0.1" placeholder="e.g. 162.5"
+                  value={baselineHeightCm} onChange={e => setBaselineHeightCm(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="baseWeight">Weight (kg)</label>
+                <input id="baseWeight" type="number" step="0.1" placeholder="e.g. 55.0"
+                  value={baselineWeightKg} onChange={e => setBaselineWeightKg(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="heartRate">Heart Rate (bpm)</label>
+                <input id="heartRate" type="number" placeholder="e.g. 72"
+                  value={heartRate} onChange={e => setHeartRate(e.target.value)} className={inputCls} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              <div>
+                <label className={labelCls} htmlFor="bpSys">BP Systolic</label>
+                <input id="bpSys" type="number" placeholder="e.g. 120"
+                  value={bpSystolic} onChange={e => setBpSystolic(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="bpDia">BP Diastolic</label>
+                <input id="bpDia" type="number" placeholder="e.g. 80"
+                  value={bpDiastolic} onChange={e => setBpDiastolic(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="o2Sat">O2 Saturation (%)</label>
+                <input id="o2Sat" type="number" min="0" max="100" placeholder="e.g. 98"
+                  value={o2Sat} onChange={e => setO2Sat(e.target.value)} className={inputCls} />
+              </div>
+            </div>
+          </div>
+
+          {/* Clinical Info */}
+          <div className="bg-surface border border-border rounded-2xl p-4 lg:p-6 space-y-3">
+            <h3 className="text-sm font-semibold text-ink-base">Clinical Information</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls} htmlFor="coMorbidities">Co-morbidities</label>
+                <select
+                  id="coMorbidities"
+                  value={coMorbidities}
+                  onChange={e => setCoMorbidities(e.target.value)}
+                  className={inputCls + ' bg-surface'}
+                >
+                  <option value="">Select Co-morbidities</option>
+                  <option value="None">None</option>
+                  <option value="Diabetes">Diabetes</option>
+                  <option value="HIV">HIV</option>
+                  <option value="LungDisease">Lung Disease</option>
+                  <option value="KidneyDisease">Kidney Disease</option>
+                  <option value="LiverDisease">Liver Disease</option>
+                  <option value="Malnutrition">Malnutrition</option>
+                  <option value="OtherImmunosuppression">Other Immunosuppression (Cancer/Steroids)</option>
+                  <option value="Multiple">Multiple Comorbidities</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="chestXRay">Chest X-ray at Notification</label>
+                <select id="chestXRay" value={chestXRayAtNotification} onChange={e => setChestXRayAtNotification(e.target.value)} className={selectCls}>
+                  <option value="">Select (optional)</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                  <option value="Married">Married</option>
+                  <option value="Divorced">Divorced</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls} htmlFor="chestXRay">Chest X-ray at Notification</label>
+                <select id="chestXRay" value={chestXRayAtNotification} onChange={e => setChestXRayAtNotification(e.target.value)} className={selectCls}>
+                  <option value="">Select (optional)</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                  <option value="Not Done">Not Done</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className={labelCls} htmlFor="diagnosis">Diagnosis</label>
+              <select
+                  id="diagnosis"
+                  value={diagnosis}
+                  onChange={e => setDiagnosis(e.target.value)}
+                  className={inputCls + ' bg-surface'}
+                >
+                  <option value="">Select Diagnosis Type</option>
+                  <option value="PTB-BacteriologicallyConfirmed">Pulmonary TB - Bacteriologically Confirmed</option>
+                  <option value="PTB-ClinicallyDiagnosed">Pulmonary TB - Clinically Diagnosed</option>
+                  <option value="EPTB">Extrapulmonary TB (EPTB)</option>
+                  <option value="Both">Both Pulmonary and Extrapulmonary TB</option>
               </select>
             </div>
           </div>

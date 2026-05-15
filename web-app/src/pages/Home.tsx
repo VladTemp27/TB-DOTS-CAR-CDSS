@@ -51,7 +51,7 @@ export function Home() {
 
   const high = patients.filter(p => riskLabel(p.predictions.at(-1)?.failureProbability ?? 0) === 'HIGH').length
   const dueSoon = patients.filter(p => {
-    if (p.monthlyRecords.length >= 6) return false         // completed all 6 months
+    if (p.monthlyRecords.length >= 13) return false        // completed all 13 months (M0–M12)
     if (!p.treatmentStartDate) return false                // no start date recorded
     const start = new Date(p.treatmentStartDate).getTime()
     const monthsElapsed = Math.floor((Date.now() - start) / (1000 * 60 * 60 * 24 * 30))

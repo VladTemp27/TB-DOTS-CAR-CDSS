@@ -254,11 +254,17 @@ def _demo_patients() -> list[_DemoPatient]:
             "timestamp": int(ts),
         }
 
-    def mr(*, month: int, prob: float, ts: int, adherence: str, weight: float | None = None, smear: str | None = None) -> dict:
+    def mr(*, month: int, prob: float, ts: int, adherence: str, weight: float | None = None, height: float | None = None, smear_tb_lamp: int | None = None, xpert_mtb_rif: int | None = None, monthly_doses_taken: int | None = None, monthly_missed_doses: int | None = None, cumulative_doses_taken: int | None = None, pct_adherence: float | None = None) -> dict:
         return {
             "month": int(month),
             "weight": float(weight) if weight is not None else None,
-            "smear_result": smear,
+            "height": float(height) if height is not None else None,
+            "smear_tb_lamp": int(smear_tb_lamp) if smear_tb_lamp is not None else None,
+            "xpert_mtb_rif": int(xpert_mtb_rif) if xpert_mtb_rif is not None else None,
+            "monthly_doses_taken": int(monthly_doses_taken) if monthly_doses_taken is not None else None,
+            "monthly_missed_doses": int(monthly_missed_doses) if monthly_missed_doses is not None else None,
+            "cumulative_doses_taken": int(cumulative_doses_taken) if cumulative_doses_taken is not None else None,
+            "pct_adherence": float(pct_adherence) if pct_adherence is not None else None,
             "adherence": adherence,
             "failure_probability": float(prob),
             "timestamp": int(ts),
@@ -327,7 +333,7 @@ def _demo_patients() -> list[_DemoPatient]:
                 pred(label=0, prob=0.41, ts=base + 35 * 24 * 60 * 60 * 1000, used=p1_used_m1),
             ],
             monthly_records=[
-                mr(month=1, prob=0.41, ts=base + 35 * 24 * 60 * 60 * 1000, adherence="full", weight=53.2, smear="NEG"),
+                mr(month=1, prob=0.41, ts=base + 35 * 24 * 60 * 60 * 1000, adherence="full", weight=53.2, height=160, smear_tb_lamp=0, monthly_doses_taken=28, monthly_missed_doses=0, cumulative_doses_taken=28, pct_adherence=100),
             ],
         ),
         _DemoPatient(
@@ -342,7 +348,7 @@ def _demo_patients() -> list[_DemoPatient]:
                 pred(label=1, prob=0.83, ts=base + 40 * 24 * 60 * 60 * 1000, used=p2_features),
             ],
             monthly_records=[
-                mr(month=1, prob=0.83, ts=base + 40 * 24 * 60 * 60 * 1000, adherence="poor", weight=50.1, smear="POS"),
+                mr(month=1, prob=0.83, ts=base + 40 * 24 * 60 * 60 * 1000, adherence="poor", weight=50.1, height=165, smear_tb_lamp=1, monthly_doses_taken=15, monthly_missed_doses=15, cumulative_doses_taken=15, pct_adherence=50),
             ],
         ),
         _DemoPatient(
@@ -478,7 +484,13 @@ def _seed_db(db: Session, *, include_xrays: bool) -> int:
                 MonthlyRecordRow(
                     month=r["month"],
                     weight=r.get("weight"),
-                    smear_result=r.get("smear_result"),
+                    height=r.get("height"),
+                    smear_tb_lamp=r.get("smear_tb_lamp"),
+                    xpert_mtb_rif=r.get("xpert_mtb_rif"),
+                    monthly_doses_taken=r.get("monthly_doses_taken"),
+                    monthly_missed_doses=r.get("monthly_missed_doses"),
+                    cumulative_doses_taken=r.get("cumulative_doses_taken"),
+                    pct_adherence=r.get("pct_adherence"),
                     adherence=r["adherence"],
                     failure_probability=r["failure_probability"],
                     timestamp=r["timestamp"],

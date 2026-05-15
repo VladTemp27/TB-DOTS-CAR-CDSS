@@ -52,10 +52,22 @@ class MonthlyRecord(Base):
 
     month: Mapped[int] = mapped_column(Integer, nullable=False)
     weight: Mapped[float | None] = mapped_column(Float, nullable=True)
-    smear_result: Mapped[str | None] = mapped_column(String, nullable=True)
+    height: Mapped[float | None] = mapped_column(Float, nullable=True)
+    smear_tb_lamp: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    xpert_mtb_rif: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    monthly_doses_taken: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    monthly_missed_doses: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cumulative_doses_taken: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    pct_adherence: Mapped[float | None] = mapped_column(Float, nullable=True)
     adherence: Mapped[str] = mapped_column(String, nullable=False)
     failure_probability: Mapped[float] = mapped_column(Float, nullable=False)
     timestamp: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_missing_weight: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_missing_height: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_missing_smear_tb_lamp: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_missing_xpert_mtb_rif: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_missing_monthly_doses_taken: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_missing_monthly_missed_doses: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     patient: Mapped[Patient] = relationship(back_populates="monthly_records")
 

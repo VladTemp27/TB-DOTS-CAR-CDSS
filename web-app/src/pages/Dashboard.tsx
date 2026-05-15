@@ -5,7 +5,7 @@ import { riskLabel, riskColor } from '../components/RiskBadge'
 import { AppHeader } from '../components/AppHeader'
 import type { Patient } from '../lib/storage'
 
-const DOTS_COURSE_MONTHS = 6
+const DOTS_COURSE_TOTAL_RECORDS = 13
 
 function latestProb(p: Patient): number {
   return p.predictions.at(-1)?.failureProbability ?? 0
@@ -52,7 +52,7 @@ export function Dashboard() {
     ? patients.reduce((sum, p) => sum + latestProb(p), 0) / total
     : null
   const dueCheckin = patients.filter(p => {
-    if (p.monthlyRecords.length >= 6) return false
+    if (p.monthlyRecords.length >= DOTS_COURSE_TOTAL_RECORDS) return false
     if (!p.treatmentStartDate) return false
     const start = new Date(p.treatmentStartDate).getTime()
     const monthsElapsed = Math.floor((Date.now() - start) / (1000 * 60 * 60 * 24 * 30))

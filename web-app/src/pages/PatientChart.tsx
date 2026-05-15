@@ -227,10 +227,16 @@ export function PatientChart() {
                   <thead>
                     <tr className="text-xs text-ink-muted border-b-2 border-border print:text-xs">
                       <th className="text-left pb-2 font-semibold">Month</th>
-                      <th className="text-left pb-2 font-semibold">Weight</th>
-                      <th className="text-left pb-2 font-semibold">Smear Result</th>
-                      <th className="text-left pb-2 font-semibold">Adherence</th>
-                      <th className="text-right pb-2 font-semibold">Failure Risk</th>
+                      <th className="text-left pb-2 font-semibold">Wt</th>
+                      <th className="text-left pb-2 font-semibold">Ht</th>
+                      <th className="text-left pb-2 font-semibold">TB LAMP</th>
+                      <th className="text-left pb-2 font-semibold">Xpert</th>
+                      <th className="text-left pb-2 font-semibold">Doses</th>
+                      <th className="text-left pb-2 font-semibold">Missed</th>
+                      <th className="text-left pb-2 font-semibold">Cumul</th>
+                      <th className="text-left pb-2 font-semibold">Adh%</th>
+                      <th className="text-left pb-2 font-semibold">Adh</th>
+                      <th className="text-right pb-2 font-semibold">Risk</th>
                       <th className="text-right pb-2 font-semibold">Date</th>
                     </tr>
                   </thead>
@@ -238,8 +244,14 @@ export function PatientChart() {
                     {patient.monthlyRecords.map((record, i) => (
                       <tr key={record.timestamp} className={`border-b border-border/50 ${i % 2 === 0 ? '' : 'bg-gray-50/50 print:bg-gray-100'}`}>
                         <td className="py-2 text-ink-secondary font-medium">M{record.month}</td>
-                        <td className="py-2 text-ink-secondary">{record.weight ? `${record.weight} kg` : '—'}</td>
-                        <td className="py-2 text-ink-secondary">{record.smearResult || '—'}</td>
+                        <td className="py-2 text-ink-secondary tabular-nums">{record.weight ?? '—'}</td>
+                        <td className="py-2 text-ink-secondary tabular-nums">{record.height ?? '—'}</td>
+                        <td className="py-2 text-ink-secondary">{record.smearTbLamp != null ? record.smearTbLamp : '—'}</td>
+                        <td className="py-2 text-ink-secondary">{record.xpertMtbRif != null ? record.xpertMtbRif : '—'}</td>
+                        <td className="py-2 text-ink-secondary tabular-nums">{record.monthlyDosesTaken ?? '—'}</td>
+                        <td className="py-2 text-ink-secondary tabular-nums">{record.monthlyMissedDoses ?? '—'}</td>
+                        <td className="py-2 text-ink-secondary tabular-nums">{record.cumulativeDosesTaken ?? '—'}</td>
+                        <td className="py-2 text-ink-secondary tabular-nums">{record.pctAdherence != null ? `${record.pctAdherence}%` : '—'}</td>
                         <td className={`py-2 capitalize font-medium
                           ${record.adherence === 'full' ? 'text-risk-low'
                             : record.adherence === 'partial' ? 'text-risk-med'
@@ -334,6 +346,14 @@ export function PatientChart() {
                 <p className="text-sm font-medium text-ink-base">{patient.features.sex === 'M' ? 'Male' : 'Female'}</p>
               </div>
               <div>
+                <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Civil Status</p>
+                <p className="text-sm font-medium text-ink-base">{patient.features.civilStatus || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Nationality</p>
+                <p className="text-sm font-medium text-ink-base">{patient.features.nationality || '—'}</p>
+              </div>
+              <div>
                 <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Province</p>
                 <p className="text-sm font-medium text-ink-base">{patient.features.province || '—'}</p>
               </div>
@@ -365,6 +385,14 @@ export function PatientChart() {
                 <p className="text-sm font-medium text-ink-base">{patient.features.microscopyResult}</p>
               </div>
               <div>
+                <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Xpert MTB/RIF</p>
+                <p className="text-sm font-medium text-ink-base">{patient.features.xpertMtbRif || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Drug Resistance Status</p>
+                <p className="text-sm font-medium text-ink-base">{patient.features.drugResistanceStatus || '—'}</p>
+              </div>
+              <div>
                 <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Anatomical Site</p>
                 <p className="text-sm font-medium text-ink-base">
                   {patient.features.anatomicalSite === 'P' ? 'PTB (Pulmonary)' : 'EPTB (Extra-pulmonary)'}
@@ -378,10 +406,22 @@ export function PatientChart() {
                 <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Case Type</p>
                 <p className="text-sm font-medium text-ink-base">{patient.features.type}</p>
               </div>
+              <div>
+                <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Diagnosis</p>
+                <p className="text-sm font-medium text-ink-base">{patient.features.diagnosis || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Co-morbidities</p>
+                <p className="text-sm font-medium text-ink-base">{patient.features.coMorbidities || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Chest X-ray at Notification</p>
+                <p className="text-sm font-medium text-ink-base">{patient.features.chestXRayAtNotification || '—'}</p>
+              </div>
             </div>
           </section>
 
-          {/* Facilities Section */}
+          {/* Health Facilities Section */}
           <section className="bg-surface border border-border rounded-2xl p-4 lg:p-6 print:border-2 print:break-inside-avoid">
             <h2 className="text-lg font-bold text-ink-base mb-4 font-display print:text-base">Health Facilities</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
@@ -395,6 +435,45 @@ export function PatientChart() {
               </div>
             </div>
           </section>
+
+          {/* Baseline Vitals Section */}
+          {patient.features.baselineHeightCm || patient.features.baselineWeightKg || patient.features.bpSystolic || patient.features.heartRate || patient.features.o2Sat ? (
+            <section className="bg-surface border border-border rounded-2xl p-4 lg:p-6 print:border-2 print:break-inside-avoid">
+              <h2 className="text-lg font-bold text-ink-base mb-4 font-display print:text-base">Baseline Vitals &amp; Measurements</h2>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                {patient.features.baselineHeightCm != null && (
+                  <div>
+                    <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Height</p>
+                    <p className="text-sm font-medium text-ink-base">{patient.features.baselineHeightCm} cm</p>
+                  </div>
+                )}
+                {patient.features.baselineWeightKg != null && (
+                  <div>
+                    <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Weight</p>
+                    <p className="text-sm font-medium text-ink-base">{patient.features.baselineWeightKg} kg</p>
+                  </div>
+                )}
+                {patient.features.bpSystolic != null && patient.features.bpDiastolic != null && (
+                  <div>
+                    <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Blood Pressure</p>
+                    <p className="text-sm font-medium text-ink-base">{patient.features.bpSystolic}/{patient.features.bpDiastolic} mmHg</p>
+                  </div>
+                )}
+                {patient.features.heartRate != null && (
+                  <div>
+                    <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Heart Rate</p>
+                    <p className="text-sm font-medium text-ink-base">{patient.features.heartRate} bpm</p>
+                  </div>
+                )}
+                {patient.features.o2Sat != null && (
+                  <div>
+                    <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">O2 Saturation</p>
+                    <p className="text-sm font-medium text-ink-base">{patient.features.o2Sat}%</p>
+                  </div>
+                )}
+              </div>
+            </section>
+          ) : null}
 
           {/* Treatment Information Section */}
           <section className="bg-surface border border-border rounded-2xl p-4 lg:p-6 print:border-2 print:break-inside-avoid">
