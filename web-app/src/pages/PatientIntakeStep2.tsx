@@ -210,9 +210,12 @@ export function PatientIntakeStep2() {
                   className={inputCls + ' bg-surface'}
                 >
                   <option value="">Select Drug Resistance Status</option>
-                  <option value="DS-TB">DS-TB</option>
-                  <option value="MDR-TB">MDR-TB</option>
-                  <option value="XDR-TB">XDR-TB</option>
+                  <option value="DS-TB">Drug-Susceptible TB (DS-TB)</option>
+                  <option value="Hr-TB">Isoniazid-Monoresistant TB (Hr-TB)</option>
+                  <option value="RR-TB">Rifampicin-Resistant TB (RR-TB)</option>
+                  <option value="MDR-TB">Multi-Drug Resistant TB (MDR-TB)</option>
+                  <option value="Pre-XDR-TB">Pre-Extensively Drug-Resistant TB (Pre-XDR)</option>
+                  <option value="XDR-TB">Extensively Drug-Resistant TB (XDR-TB)</option>
                 </select>
               </div>
             </div>
@@ -280,9 +283,15 @@ export function PatientIntakeStep2() {
                   className={inputCls + ' bg-surface'}
                 >
                   <option value="">Select Co-morbidities</option>
+                  <option value="None">None</option>
                   <option value="Diabetes">Diabetes</option>
                   <option value="HIV">HIV</option>
-                  <option value="None">None</option>
+                  <option value="LungDisease">Lung Disease</option>
+                  <option value="KidneyDisease">Kidney Disease</option>
+                  <option value="LiverDisease">Liver Disease</option>
+                  <option value="Malnutrition">Malnutrition</option>
+                  <option value="OtherImmunosuppression">Other Immunosuppression (Cancer/Steroids)</option>
+                  <option value="Multiple">Multiple Comorbidities</option>
                 </select>
               </div>
               <div>
@@ -313,10 +322,11 @@ export function PatientIntakeStep2() {
                   onChange={e => setDiagnosis(e.target.value)}
                   className={inputCls + ' bg-surface'}
                 >
-                  <option value="">Select Diagnosis</option>
-                  <option value="Pulmonary TB">Pulmonary TB</option>
-                  <option value="MDR-TB">MDR-TB</option>
-                  <option value="None">None</option>
+                  <option value="">Select Diagnosis Type</option>
+                  <option value="PTB-BacteriologicallyConfirmed">Pulmonary TB - Bacteriologically Confirmed</option>
+                  <option value="PTB-ClinicallyDiagnosed">Pulmonary TB - Clinically Diagnosed</option>
+                  <option value="EPTB">Extrapulmonary TB (EPTB)</option>
+                  <option value="Both">Both Pulmonary and Extrapulmonary TB</option>
               </select>
             </div>
           </div>
