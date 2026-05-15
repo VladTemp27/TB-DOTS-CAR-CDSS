@@ -189,6 +189,8 @@ class TBExperimentPipeline:
             mcc = matthews_corrcoef(y_test, y_pred)
             f1_fail = report['0']['f1-score']
             recall_fail = report['0']['recall']
+            cm = confusion_matrix(y_test, y_pred, labels=[0, 1])
+            tp_fail, fn_fail, fp_fail, tn_fail = cm[0,0], cm[0,1], cm[1,0], cm[1,1]
 
             # 5-fold stratified cross-validation on training data
             cv_aucs = cross_val_score(pipe, X_train, y_train, cv=cv,
@@ -206,6 +208,10 @@ class TBExperimentPipeline:
                 'CV-AUC Mean': cv_aucs.mean(),
                 'CV-AUC Std': cv_aucs.std(),
                 'MCC': mcc,
+                'TP': int(tp_fail),
+                'FN': int(fn_fail),
+                'FP': int(fp_fail),
+                'TN': int(tn_fail),
                 'Precision (Fail)': report['0']['precision'],
                 'Recall (Fail)': recall_fail,
                 'F1 (Fail)': f1_fail,

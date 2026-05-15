@@ -155,6 +155,9 @@ def main():
     # Export model comparison table (APA-formatted, resizeable)
     _export_model_comparison(master_df, best_model_row, pipeline.table_dir)
 
+    # Export confusion matrix counts table
+    _export_confusion_matrix_table(master_df, best_model_row, pipeline.table_dir)
+
     logger.info("All experiments completed. Tables → paper/apa/tables/  Figures → paper/apa/figures/")
 
 
@@ -213,6 +216,52 @@ def _export_model_comparison(master_df, best_model_row, table_dir):
     out.write_text(tex)
     import logging
     logging.getLogger(__name__).info("Exported APA table → %s", out)
+
+
+def _export_confusion_matrix_table(master_df, best_model_row, table_dir):
+    cols = ['Model', 'Sampler', 'TP', 'FN', 'FP', 'TN']
+    df = (master_df[cols + ['_score']]
+          .sort_values('_score', ascending=False)
+          .reset_index(drop=True))
+
+    rows_tex = []
+    for _, row in df.iterrows():
+        is_best = (row['Model'] == best_model_row['Model'] and
+                   row['Sampler'] == best_model_row['Sampler'])
+        cells = [row['Model'], row['Sampler'] or 'None',
+                 str(int(row['TP'])), str(int(row['FN'])),
+                 str(int(row['FP'])), str(int(row['TN']))]
+        if is_best:
+            cells = [r'\textbf{' + c + '}' for c in cells]
+        rows_tex.append(' & '.join(cells) + r' \\')
+
+    tex = (
+        r'\begin{table}[htbp]' + '\n'
+        r'\caption{Static Model Confusion Matrix Counts on Test Set}' + '\n'
+        r'\label{tab:static_confusion_matrix}' + '\n'
+        r'\centering' + '\n'
+        r'\small' + '\n'
+        r'\begin{tabular}{llcccc}' + '\n'
+        r'\toprule' + '\n'
+        r'Model & Sampler & TP & FN & FP & TN \\' + '\n'
+        r'\midrule' + '\n'
+        + '\n'.join(rows_tex) + '\n'
+        r'\bottomrule' + '\n'
+        r'\end{tabular}' + '\n\n'
+        r'{\footnotesize \textit{Note.} Failure is treated as the positive class. '
+        r'TP~=~actual Failure predicted as Failure; '
+        r'FN~=~actual Failure predicted as Success; '
+        r'FP~=~actual Success predicted as Failure; '
+        r'TN~=~actual Success predicted as Success. '
+        r'Bold row indicates recommended model. '
+        r'Test set: 1{,}598 samples (221 Failure, 1{,}377 Success).}' + '\n'
+        r'\end{table}'
+    )
+
+    out = table_dir / 'static_confusion_matrix.tex'
+    out.write_text(tex)
+    import logging
+    logging.getLogger(__name__).info("Exported confusion matrix table → %s", out)
 
 
 if __name__ == "__main__":

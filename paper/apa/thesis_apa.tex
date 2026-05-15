@@ -535,6 +535,9 @@ The Cram\'{e}r's V matrix (Figure~\ref{fig:categorical_cramersv}) quantifies pai
 
 \input{tables/model_comparison.tex}
 
+\input{tables/static_confusion_matrix.tex}
+\FloatBarrier
+
 \subsection{Model Performance Visualizations}
 
 \textbf{Feature set selection.} Three candidate feature sets were evaluated: a baseline set of 11 core clinical and demographic variables, an improved set of 14 features that adds three facility-level variables (\texttt{City/Municipality}, \texttt{Treatment Health Facility}, \texttt{Screening/Diagnosing Health Facility}), and an extended set of 21 features incorporating additional temporal diagnostic variables. Cross-validation performance consistently favored the improved set, which encodes geographic and facility-level care quality signals with minimal added complexity. The extended features did not yield consistent AUC gains and introduced variables with higher missingness rates. The improved 14-feature set was therefore used for all final model training and evaluation.
