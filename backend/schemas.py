@@ -119,10 +119,11 @@ class InterpretRequest(BaseModel):
     sex: Literal["M", "F"]
     bacteriologic_status: str
     microscopy_result: str
-    anatomical_site: Literal["P", "EP"]
+    anatomical_site: Literal["P", "EP"] | None = None   # Optional; V2 CSV doesn't have this
     registration_group: str
-    source_of_patient: str
-    type: str
+    source_of_patient: str | None = None                 # Optional; V2 CSV doesn't have this
+    type: str | None = None                              # Optional; V2 CSV doesn't have this
     days_to_treatment: int
     failure_probability: float
     contributions: list[ContributionItem]
+    month_of_prediction: int | None = None               # V2: M0-M12 horizon; None = unspecified

@@ -128,5 +128,8 @@ start.sh
 # Backend data (SQLite + X-ray blobs)
 data/
 
+# SLM-SHAP pipeline
+slm_shap_pipeline/cache/
+outputs/slm_shap_pipeline/
 CLAUDE.md
 .claude/settings.json
