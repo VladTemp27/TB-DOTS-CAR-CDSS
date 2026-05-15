@@ -432,7 +432,7 @@ To ensure reproducibility and eliminate transcription errors, all experiments ar
 
 The validated models are embedded into a Clinical Decision Support System (CDSS) designed for healthcare providers. This system visualizes patient risk levels and provides a summary of predictive outputs. Key features include a predictive dashboard that displays the probability of treatment failure and success, risk factor visualization that highlights the specific variables (e.g., adherence gaps, lab results) contributing to the risk score, and dynamic updates where the system accepts new follow-up data (e.g., monthly weight, smear results), triggering updated risk predictions to support real-time clinical management throughout the treatment duration.
 
-\subsection{SLM-Based Narrative Explanation Layer}
+\subsection{Small Language Model (SLM)-Based Narrative Explanation Layer}
 
 To improve the usability of model explanations for healthcare users, the CDSS includes a small language model (SLM) as a constrained narrative layer that verbalizes model outputs into readable clinical text. SHAP-based feature contribution outputs remain the primary explanation source, while the SLM functions as a presentation layer rather than an independent predictor or diagnostic engine \citep{ref39, ref41}. This component operates post-prediction and does not alter model training, inference probabilities, or risk classification thresholds. In the implemented pipeline, the web client constructs a structured interpretation request containing selected patient context fields, predicted treatment-failure probability, and ranked contribution signals, then sends the payload to a dedicated interpretation endpoint for streamed narrative rendering in the interface.
 
