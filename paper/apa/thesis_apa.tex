@@ -225,7 +225,6 @@ This study uses a dataset of records of PTB patients from the Cordillera Adminis
 \begin{figure}[H]
 \caption{Data Management and Analysis Process}
 \label{fig:data_management}
-\centering
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[
   node distance=0.5cm and 0.9cm,
@@ -338,7 +337,6 @@ Clinical TB registries exhibit heterogeneous missingness arising from inconsiste
 \begin{figure}[H]
 \caption{Missing Data Handling Decision Logic}
 \label{fig:missing_data_pipeline}
-\centering
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[
   node distance=0.7cm and 1.1cm,
@@ -463,7 +461,6 @@ Table~\ref{tab:raw_missingness_summary} presents the complete missingness profil
 \begin{figure}[t]
 \caption{Patient Retention Cascade Across Treatment Months}
 \label{fig:temporal_persistence}
-\centering
 \includegraphics[width=\columnwidth]{temporal/figures/temporal_persistence_cascade.pdf}
 \end{figure}
 \FloatBarrier
@@ -482,14 +479,12 @@ The final validated dataset comprised 7,389 complete patient records encompassin
 \begin{figure}[t]
     \caption{TB Case Notifications by Year (2015--2025)}
     \label{fig:yearly_case_counts}
-    \centering
     \includegraphics[width=\columnwidth]{figures/yearly_case_counts.pdf}
 \end{figure}
 
 \begin{figure}[t]
     \caption{Age-Sex Pyramid of the Study Cohort}
     \label{fig:age_sex_pyramid}
-    \centering
     \includegraphics[width=\columnwidth]{figures/age_sex_pyramid.pdf}
 \end{figure}
 \FloatBarrier
@@ -505,7 +500,6 @@ Conversely, adverse outcomes accounted for a critical minority of the dataset. P
 \begin{figure}[t]
     \caption{Distribution of Treatment Outcomes Among PTB Patients}
     \label{fig:outcome_distribution}
-    \centering
     \includegraphics[width=0.7\textwidth]{figures/treatment_outcomes_pie.pdf}
 \end{figure}
 \FloatBarrier
@@ -544,7 +538,6 @@ These skewed distributions demonstrate that while the median programmatic respon
 \begin{figure}[H]
     \caption{Pearson Correlation Matrix of Continuous Variables}
     \label{fig:numerical_pearson}
-    \centering
     \includegraphics[width=0.7\columnwidth]{figures/numerical_pearson_correlation.pdf}
 \end{figure}
 \FloatBarrier
@@ -554,7 +547,6 @@ The Pearson correlation matrix (Figure~\ref{fig:numerical_pearson}) reveals the 
 \begin{figure}[H]
     \caption{Cram\'{e}r's V Correlation Matrix of Categorical Variables}
     \label{fig:categorical_cramersv}
-    \centering
     \includegraphics[width=\columnwidth]{figures/categorical_cramersv_correlation.pdf}
 \end{figure}
 \FloatBarrier
@@ -576,7 +568,6 @@ The Cram\'{e}r's V matrix (Figure~\ref{fig:categorical_cramersv}) quantifies pai
 Figure~\ref{fig:roc_pr} presents the Receiver Operating Characteristic (ROC) curves~(a) and Precision-Recall curves~(b) for the best configuration of each classifier. Panel~(a) summarizes each model's ability to discriminate between treatment success and failure across decision thresholds, with the dashed diagonal representing random chance. Panel~(b) provides a more informative view under class imbalance (approximately 86\% success rate), where the horizontal dashed line marks the no-skill baseline at the failure class prevalence. Together, these two panels reveal both the overall discriminative capacity and the precision--recall trade-off that clinicians must navigate when setting alert thresholds.
 
 \begin{figure}[htbp]
-  \centering
   \includegraphics[width=0.95\textwidth]{figures/fig_roc_pr_curves.pdf}
   \caption{(a) ROC curves and (b) Precision-Recall curves for XGBoost, LightGBM, and
            Random Forest under both sampling conditions. AUC and Average Precision (AP)
@@ -589,7 +580,6 @@ Figure~\ref{fig:roc_pr} presents the Receiver Operating Characteristic (ROC) cur
 Figure~\ref{fig:cv_feat} presents the cross-validation stability of all six model configurations~(c) and the top 15 feature importances from the best-performing classifier~(d). Panel~(c) shows the 5-fold CV ROC-AUC mean with standard deviation bars for each model--sampler combination, color-coded by sampling strategy; configurations with narrower error bars indicate more stable generalization. Panel~(d) ranks the most predictive features by normalized importance, providing clinically interpretable signals for which patient attributes drive the risk prediction.
 
 \begin{figure}[htbp]
-  \centering
   \includegraphics[width=0.95\textwidth]{figures/fig_cv_feature_importance.pdf}
   \caption{(c) 5-fold cross-validation ROC-AUC (mean $\pm$ std) for all six model--sampler
            configurations, color-coded by sampling strategy. (d) Top 15 feature importances
@@ -656,7 +646,6 @@ The v2 results (Table~\ref{tab:temporal_performance_v2}) reflect the corrected t
 \begin{table}[H]
 \caption{Version 2 (v2) Confusion Matrix Counts of Temporal Models}
 \label{tab:temporal_confusion_v2}
-\centering
 \small
 \begin{tabular}{lcccc}
 \toprule
@@ -680,7 +669,6 @@ Note. Failure is treated as the positive class. TP = actual Failure predicted as
 \begin{table}[H]
 \caption{Methodological Differences Between Temporal Modeling Iterations (v1 vs v2)}
 \label{tab:temporal_v1_v2_method_comparison}
-\centering
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{llll}
 \toprule
@@ -699,7 +687,6 @@ Failure detection on test & Specificity 0.0000 & Specificity 0.8333--1.0000 & v2
 \begin{table}[H]
 \caption{Model-Level Performance Comparison Between Temporal Model v1 and v2 (Test Sets)}
 \label{tab:temporal_v1_v2_model_comparison}
-\centering
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{lccccccc}
 \toprule
@@ -721,28 +708,24 @@ Hybrid Bi-LSTM (Augmented) & 0.9048 & 0.0000 & 0.3684 & 0.7500 & 1.0000 & 0.9474
 \begin{figure}[H]
     \caption{Version 2 (v2) Hybrid Bi-LSTM Per-Month Performance (M0--M12)}
     \label{fig:temporal_v2_lstm_per_month_performance}
-    \centering
     \includegraphics[width=\columnwidth]{figures/temporal_v2_lstm_per_month_performance.png}
 \end{figure}
 
 \begin{figure}[H]
     \caption{Version 2 (v2) XGBoost Per-Month Performance (M0--M12)}
     \label{fig:temporal_v2_xgb_per_month_performance}
-    \centering
     \includegraphics[width=\columnwidth]{figures/temporal_v2_xgb_per_month_performance.png}
 \end{figure}
 
 \begin{figure}[H]
     \caption{Version 2 (v2) LightGBM Per-Month Performance (M0--M12)}
     \label{fig:temporal_v2_lgb_per_month_performance}
-    \centering
     \includegraphics[width=\columnwidth]{figures/temporal_v2_lgb_per_month_performance.png}
 \end{figure}
 
 \begin{figure}[H]
     \caption{Version 2 (v2) Random Forest Per-Month Performance (M0--M12)}
     \label{fig:temporal_v2_rf_per_month_performance}
-    \centering
     \includegraphics[width=\columnwidth]{figures/temporal_v2_rf_per_month_performance.png}
 \end{figure}
 
@@ -754,7 +737,6 @@ Figures~\ref{fig:temporal_v2_lstm_per_month_performance}--\ref{fig:temporal_v2_r
 \begin{figure}[t]
 \caption{Pearson Correlation Matrix of Vital Sign Features in the Temporal Dataset}
 \label{fig:vitals_pearson}
-\centering
 \includegraphics[width=\columnwidth]{temporal/figures/vitals_pearson_correlation.pdf}
 \end{figure}
 \FloatBarrier
@@ -764,7 +746,6 @@ Pairwise correlations among vital signs within the temporal monitoring dataset c
 \begin{figure}[t]
 \caption{Categorical Feature Raw Cardinality — Justification for Stage 4 Harmonization}
 \label{fig:categorical_cardinality}
-\centering
 \includegraphics[width=\columnwidth]{temporal/figures/categorical_cardinality_audit.pdf}
 \end{figure}
 \FloatBarrier
@@ -776,7 +757,6 @@ This heterogeneity directly motivated the Stage 4 categorical harmonization step
 \begin{figure}[t]
 \caption{Cram\'{e}r's V Correlation Matrix of Raw Categorical Variables in the Temporal Dataset}
 \label{fig:cramers_raw}
-\centering
 \includegraphics[width=\columnwidth]{temporal/figures/categorical_cramersv_correlation.pdf}
 \end{figure}
 \FloatBarrier
@@ -786,7 +766,6 @@ Cram\'{e}r's V associations among raw categorical variables in the temporal data
 \begin{figure}[t]
 \caption{Cram\'{e}r's V Correlation Matrix of Imputed Categorical Variables}
 \label{fig:cramers_imputed}
-\centering
 \includegraphics[width=\columnwidth]{temporal/figures/categorical_cramersv_imputed.pdf}
 \end{figure}
 \FloatBarrier
@@ -796,7 +775,6 @@ The imputed Cram\'{e}r's V matrix (Figure~\ref{fig:cramers_imputed}) confirms th
 \begin{figure}[t]
 \caption{Temporal Feature Correlation Matrix of Treatment Variables}
 \label{fig:temporal_feature_corr}
-\centering
 \includegraphics[width=\columnwidth]{temporal/figures/temporal_feature_correlation.pdf}
 \end{figure}
 \FloatBarrier
@@ -806,7 +784,6 @@ The temporal feature correlation matrix (Figure~\ref{fig:temporal_feature_corr})
 \begin{figure}[t]
 \caption{Temporal Lag Correlation of Percentage Adherence Across Consecutive Treatment Months}
 \label{fig:temporal_lag}
-\centering
 \includegraphics[width=\columnwidth]{temporal/figures/temporal_lag_heatmap.pdf}
 \end{figure}
 \FloatBarrier
