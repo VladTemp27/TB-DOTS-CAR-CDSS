@@ -229,7 +229,6 @@ export function PatientChart() {
                       <th className="text-left pb-2 font-semibold">Month</th>
                       <th className="text-left pb-2 font-semibold">Wt</th>
                       <th className="text-left pb-2 font-semibold">Ht</th>
-                      <th className="text-left pb-2 font-semibold">Smear</th>
                       <th className="text-left pb-2 font-semibold">TB LAMP</th>
                       <th className="text-left pb-2 font-semibold">Xpert</th>
                       <th className="text-left pb-2 font-semibold">Doses</th>
@@ -247,7 +246,6 @@ export function PatientChart() {
                         <td className="py-2 text-ink-secondary font-medium">M{record.month}</td>
                         <td className="py-2 text-ink-secondary tabular-nums">{record.weight ?? '—'}</td>
                         <td className="py-2 text-ink-secondary tabular-nums">{record.height ?? '—'}</td>
-                        <td className="py-2 text-ink-secondary">{record.smearResult || '—'}</td>
                         <td className="py-2 text-ink-secondary">{record.smearTbLamp != null ? record.smearTbLamp : '—'}</td>
                         <td className="py-2 text-ink-secondary">{record.xpertMtbRif != null ? record.xpertMtbRif : '—'}</td>
                         <td className="py-2 text-ink-secondary tabular-nums">{record.monthlyDosesTaken ?? '—'}</td>

@@ -27,7 +27,6 @@ class MonthlyRecord(CamelModel):
     month: int
     weight: float | None = None
     height: float | None = None
-    smear_result: str | None = Field(default=None, alias="smearResult")
     smear_tb_lamp: int | None = Field(default=None, alias="smearTbLamp")
     xpert_mtb_rif: int | None = Field(default=None, alias="xpertMtbRif")
     monthly_doses_taken: int | None = Field(default=None, alias="monthlyDosesTaken")
@@ -38,6 +37,12 @@ class MonthlyRecord(CamelModel):
     failure_probability: float = Field(alias="failureProbability")
     timestamp: int
     xray_ids: list[str] | None = Field(default=None, alias="xrayIds")
+    is_missing_weight: int = Field(default=0, alias="isMissingWeight")
+    is_missing_height: int = Field(default=0, alias="isMissingHeight")
+    is_missing_smear_tb_lamp: int = Field(default=0, alias="isMissingSmearTbLamp")
+    is_missing_xpert_mtb_rif: int = Field(default=0, alias="isMissingXpertMtbRif")
+    is_missing_monthly_doses_taken: int = Field(default=0, alias="isMissingMonthlyDosesTaken")
+    is_missing_monthly_missed_doses: int = Field(default=0, alias="isMissingMonthlyMissedDoses")
 
 
 class PatientFeatures(CamelModel):
@@ -102,7 +107,6 @@ class MonthlyRecordCreate(CamelModel):
     month: int
     weight: float | None = None
     height: float | None = None
-    smear_result: str | None = Field(default=None, alias="smearResult")
     smear_tb_lamp: int | None = Field(default=None, alias="smearTbLamp")
     xpert_mtb_rif: int | None = Field(default=None, alias="xpertMtbRif")
     monthly_doses_taken: int | None = Field(default=None, alias="monthlyDosesTaken")
@@ -112,6 +116,12 @@ class MonthlyRecordCreate(CamelModel):
     adherence: Literal["full", "partial", "poor"]
     failure_probability: float = Field(alias="failureProbability")
     timestamp: int
+    is_missing_weight: int = Field(default=0, alias="isMissingWeight")
+    is_missing_height: int = Field(default=0, alias="isMissingHeight")
+    is_missing_smear_tb_lamp: int = Field(default=0, alias="isMissingSmearTbLamp")
+    is_missing_xpert_mtb_rif: int = Field(default=0, alias="isMissingXpertMtbRif")
+    is_missing_monthly_doses_taken: int = Field(default=0, alias="isMissingMonthlyDosesTaken")
+    is_missing_monthly_missed_doses: int = Field(default=0, alias="isMissingMonthlyMissedDoses")
 
 
 class PredictionCreate(CamelModel):

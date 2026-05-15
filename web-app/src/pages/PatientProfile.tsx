@@ -164,6 +164,33 @@ export function PatientProfile() {
               </div>
             )}
 
+            {(() => {
+              const m0 = patient.monthlyRecords.find(r => r.month === 0)
+              return m0 ? (
+                <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
+                  <p className="text-sm font-semibold text-ink-base mb-2">Baseline (M0)</p>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-xs text-ink-muted">Weight</p>
+                      <p className="font-medium">{m0.weight ?? '—'} kg</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-ink-muted">Height</p>
+                      <p className="font-medium">{m0.height ?? '—'} cm</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-ink-muted">Smear TB LAMP</p>
+                      <p className="font-medium">{m0.smearTbLamp != null ? m0.smearTbLamp : '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-ink-muted">Xpert MTB/RIF</p>
+                      <p className="font-medium">{m0.xpertMtbRif != null ? m0.xpertMtbRif : '—'}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null
+            })()}
+
             {patient.monthlyRecords.length > 0 && (
               <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm overflow-hidden">
                 <p className="text-sm font-semibold text-ink-base mb-3">Monthly Records</p>
@@ -174,7 +201,6 @@ export function PatientProfile() {
                         <th className="text-left pb-2 font-semibold">Month</th>
                         <th className="text-left pb-2 font-semibold">Wt</th>
                         <th className="text-left pb-2 font-semibold">Ht</th>
-                        <th className="text-left pb-2 font-semibold">Smear</th>
                         <th className="text-left pb-2 font-semibold">TB LAMP</th>
                         <th className="text-left pb-2 font-semibold">Xpert</th>
                         <th className="text-left pb-2 font-semibold">Doses</th>
@@ -191,7 +217,6 @@ export function PatientProfile() {
                           <td className="py-2 text-ink-secondary">M{r.month}</td>
                           <td className="py-2 text-ink-secondary tabular-nums">{r.weight ?? '—'}</td>
                           <td className="py-2 text-ink-secondary tabular-nums">{r.height ?? '—'}</td>
-                          <td className="py-2 text-ink-secondary">{r.smearResult || '—'}</td>
                           <td className="py-2 text-ink-secondary">{r.smearTbLamp != null ? r.smearTbLamp : '—'}</td>
                           <td className="py-2 text-ink-secondary">{r.xpertMtbRif != null ? r.xpertMtbRif : '—'}</td>
                           <td className="py-2 text-ink-secondary tabular-nums">{r.monthlyDosesTaken ?? '—'}</td>

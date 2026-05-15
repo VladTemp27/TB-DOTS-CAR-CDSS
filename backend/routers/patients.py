@@ -64,7 +64,6 @@ def _patient_to_api(db: Session, p: PatientRow) -> dict:
                 "month": int(r.month),
                 "weight": float(r.weight) if r.weight is not None else None,
                 "height": float(r.height) if r.height is not None else None,
-                "smearResult": r.smear_result,
                 "smearTbLamp": int(r.smear_tb_lamp) if r.smear_tb_lamp is not None else None,
                 "xpertMtbRif": int(r.xpert_mtb_rif) if r.xpert_mtb_rif is not None else None,
                 "monthlyDosesTaken": int(r.monthly_doses_taken) if r.monthly_doses_taken is not None else None,
@@ -75,6 +74,12 @@ def _patient_to_api(db: Session, p: PatientRow) -> dict:
                 "failureProbability": float(r.failure_probability),
                 "timestamp": int(r.timestamp),
                 "xrayIds": record_id_to_xray_ids.get(int(r.month)) or None,
+                "isMissingWeight": int(r.is_missing_weight),
+                "isMissingHeight": int(r.is_missing_height),
+                "isMissingSmearTbLamp": int(r.is_missing_smear_tb_lamp),
+                "isMissingXpertMtbRif": int(r.is_missing_xpert_mtb_rif),
+                "isMissingMonthlyDosesTaken": int(r.is_missing_monthly_doses_taken),
+                "isMissingMonthlyMissedDoses": int(r.is_missing_monthly_missed_doses),
             }
             for r in records
         ],
@@ -165,7 +170,6 @@ def add_monthly_record(
         month=body.month,
         weight=body.weight,
         height=body.height,
-        smear_result=body.smear_result,
         smear_tb_lamp=body.smear_tb_lamp,
         xpert_mtb_rif=body.xpert_mtb_rif,
         monthly_doses_taken=body.monthly_doses_taken,
@@ -175,6 +179,12 @@ def add_monthly_record(
         adherence=body.adherence,
         failure_probability=body.failure_probability,
         timestamp=body.timestamp,
+        is_missing_weight=body.is_missing_weight,
+        is_missing_height=body.is_missing_height,
+        is_missing_smear_tb_lamp=body.is_missing_smear_tb_lamp,
+        is_missing_xpert_mtb_rif=body.is_missing_xpert_mtb_rif,
+        is_missing_monthly_doses_taken=body.is_missing_monthly_doses_taken,
+        is_missing_monthly_missed_doses=body.is_missing_monthly_missed_doses,
     )
     db.add(row)
     try:
