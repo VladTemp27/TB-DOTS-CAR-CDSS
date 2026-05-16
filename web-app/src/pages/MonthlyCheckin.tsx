@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { XrayUploadField } from '../components/XrayUploadField'
 import { getPatient, saveTemporalRiskRecord, attachMonthlyXrays } from '../lib/storage'
-import { predictTemporalInBrowser } from '../lib/temporalInference'
+import { predictTemporalWithContributions } from '../lib/temporalInference'
 import { PageFooter } from '../components/PageFooter'
 import type { Patient } from '../lib/storage'
 
@@ -158,14 +158,14 @@ export function MonthlyCheckin() {
         monthlyDosesTaken: Number.isFinite(parsedMonthlyDoses) ? parsedMonthlyDoses : undefined,
         monthlyMissedDoses: Number.isFinite(parsedMonthlyMissed) ? parsedMonthlyMissed : undefined,
       }
-      const browserPrediction = await predictTemporalInBrowser(patient, temporalInput)
+      const browserPrediction = await predictTemporalWithContributions(patient, temporalInput)
       const pred = await saveTemporalRiskRecord(id, browserPrediction)
 
       const result = {
         label: pred.label,
         failureProbability: pred.failureProbability,
         successProbability: pred.successProbability,
-        contributions: [],
+        contributions: browserPrediction.contributions,
       }
 
       if (xrayFiles.length > 0) {
