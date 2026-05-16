@@ -419,7 +419,8 @@ export async function predictTemporalWithContributions(
         delta:     Math.abs(delta),
         direction: delta > 0 ? 'protective' : 'risk',
       })
-    } catch {
+    } catch (err) {
+      console.error(`[temporal SHAP] occlusion pass failed for group "${group.name}":`, err)
       contributions.push({ feature: group.name, delta: 0, direction: 'risk' })
     }
   }
