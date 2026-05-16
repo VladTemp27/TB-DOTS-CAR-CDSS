@@ -151,7 +151,8 @@ export function PatientProfile() {
                 <p className="text-sm font-semibold text-ink-base mb-3">Risk Trend Over Time</p>
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {monthlyRecords.map((record, i) => {
-                    const p = Math.round(record.failureProbability * 100)
+                    const pct = record.failureProbability * 100
+                    const p = pct > 0 && pct < 1 ? '<1' : String(Math.round(pct))
                     const isLast = i === monthlyRecords.length - 1
                     return (
                       <div key={record.timestamp} className={`flex flex-col items-center min-w-[52px] border rounded-xl p-2
@@ -223,7 +224,7 @@ export function PatientProfile() {
                           <td className="py-2 text-ink-secondary tabular-nums">{r.monthlyDosesTaken ?? '—'}</td>
                           <td className="py-2 text-ink-secondary tabular-nums">{r.monthlyMissedDoses ?? '—'}</td>
                           <td className="py-2 text-ink-secondary tabular-nums">{r.cumulativeDosesTaken ?? '—'}</td>
-                          <td className="py-2 text-ink-secondary tabular-nums">{r.pctAdherence != null ? `${r.pctAdherence.toFixed(2)}%` : '—'}</td>
+                          <td className="py-2 text-ink-secondary tabular-nums">{r.pctAdherence != null ? `${((r.pctAdherence > 1 ? r.pctAdherence : r.pctAdherence * 100)).toFixed(2)}%` : '—'}</td>
                           <td className={`py-2 capitalize font-medium
                             ${r.adherence === 'full' ? 'text-risk-low'
                               : r.adherence === 'partial' ? 'text-risk-med'
@@ -231,7 +232,11 @@ export function PatientProfile() {
                             {r.adherence}
                           </td>
                           <td className="py-2 text-right text-ink-secondary tabular-nums">
-                            {Math.round(r.failureProbability * 100)}%
+                            {(() => {
+                              const pct = r.failureProbability * 100
+                              if (pct > 0 && pct < 1) return '<1%'
+                              return `${Math.round(pct)}%`
+                            })()}
                           </td>
                         </tr>
                       ))}

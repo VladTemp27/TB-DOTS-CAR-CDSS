@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-05-08T18:29:46.312116",
+  "generated_at": "2026-05-16T04:48:13.846072",
   "pipeline": "TB-DOTS CAR CDSS \u2014 Missing Data Handling",
   "dataset_info": {
     "n_rows": 599,
     "n_static_cols": 53,
     "n_temporal_cols": 10,
-    "n_static_nulls": 14922,
+    "n_static_nulls": 14916,
     "n_temporal_nulls": 49283
   },
   "mcar_test": {
@@ -178,11 +178,11 @@
       "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (45.9%)."
     },
     "outcome": {
-      "missing_rate_pct": 28.05,
+      "missing_rate_pct": 27.05,
       "mechanism": "MNAR",
       "temporal_pattern": "N/A",
       "pathway": "GAMMA_INDICATOR",
-      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (28.0%)."
+      "pathway_rationale": "Missing indicator + fill: mechanism=MNAR, moderate-to-high missingness (27.0%)."
     },
     "co_morbidities": {
       "missing_rate_pct": 42.24,
