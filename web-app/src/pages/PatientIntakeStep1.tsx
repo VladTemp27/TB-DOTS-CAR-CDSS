@@ -9,6 +9,7 @@ import { createDraftPatientId, loadIntakeDraft, saveIntakeDraft } from '../lib/i
 const inputCls = 'w-full min-h-[44px] border border-border rounded-xl px-3 py-2.5 text-sm text-ink-base bg-surface placeholder-ink-muted focus:border-primary outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1'
 const selectCls = `${inputCls} bg-surface`
 const labelCls = 'block text-sm font-medium text-ink-secondary mb-1'
+const opt = <span className="ml-1 text-xs font-normal text-ink-muted">(Optional)</span>
 
 export function PatientIntakeStep1() {
   const navigate = useNavigate()
@@ -90,6 +91,7 @@ export function PatientIntakeStep1() {
               </div>
               <div>
                 <label className={labelCls} htmlFor="medicalId">Medical ID</label>
+                <p className="text-xs text-ink-muted -mt-0.5">{opt}</p>
                 <input id="medicalId" type="text" value={medicalId}
                   onChange={e => setMedicalId(e.target.value)}
                   className={inputCls} />
@@ -117,6 +119,7 @@ export function PatientIntakeStep1() {
               </div>
               <div>
                 <label className={labelCls} htmlFor="city">City / Municipality</label>
+                <p className="text-xs text-ink-muted -mt-0.5">{opt}</p>
                 <select id="city" value={city} onChange={e => setCity(e.target.value)}
                   disabled={!province}
                   className={`${selectCls} disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-bg`}>
@@ -129,6 +132,7 @@ export function PatientIntakeStep1() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label className={labelCls} htmlFor="civilStatus">Civil Status</label>
+                <p className="text-xs text-ink-muted -mt-0.5">{opt}</p>
                 <select
                   id="civilStatus"
                   value={civilStatus}
@@ -145,6 +149,7 @@ export function PatientIntakeStep1() {
               </div>
               <div>
                 <label className={labelCls} htmlFor="nationality">Nationality</label>
+                <p className="text-xs text-ink-muted -mt-0.5">{opt}</p>
                 <input
                   id="nationality"
                   type="text"

@@ -1,0 +1,132 @@
+Overfit-Reduced Balanced Hybrid Bi-LSTM Failure-Risk Evaluation
+===============================================================
+Created at: 2026-05-16T14:46:21
+Label convention: 1=Failure, 0=Success
+Output probability: P(Failure)
+Selected candidate: h48_l1_d04_balanced_bce
+Training objective: balanced_bce
+Selection objective: 0.6_auc_0.4_failure_recall
+Model spec: {'capacity': 'h48_l1_d04', 'lstm_hidden': 48, 'lstm_layers': 1, 'dropout': 0.4, 'static_hidden': 32, 'static_out': 16, 'classifier_hidden': 32, 'loss': 'balanced_bce', 'pos_weight': None, 'name': 'h48_l1_d04_balanced_bce'}
+Pos weight: None
+Threshold: 0.0500
+Deployment status: ACCEPTABLE
+
+train_progressive
+-----------------
+{
+  "split": "train_progressive",
+  "threshold": 0.05,
+  "accuracy": 0.599620942904525,
+  "balanced_accuracy": 0.7000133660568351,
+  "macro_f1": 0.5985599573927649,
+  "failure_precision": 0.4500491320013102,
+  "failure_recall": 0.992057761732852,
+  "failure_f1": 0.619197836863452,
+  "success_precision": 0.990582191780822,
+  "success_recall": 0.40796897038081803,
+  "success_f1": 0.577922077922078,
+  "min_class_recall": 0.40796897038081803,
+  "roc_auc_failure": 0.9582867006461535,
+  "pr_auc_failure": 0.9398922124966597,
+  "false_success_count": 11,
+  "false_failure_count": 1679,
+  "actual_failure_rate": 0.328121298270552,
+  "predicted_failure_rate": 0.7232883203032456,
+  "class_rate_gap": 0.39516702203269366,
+  "mean_p_failure_true_failure": 0.7578563690185547,
+  "mean_p_failure_true_success": 0.0891776755452156,
+  "confusion_labels_failure_success": [
+    [
+      1374,
+      11
+    ],
+    [
+      1679,
+      1157
+    ]
+  ]
+}
+
+val_m12_full_sequence
+---------------------
+{
+  "split": "val_m12_full_sequence",
+  "threshold": 0.05,
+  "accuracy": 0.7126436781609196,
+  "balanced_accuracy": 0.8287671232876712,
+  "macro_f1": 0.6608451582722594,
+  "failure_precision": 0.358974358974359,
+  "failure_recall": 1.0,
+  "failure_f1": 0.5283018867924528,
+  "success_precision": 1.0,
+  "success_recall": 0.6575342465753424,
+  "success_f1": 0.7933884297520661,
+  "min_class_recall": 0.6575342465753424,
+  "roc_auc_failure": 0.9540117416829746,
+  "pr_auc_failure": 0.8473897134611419,
+  "false_success_count": 0,
+  "false_failure_count": 25,
+  "actual_failure_rate": 0.16091954022988506,
+  "predicted_failure_rate": 0.4482758620689655,
+  "class_rate_gap": 0.28735632183908044,
+  "mean_p_failure_true_failure": 0.6681112051010132,
+  "mean_p_failure_true_success": 0.07722944766283035,
+  "confusion_labels_failure_success": [
+    [
+      14,
+      0
+    ],
+    [
+      25,
+      48
+    ]
+  ]
+}
+
+test_m12_full_sequence
+----------------------
+{
+  "split": "test_m12_full_sequence",
+  "threshold": 0.05,
+  "accuracy": 0.7555555555555555,
+  "balanced_accuracy": 0.7969924812030075,
+  "macro_f1": 0.6787800129785853,
+  "failure_precision": 0.375,
+  "failure_recall": 0.8571428571428571,
+  "failure_f1": 0.5217391304347826,
+  "success_precision": 0.9655172413793104,
+  "success_recall": 0.7368421052631579,
+  "success_f1": 0.835820895522388,
+  "min_class_recall": 0.7368421052631579,
+  "roc_auc_failure": 0.9060150375939848,
+  "pr_auc_failure": 0.6389455782312925,
+  "false_success_count": 1,
+  "false_failure_count": 10,
+  "actual_failure_rate": 0.15555555555555556,
+  "predicted_failure_rate": 0.35555555555555557,
+  "class_rate_gap": 0.2,
+  "mean_p_failure_true_failure": 0.6626745462417603,
+  "mean_p_failure_true_success": 0.08110848069190979,
+  "confusion_labels_failure_success": [
+    [
+      6,
+      1
+    ],
+    [
+      10,
+      28
+    ]
+  ]
+}
+
+Overfit and class-bias diagnostics
+-----------------------------------
+{
+  "train_val_gap": -0.12875375723083615,
+  "train_test_gap": -0.09697911514617241,
+  "warnings": [
+    "Predicted Failure rate is far from actual Failure rate (0.2000).",
+    "Failure-biased model: predicted Failure rate is higher than target tolerance."
+  ],
+  "deployment_status": "ACCEPTABLE"
+}

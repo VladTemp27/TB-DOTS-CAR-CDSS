@@ -133,3 +133,5 @@ slm_shap_pipeline/cache/
 outputs/slm_shap_pipeline/
 CLAUDE.md
 .claude/settings.json
+# Added by code-review-graph
+.code-review-graph/

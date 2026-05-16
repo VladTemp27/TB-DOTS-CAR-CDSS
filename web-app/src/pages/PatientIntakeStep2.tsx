@@ -11,6 +11,7 @@ import { createDraftPatientId, loadIntakeDraft, saveIntakeDraft } from '../lib/i
 const inputCls = 'w-full min-h-[44px] border border-border rounded-xl px-3 py-2.5 text-sm text-ink-base bg-surface placeholder-ink-muted focus:border-primary outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1'
 const selectCls = `${inputCls} bg-surface`
 const labelCls = 'block text-sm font-medium text-ink-secondary mb-1'
+const opt = <span className="ml-1 text-xs font-normal text-ink-muted">(Optional)</span>
 
 export function PatientIntakeStep2() {
   const navigate = useNavigate()
@@ -193,6 +194,7 @@ export function PatientIntakeStep2() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label className={labelCls} htmlFor="xpertMtbRif">Xpert MTB/RIF</label>
+                <p className="text-xs text-ink-muted -mt-0.5">{opt}</p>
                 <select id="xpertMtbRif" value={xpertMtbRif} onChange={e => setXpertMtbRif(e.target.value)} className={selectCls}>
                   <option value="">Select (optional)</option>
                   <option value="Positive">Positive</option>
@@ -203,6 +205,7 @@ export function PatientIntakeStep2() {
               </div>
               <div>
                 <label className={labelCls} htmlFor="drugResistance">Drug Resistance Status</label>
+                <p className="text-xs text-ink-muted -mt-0.5">{opt}</p>
                 <select
                   id="drugResistance"
                   value={drugResistanceStatus}
@@ -227,16 +230,19 @@ export function PatientIntakeStep2() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
               <div>
                 <label className={labelCls} htmlFor="baseHeight">Height (cm)</label>
+                <p className="text-xs text-ink-muted -mt-0.5">{opt}</p>
                 <input id="baseHeight" type="number" step="0.1" placeholder="e.g. 162.5"
                   value={baselineHeightCm} onChange={e => setBaselineHeightCm(e.target.value)} className={inputCls} />
               </div>
               <div>
                 <label className={labelCls} htmlFor="baseWeight">Weight (kg)</label>
+                <p className="text-xs text-ink-muted -mt-0.5">{opt}</p>
                 <input id="baseWeight" type="number" step="0.1" placeholder="e.g. 55.0"
                   value={baselineWeightKg} onChange={e => setBaselineWeightKg(e.target.value)} className={inputCls} />
               </div>
               <div>
                 <label className={labelCls} htmlFor="heartRate">Heart Rate (bpm)</label>
+                <p className="text-xs text-ink-muted -mt-0.5">{opt}</p>
                 <input id="heartRate" type="number" placeholder="e.g. 72"
                   value={heartRate} onChange={e => setHeartRate(e.target.value)} className={inputCls} />
               </div>
@@ -244,16 +250,19 @@ export function PatientIntakeStep2() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
               <div>
                 <label className={labelCls} htmlFor="bpSys">BP Systolic</label>
+                <p className="text-xs text-ink-muted -mt-0.5">{opt}</p>
                 <input id="bpSys" type="number" placeholder="e.g. 120"
                   value={bpSystolic} onChange={e => setBpSystolic(e.target.value)} className={inputCls} />
               </div>
               <div>
                 <label className={labelCls} htmlFor="bpDia">BP Diastolic</label>
+                <p className="text-xs text-ink-muted -mt-0.5">{opt}</p>
                 <input id="bpDia" type="number" placeholder="e.g. 80"
                   value={bpDiastolic} onChange={e => setBpDiastolic(e.target.value)} className={inputCls} />
               </div>
               <div>
                 <label className={labelCls} htmlFor="o2Sat">O2 Saturation (%)</label>
+                <p className="text-xs text-ink-muted -mt-0.5">{opt}</p>
                 <input id="o2Sat" type="number" min="0" max="100" placeholder="e.g. 98"
                   value={o2Sat} onChange={e => setO2Sat(e.target.value)} className={inputCls} />
               </div>
@@ -266,6 +275,7 @@ export function PatientIntakeStep2() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label className={labelCls} htmlFor="coMorbidities">Co-morbidities</label>
+                <p className="text-xs text-ink-muted -mt-0.5">{opt}</p>
                 <select
                   id="coMorbidities"
                   value={coMorbidities}
@@ -286,6 +296,7 @@ export function PatientIntakeStep2() {
               </div>
               <div>
                 <label className={labelCls} htmlFor="chestXRay">Chest X-ray at Notification</label>
+                <p className="text-xs text-ink-muted -mt-0.5">{opt}</p>
                 <select id="chestXRay" value={chestXRayAtNotification} onChange={e => setChestXRayAtNotification(e.target.value)} className={selectCls}>
                   <option value="">Select (optional)</option>
                   <option value="Yes">Yes</option>
@@ -343,12 +354,14 @@ export function PatientIntakeStep2() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label className={labelCls} htmlFor="diagDate">Date of Diagnosis</label>
+                <p className="text-xs text-ink-muted -mt-0.5">{opt}</p>
                 <input id="diagDate" type="date" value={dateOfDiagnosis}
                   onChange={e => setDateOfDiagnosis(e.target.value)}
                   className={inputCls} />
               </div>
               <div>
                 <label className={labelCls} htmlFor="txDate">Date Started Treatment</label>
+                <p className="text-xs text-ink-muted -mt-0.5">{opt}</p>
                 <input id="txDate" type="date" value={dateStartedTx}
                   onChange={e => setDateStartedTx(e.target.value)}
                   className={inputCls} />

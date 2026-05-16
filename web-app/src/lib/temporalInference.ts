@@ -6,8 +6,16 @@ ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.25.1/di
 const MODEL_URL = '/model/hybrid_lstm_temporal.onnx'
 const METADATA_URL = '/model/hybrid_lstm_temporal_metadata.json'
 
+const TOTAL_MONTHS = 13
+
 type Metadata = {
-  modelName: string
+  modelName?: string
+  modelType?: string
+  outputProbability?: string
+  logitMeaning?: string
+  deploymentStatus?: string
+  temperature?: number
+  platt?: { a: number; b: number }
   threshold: number
   staticFeatureNames: string[]
   temporalFeatureNames: string[]
@@ -57,12 +65,16 @@ function buildStaticVector(patient: Patient, names: string[]) {
   const out = new Float32Array(names.length)
   const idx = new Map(names.map((name, i) => [name, i]))
   const explicitMissing = new Set<string>()
+  const setValues = new Set<string>()
   const f = patient.features
+
+  const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v))
 
   const setv = (name: string, value: number | undefined | null) => {
     const i = idx.get(name)
     if (i == null || value == null || !Number.isFinite(value)) return
     out[i] = value
+    setValues.add(name)
   }
   const setMissing = (name: string, missing: boolean) => {
     const i = idx.get(name)
@@ -73,15 +85,26 @@ function buildStaticVector(patient: Patient, names: string[]) {
   const oneHot = (name: string) => {
     const i = idx.get(name)
     if (i != null) out[i] = 1
+    return i != null
   }
 
-  setv('age', f.age)
-  setv('weight_kg', f.baselineWeightKg)
-  setv('height_cm', f.baselineHeightCm)
-  setv('bp_systolic', f.bpSystolic)
-  setv('bp_diastolic', f.bpDiastolic)
-  setv('heart_rate', f.heartRate)
-  setv('o2_sat', f.o2Sat)
+  // Training-time preprocessing adds explicit "<col>__missing" indicators for
+  // any static column with NA in the training set. Mirror that in inference.
+  const setTrainMissingIndicator = (col: string, missing: boolean) => {
+    const name = `${col}__missing`
+    const i = idx.get(name)
+    if (i == null) return
+    out[i] = missing ? 1 : 0
+  }
+
+  // Align inference-time bounds with training-time clipping.
+  setv('age', f.age == null ? f.age : clamp(f.age, 0, 110))
+  setv('weight_kg', f.baselineWeightKg == null ? f.baselineWeightKg : clamp(f.baselineWeightKg, 10, 180))
+  setv('height_cm', f.baselineHeightCm == null ? f.baselineHeightCm : clamp(f.baselineHeightCm, 80, 220))
+  setv('bp_systolic', f.bpSystolic == null ? f.bpSystolic : clamp(f.bpSystolic, 60, 220))
+  setv('bp_diastolic', f.bpDiastolic == null ? f.bpDiastolic : clamp(f.bpDiastolic, 30, 140))
+  setv('heart_rate', f.heartRate == null ? f.heartRate : clamp(f.heartRate, 20, 250))
+  setv('o2_sat', f.o2Sat == null ? f.o2Sat : clamp(f.o2Sat, 70, 100))
   setv('xpert_mtb_rif', as01(f.xpertMtbRif))
   setv('smear_microscopy', as01(f.microscopyResult))
 
@@ -94,26 +117,62 @@ function buildStaticVector(patient: Patient, names: string[]) {
   }
 
   const sex = String(f.sex || '').toLowerCase()
-  if (sex === 'm' || sex === 'male') oneHot('sex_Male')
-  if (sex === 'f' || sex === 'female') oneHot('sex_Female')
+  const sexCat = (sex === 'm' || sex === 'male') ? 'Male' : (sex === 'f' || sex === 'female') ? 'Female' : undefined
+  const sexMissing = sexCat == null
+  // Mode-fill used during training; default to Male when missing/unrecognized.
+  oneHot(`sex_${sexCat ?? 'Male'}`)
+  setMissing('is_missing_sex', sexMissing)
+  setTrainMissingIndicator('sex', sexMissing)
 
   const diagnosis = f.diagnosis?.trim()
-  if (diagnosis) oneHot(`diagnosis_${diagnosis}`)
+  const diagnosisMissing = !diagnosis
+  // Mode-fill used during training; default to TB Disease when missing.
+  oneHot(`diagnosis_${diagnosisMissing ? 'TB Disease' : diagnosis}`)
+  setMissing('is_missing_diagnosis', diagnosisMissing)
+  setTrainMissingIndicator('diagnosis', diagnosisMissing)
 
   const bacterio = f.bacteriologicStatus?.toLowerCase().includes('bacteriologically')
     ? 'Bacteriologically Confirmed'
     : f.bacteriologicStatus?.toLowerCase().includes('clinically')
       ? 'Clinically Diagnosed'
       : undefined
-  if (bacterio) oneHot(`bacteriologic_status_${bacterio}`)
+  const bacterioMissing = bacterio == null
+  // Mode-fill used during training; default to Clinically Diagnosed when missing.
+  oneHot(`bacteriologic_status_${bacterio ?? 'Clinically Diagnosed'}`)
+  setMissing('is_missing_bacteriologic_status', bacterioMissing)
+  setTrainMissingIndicator('bacteriologic_status', bacterioMissing)
 
-  const regGroup = f.registrationGroup?.toLowerCase().includes('relapse') ? 'Relapse' : f.registrationGroup ? 'New' : undefined
-  if (regGroup) oneHot(`case_registration_group_${regGroup}`)
+  const regRaw = f.registrationGroup ? String(f.registrationGroup) : ''
+  const regLower = regRaw.trim().toLowerCase()
+  const regGroup = regLower.includes('relapse') ? 'Relapse' : regLower.includes('new') ? 'New' : undefined
+  const regMissing = regGroup == null
+  // Mode-fill used during training; default to New when missing/unrecognized.
+  oneHot(`case_registration_group_${regGroup ?? 'New'}`)
+  setMissing('is_missing_case_registration_group', regMissing)
+  setTrainMissingIndicator('case_registration_group', regMissing)
 
-  if (patient.treatmentRegimen) oneHot(`treatment_regimen_${patient.treatmentRegimen === 'hrze' ? 'Regimen 1' : 'Regimen 2'}`)
-  if (f.coMorbidities?.trim()) oneHot(`co_morbidities_${f.coMorbidities.trim()}`)
+  const regimenMissing = patient.treatmentRegimen == null
+  const regimen = patient.treatmentRegimen === 'hrze' ? 'Regimen 1' : patient.treatmentRegimen ? 'Regimen 2' : 'Regimen 1'
+  oneHot(`treatment_regimen_${regimen}`)
+  setMissing('is_missing_treatment_regimen', regimenMissing)
+  setTrainMissingIndicator('treatment_regimen', regimenMissing)
+
+  const comorbRaw = f.coMorbidities?.trim() || ''
+  const comorbMissing = comorbRaw.length === 0
+  // Mode-fill used during training; default to No Known Comorbidity.
+  const comorbToEncode = comorbMissing ? 'No Known Comorbidity' : comorbRaw
+  const comorbOk = oneHot(`co_morbidities_${comorbToEncode}`)
+  if (!comorbOk) {
+    // If it doesn't exist in the model's feature space, treat as missing.
+    oneHot('co_morbidities_No Known Comorbidity')
+    setTrainMissingIndicator('co_morbidities', true)
+  } else {
+    setTrainMissingIndicator('co_morbidities', comorbMissing)
+  }
+  setMissing('is_missing_co_morbidities', comorbMissing)
 
   const facility = String(f.treatmentHealthFacility || '').toLowerCase()
+  const facilityMissing = facility.trim().length === 0
   for (const [token, col] of [
     ['pacdal', 'facility_Pacdal'], ['quirino', 'facility_Quirino Hill'], ['pinsao', 'facility_Pinsao'],
     ['asin', 'facility_Asin'], ['atab', 'facility_Atab'], ['atok', 'facility_Atok Trail'],
@@ -122,6 +181,11 @@ function buildStaticVector(patient: Patient, names: string[]) {
   ] as const) {
     if (facility.includes(token)) oneHot(col)
   }
+
+  // These fields are dropped as raw strings during training, but their missing
+  // indicators remain as features.
+  setMissing('is_missing_name_of_treatment_unit', facilityMissing)
+  setMissing('is_missing_name_of_diagnosing_facility', true)
 
   setMissing('is_missing_age', f.age == null)
   setMissing('is_missing_weight_kg', f.baselineWeightKg == null)
@@ -132,14 +196,25 @@ function buildStaticVector(patient: Patient, names: string[]) {
   setMissing('is_missing_o2_sat', f.o2Sat == null)
   setMissing('is_missing_xpert_mtb_rif', f.xpertMtbRif == null)
   setMissing('is_missing_smear_microscopy', f.microscopyResult == null)
-  setMissing('is_missing_diagnosis', f.diagnosis == null)
-  setMissing('is_missing_bacteriologic_status', f.bacteriologicStatus == null)
-  setMissing('is_missing_treatment_regimen', patient.treatmentRegimen == null)
-  setMissing('is_missing_co_morbidities', f.coMorbidities == null)
+  // The categorical missing flags above are set using the same semantics as the
+  // one-hot encoding (missing/unrecognized => missing=1, plus mode-fill one-hot).
 
   for (const [name, i] of idx) {
     if (name.startsWith('is_missing_') && !explicitMissing.has(name)) out[i] = 1
   }
+
+  const continuousFeatures = [
+    'age', 'weight_kg', 'height_cm', 'bp_systolic', 'bp_diastolic', 'heart_rate', 'o2_sat',
+    'date_of_diagnosis', 'date_of_notification', 'treatment_start_date', 'intensive_phase_start_date',
+    'xpert_mtb_rif', 'smear_microscopy',
+  ]
+  for (const name of continuousFeatures) {
+    if (!setValues.has(name)) {
+      const i = idx.get(name)
+      if (i != null) out[i] = NaN
+    }
+  }
+
   return out
 }
 
@@ -147,7 +222,7 @@ function currentRecord(input: TemporalRiskInput, priorCumulative: number): Month
   const taken = input.monthlyDosesTaken
   const missed = input.monthlyMissedDoses
   const total = (taken ?? 0) + (missed ?? 0)
-  const pct = taken != null && missed != null && total > 0 ? (taken / total) * 100 : undefined
+  const pct = taken != null && missed != null && total > 0 ? taken / total : undefined
   return {
     month: input.month,
     weight: input.weight,
@@ -158,7 +233,7 @@ function currentRecord(input: TemporalRiskInput, priorCumulative: number): Month
     monthlyMissedDoses: missed,
     cumulativeDosesTaken: taken != null ? priorCumulative + taken : undefined,
     pctAdherence: pct,
-    adherence: pct == null ? 'poor' : pct >= 90 ? 'full' : pct >= 50 ? 'partial' : 'poor',
+    adherence: pct == null ? 'poor' : pct >= 0.9 ? 'full' : pct >= 0.5 ? 'partial' : 'poor',
     failureProbability: 0,
     timestamp: Date.now(),
   }
@@ -168,31 +243,47 @@ function buildTemporalMatrix(records: MonthlyRecord[], names: string[], currentM
   const byMonth = new Map(records.map(record => [record.month, record]))
   const out = new Float32Array((currentMonth + 1) * names.length)
   let cumulative = 0
+
+  const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v))
   for (let month = 0; month <= currentMonth; month++) {
     const r = byMonth.get(month)
-    const taken = r?.monthlyDosesTaken
-    const missed = r?.monthlyMissedDoses
+    // Keep inference-time bounds aligned with training-time clinical clipping.
+    const takenRaw = r?.monthlyDosesTaken
+    const missedRaw = r?.monthlyMissedDoses
+    const taken = takenRaw == null ? undefined : clamp(takenRaw, 0, 31)
+    const missed = missedRaw == null ? undefined : clamp(missedRaw, 0, 31)
     if (taken != null) cumulative += taken
     const total = (taken ?? 0) + (missed ?? 0)
-    const pct = r?.pctAdherence ?? (taken != null && missed != null && total > 0 ? (taken / total) * 100 : undefined)
+    const rawPct = r?.pctAdherence
+    const storedPct = rawPct != null && rawPct > 1.0 ? rawPct / 100 : rawPct
+    const pctUnclamped = storedPct ?? (taken != null && missed != null && total > 0 ? taken / total : undefined)
+    const pct = pctUnclamped == null ? undefined : clamp(pctUnclamped, 0, 1)
     const cum = r?.cumulativeDosesTaken ?? (taken != null ? cumulative : undefined)
+
+    const weightRaw = r?.weight
+    const heightRaw = r?.height
+    const weight = weightRaw == null ? undefined : clamp(weightRaw, 10, 180)
+    const height = heightRaw == null ? undefined : clamp(heightRaw, 80, 220)
+
+    const smear = r?.smearTbLamp
+    const xpert = r?.xpertMtbRif
     const row: Record<string, number> = {
-      cumulative_doses_taken: cum ?? 0,
-      height: r?.height ?? 0,
-      monthly_doses_taken: taken ?? 0,
-      monthly_missed_doses: missed ?? 0,
-      pct_adherence: pct ?? 0,
-      smear_tb_lamp: r?.smearTbLamp ?? 0,
-      weight: r?.weight ?? 0,
-      xpert_mtb_rif: r?.xpertMtbRif ?? 0,
+      cumulative_doses_taken: cum == null ? NaN : cum,
+      height: height == null ? NaN : height,
+      monthly_doses_taken: taken == null ? NaN : taken,
+      monthly_missed_doses: missed == null ? NaN : missed,
+      pct_adherence: pct == null ? NaN : pct,
+      smear_tb_lamp: smear == null ? NaN : smear,
+      weight: weight == null ? NaN : weight,
+      xpert_mtb_rif: xpert == null ? NaN : xpert,
       is_missing_cumulative_doses_taken: cum == null ? 1 : 0,
-      is_missing_height: r?.height == null ? 1 : 0,
+      is_missing_height: height == null ? 1 : 0,
       is_missing_monthly_doses_taken: taken == null ? 1 : 0,
       is_missing_monthly_missed_doses: missed == null ? 1 : 0,
       is_missing_pct_adherence: pct == null ? 1 : 0,
-      is_missing_smear_tb_lamp: r?.smearTbLamp == null ? 1 : 0,
-      is_missing_weight: r?.weight == null ? 1 : 0,
-      is_missing_xpert_mtb_rif: r?.xpertMtbRif == null ? 1 : 0,
+      is_missing_smear_tb_lamp: smear == null ? 1 : 0,
+      is_missing_weight: weight == null ? 1 : 0,
+      is_missing_xpert_mtb_rif: xpert == null ? 1 : 0,
     }
     names.forEach((name, j) => { out[month * names.length + j] = row[name] ?? 0 })
   }
@@ -201,24 +292,10 @@ function buildTemporalMatrix(records: MonthlyRecord[], names: string[], currentM
 
 function scale(values: Float32Array, mean: number[], scaleValues: number[]) {
   const out = new Float32Array(values.length)
-  for (let i = 0; i < values.length; i++) out[i] = (values[i] - mean[i % mean.length]) / scaleValues[i % scaleValues.length]
-  return out
-}
-
-function ruleFloor(month: number, pct: number | undefined, smear: 0 | 1 | undefined, xpert: 0 | 1 | undefined) {
-  let floor = 0
-  if (pct == null) {
-    if (month > 0) floor = Math.max(floor, 0.35)
-  } else if (pct < 50) floor = Math.max(floor, 0.45 + ((50 - pct) / 50) * 0.35)
-  else if (pct < 80) floor = Math.max(floor, 0.30 + ((80 - pct) / 30) * 0.15)
-  else if (pct < 90) floor = Math.max(floor, 0.20)
-  const labsMissing = smear == null && xpert == null
-  if (smear === 1 || xpert === 1) floor = Math.max(floor, 0.55)
-  if (labsMissing) {
-    floor = Math.max(floor, 0.30)
-    if (pct != null && pct < 50) floor = Math.max(floor, 0.70)
+  for (let i = 0; i < values.length; i++) {
+    out[i] = Number.isNaN(values[i]) ? 0 : (values[i] - mean[i % mean.length]) / scaleValues[i % scaleValues.length]
   }
-  return Math.min(Math.max(floor, 0), 0.95)
+  return out
 }
 
 export async function predictTemporalInBrowser(patient: Patient, input: TemporalRiskInput): Promise<TemporalRiskSaveInput> {
@@ -230,33 +307,41 @@ export async function predictTemporalInBrowser(patient: Patient, input: Temporal
   const monthsUsed = [...new Set(records.map(r => r.month))].sort((a, b) => a - b)
   const seqLen = input.month + 1
 
+  // Training used a fixed 13-month tensor with seq_lens masking. Mirror that here.
+  const clampedSeqLen = Math.min(TOTAL_MONTHS, Math.max(1, seqLen))
+
   const xStatic = scale(buildStaticVector(patient, meta.staticFeatureNames), meta.staticScaler.mean, meta.staticScaler.scale)
-  const xTemporal = scale(buildTemporalMatrix(records, meta.temporalFeatureNames, input.month), meta.temporalScaler.mean, meta.temporalScaler.scale)
+  const xTemporalKnown = scale(buildTemporalMatrix(records, meta.temporalFeatureNames, input.month), meta.temporalScaler.mean, meta.temporalScaler.scale)
+  const temporalFeatureCount = meta.temporalFeatureNames.length
+  const xTemporalPadded = new Float32Array(TOTAL_MONTHS * temporalFeatureCount)
+  xTemporalPadded.set(xTemporalKnown)
+
+  // onnxruntime-web expects int64 inputs as BigInt64Array.
+  const seqLens = new BigInt64Array([BigInt(clampedSeqLen)])
   const result = await sess.run({
-    x_temporal: new ort.Tensor('float32', xTemporal, [1, seqLen, meta.temporalFeatureNames.length]),
+    x_temporal: new ort.Tensor('float32', xTemporalPadded, [1, TOTAL_MONTHS, temporalFeatureCount]),
     x_static: new ort.Tensor('float32', xStatic, [1, meta.staticFeatureNames.length]),
+    seq_lens: new ort.Tensor('int64', seqLens, [1]),
   })
   const logit = Number((result.logit.data as Float32Array | number[])[0])
-  const rawSuccess = sigmoid(logit)
-  const rawFailure = 1 - rawSuccess
-  const floor = ruleFloor(input.month, record.pctAdherence, input.smearTbLamp, input.xpertMtbRif)
-  const previous = patient.predictions.at(-1)?.failureProbability
-  const current = Math.max(rawFailure, floor)
-  const adjusted = Math.min(Math.max(previous == null ? current : Math.max(current, previous - 0.30), 0), 0.95)
+  const rawFailure = meta.platt
+    ? sigmoid(meta.platt.a * logit + meta.platt.b)
+    : sigmoid(logit / (meta.temperature && Number.isFinite(meta.temperature) && meta.temperature > 1e-6 ? meta.temperature : 1))
+  const rawSuccess = 1 - rawFailure
+  const threshold = meta.threshold
+  const label: 0 | 1 = rawFailure >= threshold ? 1 : 0
+  const modelName = meta.modelName ?? meta.modelType ?? 'hybrid_lstm_temporal_balanced_failure_risk'
   return {
     ...input,
-    label: adjusted >= 0.5 ? 1 : 0,
-    failureProbability: adjusted,
-    successProbability: 1 - adjusted,
+    label,
+    failureProbability: rawFailure,
+    successProbability: rawSuccess,
     rawFailureProbability: rawFailure,
     rawSuccessProbability: rawSuccess,
-    ruleFailureFloor: floor,
-    previousFailureProbability: previous,
-    adjustedFailureProbability: adjusted,
-    threshold: meta.threshold,
-    modelName: meta.modelName,
+    threshold,
+    modelName,
     monthsUsed,
     seqLen,
-    riskPolicy: 'browser_onnx_conservative_monthly_floor_v1',
+    riskPolicy: 'browser_onnx_balanced_failure_risk_v2',
   }
 }

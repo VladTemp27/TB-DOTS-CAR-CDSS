@@ -327,14 +327,22 @@ def parse_o2_sat(val) -> float:
 
 
 def parse_adherence(val) -> float:
-    """Extract numeric adherence percentage from strings like '100%', '95.5%'."""
+    """Extract adherence as a 0-1 proportion.
+
+    Source files mix two formats — '100%'/'95.5%' (0-100 scale) and bare
+    proportions like '0.95'. Normalize so any value > 1 is treated as 0-100
+    and divided by 100. Returned values are always in [0, 1] (or NaN).
+    """
     if pd.isna(val):
         return np.nan
     val = str(val).strip().replace("%", "").strip()
     try:
-        return float(val)
+        x = float(val)
     except ValueError:
         return np.nan
+    if x > 1.0:
+        x = x / 100.0
+    return x
 
 
 def parse_date_safe(val):
@@ -1207,7 +1215,7 @@ def _post_imputation_clinical_clipping(
     temporal_clip = {
         "weight":               (10,  180),
         "height":               (80,  220),
-        "pct_adherence":        (0,   100),
+        "pct_adherence":        (0,   1),
         "monthly_doses_taken":  (0,    31),
         "monthly_missed_doses": (0,  None),   # floor only
         "smear_tb_lamp":        (0,     1),
@@ -1396,7 +1404,7 @@ def impute_missing_mice(df_static: pd.DataFrame,
     temporal_clip_map = {
         "weight":              (10, 180),
         "height":              (80, 220),
-        "pct_adherence":       (0, 100),
+        "pct_adherence":       (0, 1),
         "monthly_doses_taken": (0, 31),
         "monthly_missed_doses":(0, None),    # floor only
         "smear_tb_lamp":       (0, 1),

@@ -104,8 +104,20 @@ export function MonthlyCheckin() {
       setLoading(false)
       return
     }
+    // Keep live input bounds aligned with training-time clinical clipping.
+    if (parsedWeight < 10 || parsedWeight > 180) {
+      alert('Weight must be between 10 and 180 kg.')
+      setLoading(false)
+      return
+    }
     if (!Number.isFinite(parsedHeight) || parsedHeight <= 0) {
       alert('Height is required and must be greater than 0.')
+      setLoading(false)
+      return
+    }
+    // Training clips to 80–220cm.
+    if (parsedHeight < 80 || parsedHeight > 220) {
+      alert('Height must be between 80 and 220 cm.')
       setLoading(false)
       return
     }
@@ -124,6 +136,18 @@ export function MonthlyCheckin() {
     const parsedXpertMtbRif = xpertMtbRif === '1' ? 1 : xpertMtbRif === '0' ? 0 : undefined
     const parsedMonthlyDoses = monthlyDosesTaken ? parseInt(monthlyDosesTaken, 10) : undefined
     const parsedMonthlyMissed = monthlyMissedDoses ? parseInt(monthlyMissedDoses, 10) : undefined
+
+    // Training clips doses taken to 0–31 (max days in a month).
+    if (parsedMonthlyDoses != null && (parsedMonthlyDoses < 0 || parsedMonthlyDoses > 31)) {
+      alert('Monthly doses taken must be between 0 and 31.')
+      setLoading(false)
+      return
+    }
+    if (parsedMonthlyMissed != null && (parsedMonthlyMissed < 0 || parsedMonthlyMissed > 31)) {
+      alert('Monthly doses missed must be between 0 and 31.')
+      setLoading(false)
+      return
+    }
     try {
       const temporalInput = {
         month: monthCount,
@@ -392,7 +416,7 @@ export function MonthlyCheckin() {
 
           {/* Chest X-rays — optional */}
           <div className="bg-surface border border-border rounded-2xl p-4 lg:p-5 space-y-3">
-            <p className="text-sm font-medium text-ink-secondary">Chest X-rays (optional)</p>
+            <p className="text-sm font-medium text-ink-secondary">Chest X-rays <span className="text-xs font-normal text-ink-muted">(Optional)</span></p>
             <XrayUploadField onChange={setXrayFiles} />
           </div>
 

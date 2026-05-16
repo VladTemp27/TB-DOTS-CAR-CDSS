@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 from sklearn.experimental import enable_iterative_imputer  # noqa: F401
 from sklearn.impute import IterativeImputer
+from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score, f1_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -67,7 +68,69 @@ TEMPORAL_V2_DROP_COLUMNS = TRAINING_DROP_COLUMNS | {
     "others",
     "dat_supported_dup",
     "risk_factors_for_drug_resistance_tuberculosis",
+
+    # Static/admin features that tend to dominate small-cohort temporal learning.
+    # The CDSS use-case is month-to-month monitoring, so these are intentionally removed.
+    "sex",
+    "civil_status",
+    "nationality",
+    "treatment_regimen",
+    "co_morbidities",
+    "drug_resistance_bacteriological_status",
+    "chest_x_ray_at_case_notification",
+    "diagnosis",
+    "bacteriologic_status",
+    "case_registration_group",
+
+    # Pre-derived missing flags for the removed static/admin features.
+    "is_missing_sex",
+    "is_missing_civil_status",
+    "is_missing_nationality",
+    "is_missing_treatment_regimen",
+    "is_missing_co_morbidities",
+    "is_missing_drug_resistance_bacteriological_status",
+    "is_missing_chest_x_ray_at_case_notification",
+    "is_missing_diagnosis",
+    "is_missing_bacteriologic_status",
+    "is_missing_case_registration_group",
+
+    # Facility-derived tokens are high-leakage in small cohorts.
+    "facility",
 }
+
+
+def _is_binaryish_feature(name: str) -> bool:
+    """Return True if a feature should remain 0/1 (not standardized)."""
+    return (
+        name.startswith("is_missing_")
+        or name.endswith("__missing")
+        or name.startswith("sex_")
+        or name.startswith("civil_status_")
+        or name.startswith("nationality_")
+        or name.startswith("diagnosis_")
+        or name.startswith("bacteriologic_status_")
+        or name.startswith("case_registration_group_")
+        or name.startswith("drug_resistance_bacteriological_status_")
+        or name.startswith("treatment_regimen_")
+        or name.startswith("co_morbidities_")
+        or name.startswith("facility_")
+        or name in {
+            # Binary labs.
+            "xpert_mtb_rif",
+            "smear_microscopy",
+            "smear_tb_lamp",
+            # Temporal missing flags (pre-v2 naming) can appear without the prefix.
+            "is_missing_smear_tb_lamp",
+            "is_missing_xpert_mtb_rif",
+            "is_missing_smear_microscopy",
+        }
+    )
+
+
+def _split_continuous_masks(static_feature_names: list[str], temporal_feature_names: list[str]):
+    static_mask = np.asarray([not _is_binaryish_feature(n) for n in static_feature_names], dtype=bool)
+    temporal_mask = np.asarray([not _is_binaryish_feature(n) for n in temporal_feature_names], dtype=bool)
+    return static_mask, temporal_mask
 
 
 def get_temporal_v2_drop_feature_cols() -> set[str]:
@@ -258,6 +321,7 @@ def build_split_model_inputs(
     test_idx=None,
     drop_feature_cols=None,
     random_state: int = 42,
+    imputation_policy: str = "deployment_simple",
 ):
     """Fit train-only imputers/encoders and return full arrays in patient order."""
     if val_idx is None:
@@ -300,9 +364,19 @@ def build_split_model_inputs(
     static_num_impute_cols = [c for c in static_num_cols if train_static[c].notna().any()]
     static_num_all_missing = [c for c in static_num_cols if c not in static_num_impute_cols]
 
-    static_num_imputer = IterativeImputer(max_iter=20, random_state=random_state, sample_posterior=False)
-    if static_num_impute_cols:
-        static_num_imputer.fit(train_static[static_num_impute_cols])
+    imputation_policy = (imputation_policy or "").strip().lower()
+    if imputation_policy not in {"iterative", "deployment_simple"}:
+        raise ValueError("imputation_policy must be 'iterative' or 'deployment_simple'")
+
+    if imputation_policy == "iterative":
+        static_num_imputer = IterativeImputer(max_iter=20, random_state=random_state, sample_posterior=False)
+        if static_num_impute_cols:
+            static_num_imputer.fit(train_static[static_num_impute_cols])
+    else:
+        # Deployment-compatible: deterministic median fill.
+        static_num_imputer = SimpleImputer(strategy="median")
+        if static_num_impute_cols:
+            static_num_imputer.fit(train_static[static_num_impute_cols])
 
     static_split_frames = {}
     train_dummy_cols = None
@@ -359,12 +433,21 @@ def build_split_model_inputs(
     temporal_num_impute_cols = [c for c in temporal_num_cols if train_temporal[c].notna().any()]
     temporal_num_all_missing = [c for c in temporal_num_cols if c not in temporal_num_impute_cols]
 
-    train_temporal_num = train_temporal[["month"] + temporal_num_impute_cols].copy()
-    for col in temporal_num_impute_cols:
-        train_temporal_num[col] = train_temporal.groupby("patient_id")[col].ffill()
-    temporal_imputer = IterativeImputer(max_iter=20, random_state=random_state, sample_posterior=False)
-    if temporal_num_impute_cols:
-        temporal_imputer.fit(train_temporal_num[["month"] + temporal_num_impute_cols])
+    if imputation_policy == "iterative":
+        train_temporal_num = train_temporal[["month"] + temporal_num_impute_cols].copy()
+        for col in temporal_num_impute_cols:
+            train_temporal_num[col] = train_temporal.groupby("patient_id")[col].ffill()
+        temporal_imputer = IterativeImputer(max_iter=20, random_state=random_state, sample_posterior=False)
+        if temporal_num_impute_cols:
+            temporal_imputer.fit(train_temporal_num[["month"] + temporal_num_impute_cols])
+    else:
+        # Deployment-compatible: forward-fill within patient then median fill.
+        temporal_imputer = SimpleImputer(strategy="median")
+        if temporal_num_impute_cols:
+            train_temporal_num = train_temporal[["month"] + temporal_num_impute_cols].copy()
+            for col in temporal_num_impute_cols:
+                train_temporal_num[col] = train_temporal.groupby("patient_id")[col].ffill()
+            temporal_imputer.fit(train_temporal_num[temporal_num_impute_cols])
 
     processed_temporal_splits = {}
     for name, split_df in temporal_splits.items():
@@ -376,8 +459,11 @@ def build_split_model_inputs(
             num_frame = split_sorted[["month"] + temporal_num_impute_cols].copy()
             for col in temporal_num_impute_cols:
                 num_frame[col] = split_sorted.groupby("patient_id")[col].ffill()
-            num_frame[["month"] + temporal_num_impute_cols] = temporal_imputer.transform(num_frame[["month"] + temporal_num_impute_cols])
-            processed[temporal_num_impute_cols] = num_frame[temporal_num_impute_cols]
+            if imputation_policy == "iterative":
+                num_frame[["month"] + temporal_num_impute_cols] = temporal_imputer.transform(num_frame[["month"] + temporal_num_impute_cols])
+                processed[temporal_num_impute_cols] = num_frame[temporal_num_impute_cols]
+            else:
+                processed[temporal_num_impute_cols] = temporal_imputer.transform(num_frame[temporal_num_impute_cols])
         for col in temporal_num_all_missing:
             processed[col] = 0.0
         if temporal_cat_cols:
@@ -435,6 +521,7 @@ def prepare_default_model_inputs(
     test_frac=0.1,
     random_state: int = 42,
     drop_feature_cols=None,
+    imputation_policy: str = "deployment_simple",
 ):
     """Load the temporal dataset, create trustworthy labels, split patients,
     and build train-fit model arrays in one call.
@@ -456,6 +543,7 @@ def prepare_default_model_inputs(
         test_idx=test_idx,
         drop_feature_cols=drop_feature_cols,
         random_state=random_state,
+        imputation_policy=imputation_policy,
     )
     data.update(arrays)
     data["train_idx"] = train_idx
@@ -509,6 +597,94 @@ def scale_train_val_test(X_static, X_temporal, train_idx, val_idx, test_idx):
     }
 
 
+def scale_train_val_test_selective(
+    X_static,
+    X_temporal,
+    train_idx,
+    val_idx,
+    test_idx,
+    static_feature_names: list[str],
+    temporal_feature_names: list[str],
+):
+    """Scale only continuous features; keep binary/one-hot features as 0/1.
+
+    Returns the same structure as scale_train_val_test.
+    """
+    static_mask, temporal_mask = _split_continuous_masks(static_feature_names, temporal_feature_names)
+
+    scaler_static = StandardScaler()
+    if static_mask.any():
+        scaler_static.fit(X_static[train_idx][:, static_mask])
+    else:
+        scaler_static.mean_ = np.zeros((0,), dtype=float)
+        scaler_static.scale_ = np.ones((0,), dtype=float)
+
+    def transform_static(split_idx):
+        xs = np.asarray(X_static[split_idx], dtype=np.float32)
+        xs_out = xs.copy()
+        if static_mask.any() and len(split_idx) > 0:
+            xs_out[:, static_mask] = scaler_static.transform(xs[:, static_mask])
+        return xs_out
+
+    X_static_scaled = {
+        "train": transform_static(train_idx),
+        "val": transform_static(val_idx) if len(val_idx) > 0 else np.empty((0, X_static.shape[1])),
+        "test": transform_static(test_idx) if len(test_idx) > 0 else np.empty((0, X_static.shape[1])),
+    }
+
+    static_full_mean = np.zeros((X_static.shape[1],), dtype=float)
+    static_full_scale = np.ones((X_static.shape[1],), dtype=float)
+    if static_mask.any():
+        static_full_mean[static_mask] = scaler_static.mean_.astype(float)
+        static_full_scale[static_mask] = scaler_static.scale_.astype(float)
+
+    n_timesteps = X_temporal.shape[1]
+    n_temp_feats = X_temporal.shape[2]
+    scaler_temporal = StandardScaler()
+    if temporal_mask.any():
+        scaler_temporal.fit(X_temporal[train_idx][:, :, temporal_mask].reshape(-1, int(temporal_mask.sum())))
+    else:
+        scaler_temporal.mean_ = np.zeros((0,), dtype=float)
+        scaler_temporal.scale_ = np.ones((0,), dtype=float)
+
+    def transform_temporal(split_idx):
+        if len(split_idx) == 0:
+            return np.empty((0, n_timesteps, n_temp_feats))
+        arr = np.asarray(X_temporal[split_idx], dtype=np.float32)
+        out = arr.copy()
+        if temporal_mask.any():
+            cont = arr[:, :, temporal_mask].reshape(-1, int(temporal_mask.sum()))
+            cont_t = scaler_temporal.transform(cont).reshape(len(split_idx), n_timesteps, int(temporal_mask.sum()))
+            out[:, :, temporal_mask] = cont_t
+        return out
+
+    X_temporal_scaled = {
+        "train": transform_temporal(train_idx),
+        "val": transform_temporal(val_idx),
+        "test": transform_temporal(test_idx),
+    }
+
+    temporal_full_mean = np.zeros((n_temp_feats,), dtype=float)
+    temporal_full_scale = np.ones((n_temp_feats,), dtype=float)
+    if temporal_mask.any():
+        temporal_full_mean[temporal_mask] = scaler_temporal.mean_.astype(float)
+        temporal_full_scale[temporal_mask] = scaler_temporal.scale_.astype(float)
+
+    return {
+        "X_static_scaled": X_static_scaled,
+        "X_temporal_scaled": X_temporal_scaled,
+        "scaler_static": scaler_static,
+        "scaler_temporal": scaler_temporal,
+        # Full-length arrays for deployment metadata.
+        "static_full_mean": static_full_mean,
+        "static_full_scale": static_full_scale,
+        "temporal_full_mean": temporal_full_mean,
+        "temporal_full_scale": temporal_full_scale,
+        "static_continuous_mask": static_mask,
+        "temporal_continuous_mask": temporal_mask,
+    }
+
+
 def scale_full_arrays(X_static, X_temporal, train_idx):
     """Fit on train indices only and return full-length scaled arrays.
 
@@ -533,6 +709,70 @@ def scale_full_arrays(X_static, X_temporal, train_idx):
         "X_temporal_scaled": X_temporal_scaled,
         "scaler_static": scaler_static,
         "scaler_temporal": scaler_temporal,
+    }
+
+
+def scale_full_arrays_selective(
+    X_static,
+    X_temporal,
+    train_idx,
+    static_feature_names: list[str],
+    temporal_feature_names: list[str],
+):
+    """Fit scalers on continuous features only and return full-length arrays.
+
+    This prevents rare one-hot / missing-indicator features from producing huge
+    z-scores that dominate temporal learning in small cohorts.
+    """
+    static_mask, temporal_mask = _split_continuous_masks(static_feature_names, temporal_feature_names)
+
+    scaler_static = StandardScaler()
+    X_static_scaled = np.asarray(X_static, dtype=np.float32).copy()
+    if static_mask.any():
+        scaler_static.fit(np.asarray(X_static[train_idx][:, static_mask], dtype=np.float32))
+        X_static_scaled[:, static_mask] = scaler_static.transform(X_static_scaled[:, static_mask])
+    else:
+        scaler_static.mean_ = np.zeros((0,), dtype=float)
+        scaler_static.scale_ = np.ones((0,), dtype=float)
+
+    static_full_mean = np.zeros((X_static.shape[1],), dtype=float)
+    static_full_scale = np.ones((X_static.shape[1],), dtype=float)
+    if static_mask.any():
+        static_full_mean[static_mask] = scaler_static.mean_.astype(float)
+        static_full_scale[static_mask] = scaler_static.scale_.astype(float)
+
+    n_timesteps = X_temporal.shape[1]
+    n_temp_feats = X_temporal.shape[2]
+    X_temporal_scaled = np.asarray(X_temporal, dtype=np.float32).copy()
+    scaler_temporal = StandardScaler()
+    if temporal_mask.any():
+        train_cont = np.asarray(X_temporal[train_idx][:, :, temporal_mask], dtype=np.float32).reshape(-1, int(temporal_mask.sum()))
+        scaler_temporal.fit(train_cont)
+        full_cont = X_temporal_scaled[:, :, temporal_mask].reshape(-1, int(temporal_mask.sum()))
+        full_cont_t = scaler_temporal.transform(full_cont).reshape(X_temporal.shape[0], n_timesteps, int(temporal_mask.sum()))
+        X_temporal_scaled[:, :, temporal_mask] = full_cont_t
+    else:
+        scaler_temporal.mean_ = np.zeros((0,), dtype=float)
+        scaler_temporal.scale_ = np.ones((0,), dtype=float)
+
+    temporal_full_mean = np.zeros((n_temp_feats,), dtype=float)
+    temporal_full_scale = np.ones((n_temp_feats,), dtype=float)
+    if temporal_mask.any():
+        temporal_full_mean[temporal_mask] = scaler_temporal.mean_.astype(float)
+        temporal_full_scale[temporal_mask] = scaler_temporal.scale_.astype(float)
+
+    return {
+        "X_static_scaled": X_static_scaled,
+        "X_temporal_scaled": X_temporal_scaled,
+        "scaler_static": scaler_static,
+        "scaler_temporal": scaler_temporal,
+        # Full-length arrays for deployment metadata.
+        "static_full_mean": static_full_mean,
+        "static_full_scale": static_full_scale,
+        "temporal_full_mean": temporal_full_mean,
+        "temporal_full_scale": temporal_full_scale,
+        "static_continuous_mask": static_mask,
+        "temporal_continuous_mask": temporal_mask,
     }
 
 
