@@ -112,7 +112,7 @@ def save_temporal_risk_record(
             patient_id=patient_id,
             label=int(body.label),
             failure_probability=prob_failure,
-            contributions=[],
+            contributions=[c.model_dump() for c in body.contributions],
             features_used={
                 "model": body.model_name,
                 "month": month,

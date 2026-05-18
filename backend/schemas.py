@@ -175,6 +175,7 @@ class TemporalRiskSaveRequest(TemporalRiskRequest):
     months_used: list[int] | None = Field(default=None, alias="monthsUsed")
     seq_len: int | None = Field(default=None, alias="seqLen")
     risk_policy: str | None = Field(default=None, alias="riskPolicy")
+    contributions: list[ContributionItem] = Field(default_factory=list)
 
 
 class TemporalRiskResponse(CamelModel):

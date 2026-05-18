@@ -1,4 +1,4 @@
-import type { PatientFeatures, ContributionResult } from './inference'
+import type { PatientFeatures, ContributionResult, ContributionItem } from './inference'
 
 export interface MonthlyRecord {
   month: number
@@ -130,6 +130,7 @@ export type TemporalRiskSaveInput = TemporalRiskInput & TemporalRiskResult & {
   adjustedFailureProbability?: number
   seqLen?: number
   riskPolicy?: string
+  contributions?: ContributionItem[]
 }
 
 export async function saveTemporalRiskRecord(patientId: string, input: TemporalRiskSaveInput): Promise<TemporalRiskResult> {

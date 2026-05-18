@@ -1,5 +1,6 @@
 import * as ort from 'onnxruntime-web'
 import type { Patient, MonthlyRecord, TemporalRiskInput, TemporalRiskSaveInput } from './storage'
+import type { ContributionItem } from './inference'
 
 ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.25.1/dist/'
 
@@ -45,6 +46,13 @@ async function getMetadata() {
 function sigmoid(x: number) {
   return 1 / (1 + Math.exp(-x))
 }
+
+const TEMPORAL_CONTRIBUTION_GROUPS: { name: string; cols: readonly number[] }[] = [
+  { name: 'Adherence',       cols: [0, 2, 3, 4, 8, 10, 11, 12] },
+  { name: 'Weight / Height', cols: [1, 6, 9, 14] },
+  { name: 'Smear Result',    cols: [5, 13] },
+  { name: 'Xpert Result',    cols: [7, 15] },
+]
 
 function as01(value: unknown): 0 | 1 | undefined {
   if (value == null) return undefined
@@ -298,44 +306,80 @@ function scale(values: Float32Array, mean: number[], scaleValues: number[]) {
   return out
 }
 
-export async function predictTemporalInBrowser(patient: Patient, input: TemporalRiskInput): Promise<TemporalRiskSaveInput> {
-  const meta = await getMetadata()
-  const sess = await getSession()
-  const priorCumulative = patient.monthlyRecords.reduce((sum, record) => sum + (record.monthlyDosesTaken ?? 0), 0)
+function _buildTemporalTensors(patient: Patient, input: TemporalRiskInput, meta: Metadata) {
+  const priorCumulative = patient.monthlyRecords.reduce(
+    (sum, r) => sum + (r.monthlyDosesTaken ?? 0), 0
+  )
   const record = currentRecord(input, priorCumulative)
   const records = [...patient.monthlyRecords, record]
   const monthsUsed = [...new Set(records.map(r => r.month))].sort((a, b) => a - b)
   const seqLen = input.month + 1
-
-  // Training used a fixed 13-month tensor with seq_lens masking. Mirror that here.
   const clampedSeqLen = Math.min(TOTAL_MONTHS, Math.max(1, seqLen))
-
-  const xStatic = scale(buildStaticVector(patient, meta.staticFeatureNames), meta.staticScaler.mean, meta.staticScaler.scale)
-  const xTemporalKnown = scale(buildTemporalMatrix(records, meta.temporalFeatureNames, input.month), meta.temporalScaler.mean, meta.temporalScaler.scale)
   const temporalFeatureCount = meta.temporalFeatureNames.length
+
+  const xStatic = scale(
+    buildStaticVector(patient, meta.staticFeatureNames),
+    meta.staticScaler.mean,
+    meta.staticScaler.scale,
+  )
+  const xTemporalKnown = scale(
+    buildTemporalMatrix(records, meta.temporalFeatureNames, input.month),
+    meta.temporalScaler.mean,
+    meta.temporalScaler.scale,
+  )
   const xTemporalPadded = new Float32Array(TOTAL_MONTHS * temporalFeatureCount)
   xTemporalPadded.set(xTemporalKnown)
-
-  // onnxruntime-web expects int64 inputs as BigInt64Array.
   const seqLens = new BigInt64Array([BigInt(clampedSeqLen)])
+
+  return { xStatic, xTemporalPadded, seqLens, temporalFeatureCount, monthsUsed, seqLen }
+}
+
+async function _runLogit(
+  sess: ort.InferenceSession,
+  xTemporalPadded: Float32Array,
+  xStatic: Float32Array,
+  seqLens: BigInt64Array,
+  temporalFeatureCount: number,
+): Promise<number> {
   const result = await sess.run({
     x_temporal: new ort.Tensor('float32', xTemporalPadded, [1, TOTAL_MONTHS, temporalFeatureCount]),
-    x_static: new ort.Tensor('float32', xStatic, [1, meta.staticFeatureNames.length]),
-    seq_lens: new ort.Tensor('int64', seqLens, [1]),
+    x_static:   new ort.Tensor('float32', xStatic,         [1, xStatic.length]),
+    seq_lens:   new ort.Tensor('int64',   seqLens,          [1]),
   })
-  const logit = Number((result.logit.data as Float32Array | number[])[0])
-  const rawFailure = meta.platt
+  return Number((result.logit.data as Float32Array | number[])[0])
+}
+
+function _applyCalibration(logit: number, meta: Metadata): number {
+  return meta.platt
     ? sigmoid(meta.platt.a * logit + meta.platt.b)
-    : sigmoid(logit / (meta.temperature && Number.isFinite(meta.temperature) && meta.temperature > 1e-6 ? meta.temperature : 1))
+    : sigmoid(logit / (
+        meta.temperature && Number.isFinite(meta.temperature) && meta.temperature > 1e-6
+          ? meta.temperature
+          : 1
+      ))
+}
+
+export async function predictTemporalInBrowser(
+  patient: Patient,
+  input: TemporalRiskInput,
+): Promise<TemporalRiskSaveInput> {
+  const meta = await getMetadata()
+  const sess = await getSession()
+  const { xStatic, xTemporalPadded, seqLens, temporalFeatureCount, monthsUsed, seqLen } =
+    _buildTemporalTensors(patient, input, meta)
+
+  const logit      = await _runLogit(sess, xTemporalPadded, xStatic, seqLens, temporalFeatureCount)
+  const rawFailure = _applyCalibration(logit, meta)
   const rawSuccess = 1 - rawFailure
-  const threshold = meta.threshold
+  const threshold  = meta.threshold
   const label: 0 | 1 = rawFailure >= threshold ? 1 : 0
-  const modelName = meta.modelName ?? meta.modelType ?? 'hybrid_lstm_temporal_balanced_failure_risk'
+  const modelName  = meta.modelName ?? meta.modelType ?? 'hybrid_lstm_temporal_balanced_failure_risk'
+
   return {
     ...input,
     label,
-    failureProbability: rawFailure,
-    successProbability: rawSuccess,
+    failureProbability:    rawFailure,
+    successProbability:    rawSuccess,
     rawFailureProbability: rawFailure,
     rawSuccessProbability: rawSuccess,
     threshold,
@@ -343,5 +387,61 @@ export async function predictTemporalInBrowser(patient: Patient, input: Temporal
     monthsUsed,
     seqLen,
     riskPolicy: 'browser_onnx_balanced_failure_risk_v2',
+  }
+}
+
+export async function predictTemporalWithContributions(
+  patient: Patient,
+  input: TemporalRiskInput,
+): Promise<TemporalRiskSaveInput & { contributions: ContributionItem[] }> {
+  const meta = await getMetadata()
+  const sess = await getSession()
+  const { xStatic, xTemporalPadded, seqLens, temporalFeatureCount, monthsUsed, seqLen } =
+    _buildTemporalTensors(patient, input, meta)
+
+  const baseLogit = await _runLogit(sess, xTemporalPadded, xStatic, seqLens, temporalFeatureCount)
+  const baseProb  = _applyCalibration(baseLogit, meta)
+
+  const contributions: ContributionItem[] = []
+  for (const group of TEMPORAL_CONTRIBUTION_GROUPS) {
+    try {
+      const masked = new Float32Array(xTemporalPadded)
+      for (let t = 0; t < TOTAL_MONTHS; t++) {
+        for (const col of group.cols) {
+          masked[t * temporalFeatureCount + col] = 0
+        }
+      }
+      const maskedLogit = await _runLogit(sess, masked, xStatic, seqLens, temporalFeatureCount)
+      const maskedProb  = _applyCalibration(maskedLogit, meta)
+      const delta       = maskedProb - baseProb
+      contributions.push({
+        feature:   group.name,
+        delta:     Math.abs(delta),
+        direction: delta > 0 ? 'protective' : 'risk',
+      })
+    } catch (err) {
+      console.error(`[temporal SHAP] occlusion pass failed for group "${group.name}":`, err)
+      contributions.push({ feature: group.name, delta: 0, direction: 'risk' })
+    }
+  }
+  contributions.sort((a, b) => b.delta - a.delta)
+
+  const threshold = meta.threshold
+  const label: 0 | 1 = baseProb >= threshold ? 1 : 0
+  const modelName = meta.modelName ?? meta.modelType ?? 'hybrid_lstm_temporal_balanced_failure_risk'
+
+  return {
+    ...input,
+    label,
+    failureProbability:    baseProb,
+    successProbability:    1 - baseProb,
+    rawFailureProbability: baseProb,
+    rawSuccessProbability: 1 - baseProb,
+    threshold,
+    modelName,
+    monthsUsed,
+    seqLen,
+    riskPolicy: 'browser_onnx_balanced_failure_risk_v2',
+    contributions,
   }
 }
