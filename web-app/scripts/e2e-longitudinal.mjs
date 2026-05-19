@@ -140,7 +140,7 @@ async function createPatient(page, patient) {
   // Skip X-ray → result page (M0 prediction runs here)
   await page.waitForSelector('button:has-text("Skip")')
   await page.click('button:has-text("Skip")')
-  await page.waitForURL(`${BASE}/patient/*/result`, { timeout: 60000 })
+  await page.waitForURL(`${BASE}/patient/*/result`, { timeout: 180000 })
 
   // Extract patient ID from URL
   const url = page.url()
@@ -165,10 +165,11 @@ async function doCheckin(page, patientId, monthLabel, checkin) {
   // SHAP runs 9 ONNX passes in WASM — allow up to 3 minutes
   await page.waitForURL(`${BASE}/patient/${patientId}/risk-update`, { timeout: 180000 })
 
-  const riskText = await page.locator('[class*="font-extrabold"][class*="tabular-nums"]')
-    .first().textContent({ timeout: 3000 }).catch(() => '?')
-
-  return riskText?.trim() ?? '?'
+  // RiskUpdate shows: "HIGH RISK — 28% Failure Probability" in a font-bold paragraph
+  const fullText = await page.locator('p:has-text("Failure Probability")')
+    .first().textContent({ timeout: 5000 }).catch(() => '')
+  const match = fullText.match(/(\d+)%/)
+  return match ? match[1] + '%' : '?'
 }
 
 async function readContributions(page, patientId) {
