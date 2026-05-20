@@ -1,7 +1,7 @@
 import type { ContributionResult, PatientFeatures } from './inference'
 import { savePatient, saveTemporalRiskRecord } from './storage'
 import type { Patient } from './storage'
-import { predictTemporalInBrowser } from './temporalInference'
+import { predictTemporalWithContributions } from './temporalInference'
 
 export const INTAKE_DRAFT_KEY = 'tb_intake_draft'
 
@@ -92,7 +92,7 @@ export async function commitIntakePatient(draft: CommitReadyIntakeDraft): Promis
   }
 
   await savePatient(patient)
-  const baselinePrediction = await predictTemporalInBrowser(patient, {
+  const baselinePrediction = await predictTemporalWithContributions(patient, {
     month: 0,
     weight: draft.features.baselineWeightKg,
     height: draft.features.baselineHeightCm,
@@ -104,7 +104,7 @@ export async function commitIntakePatient(draft: CommitReadyIntakeDraft): Promis
     label: savedBaseline.label,
     failureProbability: savedBaseline.failureProbability,
     successProbability: savedBaseline.successProbability,
-    contributions: [],
+    contributions: baselinePrediction.contributions,
   }
 
   clearIntakeDraft()

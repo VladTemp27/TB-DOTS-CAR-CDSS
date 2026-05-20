@@ -1,6 +1,7 @@
 import * as ort from 'onnxruntime-web'
 import type { Patient, MonthlyRecord, TemporalRiskInput, TemporalRiskSaveInput } from './storage'
 import type { ContributionItem } from './inference'
+import { computeTemporalContributions } from './temporal/shap'
 
 ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.25.1/dist/'
 
@@ -46,13 +47,6 @@ async function getMetadata() {
 function sigmoid(x: number) {
   return 1 / (1 + Math.exp(-x))
 }
-
-const TEMPORAL_CONTRIBUTION_GROUPS: { name: string; cols: readonly number[] }[] = [
-  { name: 'Adherence',       cols: [0, 2, 3, 4, 8, 10, 11, 12] },
-  { name: 'Weight / Height', cols: [1, 6, 9, 14] },
-  { name: 'Smear Result',    cols: [5, 13] },
-  { name: 'Xpert Result',    cols: [7, 15] },
-]
 
 function as01(value: unknown): 0 | 1 | undefined {
   if (value == null) return undefined
@@ -402,29 +396,15 @@ export async function predictTemporalWithContributions(
   const baseLogit = await _runLogit(sess, xTemporalPadded, xStatic, seqLens, temporalFeatureCount)
   const baseProb  = _applyCalibration(baseLogit, meta)
 
-  const contributions: ContributionItem[] = []
-  for (const group of TEMPORAL_CONTRIBUTION_GROUPS) {
-    try {
-      const masked = new Float32Array(xTemporalPadded)
-      for (let t = 0; t < TOTAL_MONTHS; t++) {
-        for (const col of group.cols) {
-          masked[t * temporalFeatureCount + col] = 0
-        }
-      }
-      const maskedLogit = await _runLogit(sess, masked, xStatic, seqLens, temporalFeatureCount)
-      const maskedProb  = _applyCalibration(maskedLogit, meta)
-      const delta       = maskedProb - baseProb
-      contributions.push({
-        feature:   group.name,
-        delta:     Math.abs(delta),
-        direction: delta > 0 ? 'protective' : 'risk',
-      })
-    } catch (err) {
-      console.error(`[temporal SHAP] occlusion pass failed for group "${group.name}":`, err)
-      contributions.push({ feature: group.name, delta: 0, direction: 'risk' })
-    }
-  }
-  contributions.sort((a, b) => b.delta - a.delta)
+  const contributions = await computeTemporalContributions({
+    session: sess,
+    meta,
+    xStatic,
+    xTemporalPadded,
+    seqLens,
+    baseFailure: baseProb,
+    totalMonths: TOTAL_MONTHS,
+  })
 
   const threshold = meta.threshold
   const label: 0 | 1 = baseProb >= threshold ? 1 : 0
