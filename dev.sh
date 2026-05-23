@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # dev.sh — start backend API + React frontend with a live dashboard
-# Usage: ./dev.sh [--from-source]
+# Usage: ./dev.sh [--from-source] [--lan]
 #   --from-source  compile llama-cpp-python from C++ source instead of using the
 #                  prebuilt Metal/CUDA wheel (slower; only needed for unsupported
 #                  Python versions or custom CUDA architectures)
+#   --lan          bind both services to 0.0.0.0 so other devices on the LAN
+#                  can reach the backend and frontend
 
 set -Eeuo pipefail
 
@@ -24,7 +26,14 @@ readonly LLAMA_VER_CU124="0.3.22"   # CUDA 12.4 — driver >= 550
 readonly LLAMA_VER_CU121="0.3.23"   # CUDA 12.1 — driver >= 530 (fallback)
 
 FROM_SOURCE=false
-[[ "${1:-}" == "--from-source" ]] && FROM_SOURCE=true
+LAN_MODE=false
+for _arg in "$@"; do
+  case "$_arg" in
+    --from-source) FROM_SOURCE=true ;;
+    --lan)         LAN_MODE=true ;;
+    *) err "Unknown argument: $_arg"; exit 1 ;;
+  esac
+done
 
 # ── colors / ANSI ─────────────────────────────────────────────────────────────
 is_tty() { [[ -t 1 ]]; }
@@ -317,13 +326,18 @@ else
 fi
 
 # ── start services ────────────────────────────────────────────────────────────
-log "Starting backend API on :$BACKEND_PORT  (log → logs/backend-${_TS}.log)"
-"$UVICORN" backend.main:app --port "$BACKEND_PORT" --log-level info \
+BIND_HOST="127.0.0.1"
+[[ "$LAN_MODE" == "true" ]] && BIND_HOST="0.0.0.0"
+
+log "Starting backend API on ${BIND_HOST}:$BACKEND_PORT  (log → logs/backend-${_TS}.log)"
+"$UVICORN" backend.main:app --host "$BIND_HOST" --port "$BACKEND_PORT" --log-level info \
   >> "$BACKEND_LOG" 2>&1 &
 BACKEND_PID=$!
 
-log "Starting React frontend on :$FRONTEND_PORT  (log → logs/frontend-${_TS}.log)"
-(cd "$WEBAPP" && npm run dev -- --port "$FRONTEND_PORT") \
+log "Starting React frontend on ${BIND_HOST}:$FRONTEND_PORT  (log → logs/frontend-${_TS}.log)"
+_FE_HOST_FLAG=""
+[[ "$LAN_MODE" == "true" ]] && _FE_HOST_FLAG="--host"
+(cd "$WEBAPP" && npm run dev -- --port "$FRONTEND_PORT" $_FE_HOST_FLAG) \
   >> "$FRONTEND_LOG" 2>&1 &
 FRONTEND_PID=$!
 
@@ -480,6 +494,12 @@ draw_dashboard() {
   echo ""
   echo -e "  ${DIM}$DIVIDER${RESET}"
   echo -e "  ${DIM}Backend → http://localhost:${actual_be_port}   Frontend → http://localhost:${actual_fe_port}${RESET}"
+  if [[ "$LAN_MODE" == "true" ]]; then
+    local _lan_ip
+    _lan_ip=$(ip route get 1.1.1.1 2>/dev/null | awk '/src/{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' \
+      || hostname -I 2>/dev/null | awk '{print $1}' || echo "?")
+    echo -e "  ${YELLOW}LAN → http://${_lan_ip}:${actual_be_port}   http://${_lan_ip}:${actual_fe_port}${RESET}"
+  fi
   echo -e "  ${DIM}logs/backend-${_TS}.log  |  logs/frontend-${_TS}.log  |  Ctrl+C to stop${RESET}"
 }
 
