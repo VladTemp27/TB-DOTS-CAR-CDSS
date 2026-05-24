@@ -512,6 +512,18 @@ def main():
         if extra_paths:
             env["LD_LIBRARY_PATH"] = ":".join(extra_paths) + (":" + env.get("LD_LIBRARY_PATH", "") if env.get("LD_LIBRARY_PATH") else "")
 
+    # ── port pre-check ───────────────────────────────────────────────────────
+    import socket
+    for port, name in [(BACKEND_PORT, "Backend"), (FRONTEND_PORT, "Frontend")]:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                s.bind(("127.0.0.1", port))
+            except OSError:
+                console.print(f"[bold red][dev][/bold red] Port {port} is already in use ({name}).")
+                console.print(f"[bold red][dev][/bold red] Find and kill the process: lsof -ti :{port} | xargs kill")
+                sys.exit(1)
+
     # ── spawn processes ───────────────────────────────────────────────────────
     console.print(f"[bold cyan][dev][/bold cyan] Starting backend API on :{BACKEND_PORT} (log → logs/backend-{ts}.log)")
     be_file = open(backend_log, "w")
@@ -616,7 +628,8 @@ def main():
     layout = Layout()
     layout.split(
         Layout(name="header", size=3),
-        Layout(name="body")
+        Layout(name="body"),
+        Layout(name="footer", size=1),
     )
     layout["body"].split_row(
         Layout(name="left", ratio=1),
@@ -780,6 +793,19 @@ def main():
                     log_lines = max(5, term_height - 26)
                     logs_text = get_formatted_logs(backend_log, log_lines)
                     layout["logs"].update(Panel(logs_text, title="[bold white]Recent Backend Logs[/bold white]", border_style="cyan"))
+
+                    # ── RENDER COMPONENT: Footer ──────────────────────────────────
+                    footer_text = Text.assemble(
+                        "  ",
+                        ("http://localhost:" + str(act_be_port), "bold cyan"),
+                        "  (API)    ",
+                        ("http://localhost:" + str(act_fe_port), "bold cyan"),
+                        "  (UI)    ",
+                        (f"logs/{backend_log.name}", "dim"),
+                        "  |  ",
+                        (f"logs/{frontend_log.name}", "dim"),
+                    )
+                    layout["footer"].update(footer_text)
 
                     # Refresh live output
                     live.refresh()
