@@ -575,9 +575,11 @@ def main():
                     break
         except Exception:
             pass
-        console.print(".", end="", flush=True)
+        sys.stdout.write(".")
+        sys.stdout.flush()
         time.sleep(2)
-    console.print()
+    sys.stdout.write("\n")
+    sys.stdout.flush()
 
     # ── prepare cleanup handler ───────────────────────────────────────────────
     cleaned = False
