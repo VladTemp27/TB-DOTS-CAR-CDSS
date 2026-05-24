@@ -78,9 +78,13 @@ echo -e "${BOLD}TB-DOTS-CAR-CDSS Dev Environment${RESET}"
 echo "────────────────────────────────────"
 
 if [[ ! -x "$PYTHON" ]]; then
-  log "Virtualenv not found at $VENV"
-  log "Run: python3.12 -m venv .venv && .venv/bin/pip install -r backend/requirements.txt"
-  exit 1
+  log "Virtualenv not found — creating at $VENV..."
+  _PY=$(command -v python3.12 || command -v python3 || command -v python || true)
+  if [[ -z "$_PY" ]]; then
+    err "python3 not found — cannot create venv."; exit 1
+  fi
+  "$_PY" -m venv "$VENV"
+  ok "Virtualenv created at $VENV"
 fi
 
 # Prebuilt wheels exist only for cp310/cp311/cp312 — gate hard

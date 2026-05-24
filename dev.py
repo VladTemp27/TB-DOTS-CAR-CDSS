@@ -2,6 +2,7 @@
 # dev.py — start backend API + React frontend with a live TUI dashboard
 
 import argparse
+import atexit
 import datetime
 import glob
 import json
@@ -12,6 +13,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.request
 import urllib.error
@@ -37,8 +39,12 @@ else:
     VENV_PYTHON = VENV / "bin" / "python"
 
 if VENV_PYTHON.exists() and sys.executable != str(VENV_PYTHON):
-    # Re-execute the script using the virtual environment python interpreter
-    os.execv(str(VENV_PYTHON), [str(VENV_PYTHON)] + sys.argv)
+    try:
+        os.execv(str(VENV_PYTHON), [str(VENV_PYTHON)] + sys.argv)
+    except OSError as e:
+        print(f"[dev] Failed to re-exec into venv Python: {e}", file=sys.stderr)
+        print("[dev] Venv may be broken. Try: python3.12 -m venv .venv", file=sys.stderr)
+        sys.exit(1)
 
 # ── install rich if missing ──────────────────────────────────────────────────
 try:
@@ -46,10 +52,15 @@ try:
 except ImportError:
     print("Installing 'rich' library for TUI dashboard...")
     try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "rich", "--quiet"])
-        import rich
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "rich", "--quiet", "--no-input"])
     except Exception as e:
-        print(f"Failed to install 'rich': {e}", file=sys.stderr)
+        print(f"[dev] Failed to install 'rich': {e}", file=sys.stderr)
+        sys.exit(1)
+    try:
+        import rich
+    except ImportError:
+        print("[dev] 'rich' installed but import still failed — venv may be broken.", file=sys.stderr)
+        print("[dev] Try: python3.12 -m venv .venv && .venv/bin/pip install -r backend/requirements.txt", file=sys.stderr)
         sys.exit(1)
 
 from rich.console import Console
@@ -98,9 +109,19 @@ def preflight(args):
     console.print("────────────────────────────────────")
 
     if not VENV_PYTHON.exists():
-        console.print(f"[bold red][dev][/bold red] Virtualenv not found at {VENV}")
-        console.print("Run: python3.12 -m venv .venv && .venv/bin/pip install -r backend/requirements.txt")
-        sys.exit(1)
+        console.print(f"[bold cyan][dev][/bold cyan] Virtualenv not found — creating at {VENV}...")
+        python3 = shutil.which("python3.12") or shutil.which("python3") or shutil.which("python")
+        if not python3:
+            console.print("[bold red][dev][/bold red] python3 not found — cannot create venv.", file=sys.stderr)
+            sys.exit(1)
+        subprocess.check_call([python3, "-m", "venv", str(VENV)])
+        console.print(f"[bold green][dev][/bold green] Virtualenv created at {VENV}.")
+        # re-exec into the new venv python so subsequent imports use it
+        try:
+            os.execv(str(VENV_PYTHON), [str(VENV_PYTHON)] + sys.argv)
+        except OSError as e:
+            console.print(f"[bold red][dev][/bold red] Failed to re-exec into new venv: {e}", file=sys.stderr)
+            sys.exit(1)
 
     # Prebuilt wheels exist only for cp310/cp311/cp312
     if not (3, 10) <= sys.version_info[:2] <= (3, 12):
@@ -146,7 +167,7 @@ def preflight(args):
                 tmp.writelines(filtered)
                 tmp_name = tmp.name
             try:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", tmp_name, "--quiet"])
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", tmp_name, "--quiet", "--no-input"])
             finally:
                 try:
                     os.unlink(tmp_name)
@@ -220,76 +241,151 @@ def install_llama_cpp(model_present, from_source):
     except ImportError:
         pass
 
-    if from_source:
-        console.print("[bold cyan][dev][/bold cyan] Source build: GGML_NATIVE=OFF (avoids i8mm CMake-probe hang)...")
+    def _cmake_env():
         env = os.environ.copy()
         if sys.platform == "darwin" and platform_is_arm64():
-            env["CMAKE_ARGS"] = "-DGGML_NATIVE=OFF -DGGML_METAL=ON -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_APPLE_SILICON_PROCESSOR=arm64"
+            env["CMAKE_ARGS"] = (
+                "-DGGML_NATIVE=OFF -DGGML_METAL=ON "
+                "-DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_APPLE_SILICON_PROCESSOR=arm64"
+            )
         else:
-            env["CMAKE_ARGS"] = "-DGGML_CUDA=on -DGGML_NATIVE=OFF -DCMAKE_CUDA_ARCHITECTURES=all-major -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_TESTS=OFF"
+            env["CMAKE_ARGS"] = (
+                "-DGGML_CUDA=on -DGGML_NATIVE=OFF -DCMAKE_CUDA_ARCHITECTURES=all-major "
+                "-DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_TESTS=OFF"
+            )
             env["FORCE_CMAKE"] = "1"
-        
-        subprocess.check_call([
+        return env
+
+    if from_source:
+        console.print("[bold cyan][dev][/bold cyan] Source build: GGML_NATIVE=OFF (avoids i8mm CMake-probe hang)...")
+        _run_with_spinner([
             sys.executable, "-m", "pip", "install", "llama-cpp-python>=0.3.0",
-            "--no-binary", "llama-cpp-python", "--no-cache-dir"
-        ], env=env)
+            "--no-binary", "llama-cpp-python", "--no-cache-dir", "--no-input",
+        ], env=_cmake_env())
+        console.print("[bold green][dev][/bold green] llama-cpp-python compiled and installed from source.")
+        return
+
+    console.print("[bold cyan][dev][/bold cyan] Installing llama-cpp-python prebuilt wheel...")
+    success = False
+    WHEEL_TIMEOUT = 120
+
+    if sys.platform == "darwin" and platform_is_arm64():
+        for ver in [LLAMA_VER_METAL, "0.3.22", "0.3.21"]:
+            console.print(f"[bold cyan][dev][/bold cyan] Trying Metal wheel v{ver}...")
+            try:
+                r = subprocess.run([
+                    sys.executable, "-m", "pip", "install", "--prefer-binary",
+                    "--no-cache-dir", "--quiet", "--no-input",
+                    "--extra-index-url", "https://abetlen.github.io/llama-cpp-python/whl/metal",
+                    f"llama-cpp-python=={ver}",
+                ], timeout=WHEEL_TIMEOUT)
+                if r.returncode == 0:
+                    success = True
+                    break
+                console.print(f"[yellow][dev][/yellow] Metal wheel v{ver} failed (exit {r.returncode}).")
+            except subprocess.TimeoutExpired:
+                console.print(f"[yellow][dev][/yellow] Metal wheel v{ver} timed out ({WHEEL_TIMEOUT}s).")
+    elif sys.platform.startswith("linux"):
+        for ver, index in [(LLAMA_VER_CU121, "cu121"), (LLAMA_VER_CU124, "cu124")]:
+            console.print(f"[bold cyan][dev][/bold cyan] Trying CUDA {index} wheel v{ver}...")
+            try:
+                r = subprocess.run([
+                    sys.executable, "-m", "pip", "install", "--prefer-binary",
+                    "--no-cache-dir", "--quiet", "--no-input",
+                    "--extra-index-url", f"https://abetlen.github.io/llama-cpp-python/whl/{index}",
+                    f"llama-cpp-python=={ver}",
+                ], timeout=WHEEL_TIMEOUT)
+                if r.returncode == 0:
+                    success = True
+                    break
+                console.print(f"[yellow][dev][/yellow] CUDA {index} wheel v{ver} failed (exit {r.returncode}).")
+            except subprocess.TimeoutExpired:
+                console.print(f"[yellow][dev][/yellow] CUDA {index} wheel v{ver} timed out ({WHEEL_TIMEOUT}s).")
+    else:
+        try:
+            r = subprocess.run([
+                sys.executable, "-m", "pip", "install", "llama-cpp-python>=0.3.0",
+                "--quiet", "--no-input",
+            ], timeout=WHEEL_TIMEOUT)
+            success = r.returncode == 0
+        except subprocess.TimeoutExpired:
+            console.print(f"[yellow][dev][/yellow] Wheel install timed out ({WHEEL_TIMEOUT}s).")
+
+    if not success:
+        console.print("[yellow][dev][/yellow] All prebuilt wheels failed. Falling back to source build (~3 mins)...")
+        _run_with_spinner([
+            sys.executable, "-m", "pip", "install", "llama-cpp-python>=0.3.0",
+            "--no-binary", "llama-cpp-python", "--no-cache-dir", "--no-input",
+        ], env=_cmake_env())
         console.print("[bold green][dev][/bold green] llama-cpp-python compiled and installed from source.")
     else:
-        console.print("[bold cyan][dev][/bold cyan] Installing llama-cpp-python prebuilt wheel...")
-        success = False
-        if sys.platform == "darwin" and platform_is_arm64():
-            for ver in [LLAMA_VER_METAL, "0.3.22", "0.3.21"]:
-                try:
-                    console.print(f"[bold cyan][dev][/bold cyan] Trying Metal wheel v{ver}...")
-                    subprocess.check_call([
-                        sys.executable, "-m", "pip", "install", "--prefer-binary", "--no-cache-dir", "--quiet",
-                        "--extra-index-url", "https://abetlen.github.io/llama-cpp-python/whl/metal",
-                        f"llama-cpp-python=={ver}"
-                    ])
-                    success = True
-                    break
-                except subprocess.CalledProcessError:
-                    console.print(f"[yellow][dev][/yellow] Metal wheel v{ver} failed.")
-        elif sys.platform.startswith("linux"):
-            for ver, index in [(LLAMA_VER_CU121, "cu121"), (LLAMA_VER_CU124, "cu124")]:
-                try:
-                    console.print(f"[bold cyan][dev][/bold cyan] Trying CUDA {index} wheel v{ver}...")
-                    subprocess.check_call([
-                        sys.executable, "-m", "pip", "install", "--prefer-binary", "--no-cache-dir", "--quiet",
-                        "--extra-index-url", f"https://abetlen.github.io/llama-cpp-python/whl/{index}",
-                        f"llama-cpp-python=={ver}"
-                    ])
-                    success = True
-                    break
-                except subprocess.CalledProcessError:
-                    console.print(f"[yellow][dev][/yellow] CUDA {index} wheel v{ver} failed.")
-        else:
-            try:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", "llama-cpp-python>=0.3.0", "--quiet"])
-                success = True
-            except subprocess.CalledProcessError:
-                pass
-
-        if not success:
-            console.print("[yellow][dev][/yellow] All prebuilt wheels failed. Falling back to source build (~3 mins)...")
-            env = os.environ.copy()
-            if sys.platform == "darwin" and platform_is_arm64():
-                env["CMAKE_ARGS"] = "-DGGML_NATIVE=OFF -DGGML_METAL=ON -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_APPLE_SILICON_PROCESSOR=arm64"
-            else:
-                env["CMAKE_ARGS"] = "-DGGML_CUDA=on -DGGML_NATIVE=OFF -DCMAKE_CUDA_ARCHITECTURES=all-major -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_TESTS=OFF"
-                env["FORCE_CMAKE"] = "1"
-            
-            subprocess.check_call([
-                sys.executable, "-m", "pip", "install", "llama-cpp-python>=0.3.0",
-                "--no-binary", "llama-cpp-python", "--no-cache-dir"
-            ], env=env)
-            console.print("[bold green][dev][/bold green] llama-cpp-python compiled and installed from source.")
-        else:
-            console.print("[bold green][dev][/bold green] llama-cpp-python installed.")
+        console.print("[bold green][dev][/bold green] llama-cpp-python installed.")
 
 def platform_is_arm64():
     import platform
     return platform.machine() == "arm64"
+
+def _run_with_spinner(cmd, env=None, timeout_s=900):
+    """Run cmd in a subprocess, showing a braille spinner + last log line.
+
+    Stall detection: warns if output is unchanged for 120s.
+    Hard timeout at timeout_s: kills and raises RuntimeError.
+    """
+    SPIN = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    log_fd, log_path = tempfile.mkstemp(prefix="devpy_build_", suffix=".log")
+    try:
+        with os.fdopen(log_fd, "w") as log_f:
+            proc = subprocess.Popen(cmd, stdout=log_f, stderr=subprocess.STDOUT, env=env)
+        elapsed = 0
+        stall = 0
+        prev_line = ""
+        warned = False
+        while proc.poll() is None:
+            try:
+                with open(log_path, "r", errors="replace") as lf:
+                    lines = lf.readlines()
+                last = (lines[-1].strip()[:60] if lines else "").replace("\r", "")
+            except Exception:
+                last = ""
+            tick = SPIN[elapsed % len(SPIN)]
+            print(f"\r  {tick} {elapsed}s  {last:<62}", end="", flush=True)
+            if last == prev_line:
+                stall += 1
+            else:
+                stall = 0
+                prev_line = last
+                warned = False
+            if stall >= 120 and not warned:
+                print()
+                console.print(f"[yellow][dev][/yellow] Build stalled 2 min — CMake probe hang? Log: {log_path}")
+                warned = True
+            if elapsed >= timeout_s:
+                proc.kill()
+                proc.wait()
+                print()
+                console.print(f"[bold red][dev][/bold red] Build timed out ({timeout_s}s). Last 30 lines:")
+                with open(log_path, "r", errors="replace") as lf:
+                    tail = lf.readlines()[-30:]
+                for l in tail:
+                    print(" ", l, end="")
+                raise RuntimeError(f"Source build timed out after {timeout_s}s")
+            time.sleep(1)
+            elapsed += 1
+        # clear spinner line
+        print(f"\r{' ' * 80}\r", end="", flush=True)
+        if proc.returncode != 0:
+            console.print(f"[bold red][dev][/bold red] Build failed ({elapsed}s). Last 30 lines:")
+            with open(log_path, "r", errors="replace") as lf:
+                tail = lf.readlines()[-30:]
+            for l in tail:
+                print(" ", l, end="")
+            raise subprocess.CalledProcessError(proc.returncode, cmd)
+        console.print(f"[bold green][dev][/bold green] Build finished in {elapsed}s.")
+    finally:
+        try:
+            os.unlink(log_path)
+        except Exception:
+            pass
 
 # ── tail log helper ───────────────────────────────────────────────────────────
 def tail_file(filepath, num_lines=12):
@@ -536,9 +632,10 @@ def main():
         Layout(name="logs")
     )
 
-    # hide cursor during dashboard loop
+    # hide cursor during dashboard loop; atexit guarantees restore even on crash
     sys.stdout.write("\033[?25l")
     sys.stdout.flush()
+    atexit.register(lambda: (sys.stdout.write("\033[?25h"), sys.stdout.flush()))
 
     # ── dashboard loop ────────────────────────────────────────────────────────
     try:
@@ -679,7 +776,8 @@ def main():
 
                     # ── RENDER COMPONENT: Recent Backend Logs ─────────────────────
                     term_height = live.console.height
-                    log_lines = max(5, term_height - 18)
+                    # fixed rows: header(3) + services(9) + ai_backend(10) + borders/padding(~4) = 26
+                    log_lines = max(5, term_height - 26)
                     logs_text = get_formatted_logs(backend_log, log_lines)
                     layout["logs"].update(Panel(logs_text, title="[bold white]Recent Backend Logs[/bold white]", border_style="cyan"))
 
