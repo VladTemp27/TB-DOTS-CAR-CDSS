@@ -145,10 +145,10 @@ python dev.py
 
 | Flag | Effect |
 |---|---|
-| _(none)_ | Standard startup — binds to `127.0.0.1` |
-| `--from-source` | Compiles `llama-cpp-python` from C++ source instead of a prebuilt wheel |
+| _(none)_ | Binds to `127.0.0.1` — localhost only |
+| `--lan` | Binds to `0.0.0.0` — accessible to other devices on the network |
 
-> **Bash alternative:** `./dev.sh` also works and additionally supports `--lan` (bind to `0.0.0.0` for LAN access).
+> **Bash alternative:** `./dev.sh` also works and supports the same `--lan` flag.
 
 | Service | URL |
 |---|---|

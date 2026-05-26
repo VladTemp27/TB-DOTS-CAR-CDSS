@@ -476,6 +476,7 @@ def detect_actual_ports(backend_log, frontend_log, default_be=8000, default_fe=5
 def main():
     parser = argparse.ArgumentParser(description="Start backend API + React frontend with a live TUI dashboard")
     parser.add_argument("--from-source", action="store_true", help="Compile llama-cpp-python from C++ source")
+    parser.add_argument("--lan", action="store_true", help="Bind to 0.0.0.0 so other devices on the LAN can connect")
     args = parser.parse_args()
 
     model_present = preflight(args)
@@ -512,29 +513,33 @@ def main():
         if extra_paths:
             env["LD_LIBRARY_PATH"] = ":".join(extra_paths) + (":" + env.get("LD_LIBRARY_PATH", "") if env.get("LD_LIBRARY_PATH") else "")
 
+    # ── bind host ────────────────────────────────────────────────────────────
+    bind_host = "0.0.0.0" if args.lan else "127.0.0.1"
+
     # ── port pre-check ───────────────────────────────────────────────────────
     import socket
     for port, name in [(BACKEND_PORT, "Backend"), (FRONTEND_PORT, "Frontend")]:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             try:
-                s.bind(("127.0.0.1", port))
+                s.bind((bind_host, port))
             except OSError:
                 console.print(f"[bold red][dev][/bold red] Port {port} is already in use ({name}).")
                 console.print(f"[bold red][dev][/bold red] Find and kill the process: lsof -ti :{port} | xargs kill")
                 sys.exit(1)
 
     # ── spawn processes ───────────────────────────────────────────────────────
-    console.print(f"[bold cyan][dev][/bold cyan] Starting backend API on :{BACKEND_PORT} (log → logs/backend-{ts}.log)")
+    console.print(f"[bold cyan][dev][/bold cyan] Starting backend API on {bind_host}:{BACKEND_PORT} (log → logs/backend-{ts}.log)")
     be_file = open(backend_log, "w")
-    
+
     # Use process group creation so we can cleanly terminate the tree on exit
     popen_kwargs = {}
     if sys.platform != "win32":
         popen_kwargs["preexec_fn"] = os.setsid
 
     be_proc = subprocess.Popen(
-        [str(VENV_PYTHON), "-m", "uvicorn", "backend.main:app", "--port", str(BACKEND_PORT), "--log-level", "info"],
+        [str(VENV_PYTHON), "-m", "uvicorn", "backend.main:app",
+         "--host", bind_host, "--port", str(BACKEND_PORT), "--log-level", "info"],
         stdout=be_file,
         stderr=subprocess.STDOUT,
         cwd=str(ROOT),
@@ -542,10 +547,13 @@ def main():
         **popen_kwargs
     )
 
-    console.print(f"[bold cyan][dev][/bold cyan] Starting React frontend on :{FRONTEND_PORT} (log → logs/frontend-{ts}.log)")
+    console.print(f"[bold cyan][dev][/bold cyan] Starting React frontend on {bind_host}:{FRONTEND_PORT} (log → logs/frontend-{ts}.log)")
     fe_file = open(frontend_log, "w")
+    fe_npm_cmd = ["npm", "run", "dev", "--", "--port", str(FRONTEND_PORT)]
+    if args.lan:
+        fe_npm_cmd.append("--host")
     fe_proc = subprocess.Popen(
-        ["npm", "run", "dev", "--", "--port", str(FRONTEND_PORT)],
+        fe_npm_cmd,
         stdout=fe_file,
         stderr=subprocess.STDOUT,
         cwd=str(WEBAPP),
