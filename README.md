@@ -21,7 +21,26 @@ Department of Health — Cordillera Administrative Region
 
 TB-DOTS CAR CDSS is an AI-powered clinical decision support system for managing tuberculosis patients under the DOTS (Directly Observed Treatment, Short-course) program in the Cordillera Administrative Region. It combines **machine learning risk prediction**, **SHAP-based explainability**, and **MedGemma LLM-generated clinical narratives** to assist healthcare workers in monitoring and treating TB patients.
 
-### Key Features
+This system is the implementation artifact for a thesis on **Clinical Decision Support for TB-DOTS using Explainable AI**. **[Read the full thesis (PDF)](paper/apa/thesis_apa.pdf)**
+
+---
+
+## Live System
+
+**URL:** [https://dots-cdss.bennygil.me](https://dots-cdss.bennygil.me)
+
+### Demo Credentials
+
+| Field | Value |
+|---|---|
+| **Username** | `admin123` |
+| **Password** | `password123` |
+
+> These are demo credentials for evaluation purposes. The system is intended for authorized DOH-CAR personnel only.
+
+---
+
+## Key Features
 
 | Feature | Description |
 |---|---|
@@ -34,18 +53,32 @@ TB-DOTS CAR CDSS is an AI-powered clinical decision support system for managing 
 
 ---
 
-## Live System
+## Architecture
 
-> **URL:** [https://dots-cdss.bennygil.me](https://dots-cdss.bennygil.me)
-
-### Demo Credentials
-
-| Field | Value |
-|---|---|
-| **Username** | `admin123` |
-| **Password** | `password123` |
-
-> These are demo credentials for evaluation purposes. The system is intended for authorized DOH-CAR personnel only.
+```
+┌─────────────────────────────────────────────────┐
+│                  Browser (PWA)                   │
+│          React 18 + Vite + Tailwind CSS          │
+│     Pages: Login, Dashboard, Patient Intake,     │
+│     Monthly Check-in, Profile, Risk Update       │
+└───────────────────┬─────────────────────────────┘
+                    │ HTTP / SSE
+┌───────────────────▼─────────────────────────────┐
+│              FastAPI Backend (Python)            │
+│  /api/patients   /api/xrays   /api/ai/explain   │
+│                                                  │
+│  ┌──────────────┐  ┌─────────────────────────┐  │
+│  │  ML Models   │  │  MedGemma LLM (llama.cpp)│  │
+│  │  XGBoost /   │  │  medgemma-1.5-4b-it      │  │
+│  │  LightGBM    │  │  (quantized, on-device)  │  │
+│  └──────────────┘  └─────────────────────────┘  │
+│                                                  │
+│  ┌──────────────────────────────────────────┐   │
+│  │           SQLite Database                │   │
+│  │  Patients · Monthly Records · Predictions│   │
+│  └──────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -61,22 +94,16 @@ TB-DOTS CAR CDSS is an AI-powered clinical decision support system for managing 
 ```bash
 git clone https://github.com/Benny-Gil/TB-DOTS-CAR-CDSS.git
 cd TB-DOTS-CAR-CDSS
-
-# Install all dependencies (Python venv + pip + npm)
-just install
+python3.12 -m venv .venv && source .venv/bin/activate
+pip install -r backend/requirements.txt
+npm install --prefix web-app
 ```
 
 ### 2. Download the LLM Model
 
-> **Note:** The MedGemma LLM is used for local development only. The live deployed system at [dots-cdss.bennygil.me](https://dots-cdss.bennygil.me) does **not** include the model — AI narrative generation is disabled in production.
+> **Note:** MedGemma is for local development only. The live deployed system does **not** include the model — AI narrative generation is disabled in production.
 
 Download the quantized model (~2.4 GB) from Hugging Face:
-
-```
-https://huggingface.co/bartowski/medgemma-1.5-4b-it-GGUF/resolve/main/medgemma-1.5-4b-it-IQ4_XS.gguf
-```
-
-Or via `wget` / `curl`:
 
 ```bash
 mkdir -p models
@@ -84,43 +111,21 @@ wget -O models/medgemma-1.5-4b-it-IQ4_XS.gguf \
   "https://huggingface.co/bartowski/medgemma-1.5-4b-it-GGUF/resolve/main/medgemma-1.5-4b-it-IQ4_XS.gguf"
 ```
 
-Place the file at:
+> Apple Silicon (M-series) is recommended — the backend enables Metal GPU offload automatically.
 
-```
-models/medgemma-1.5-4b-it-IQ4_XS.gguf
-```
-
-
-### 3. Seed Demo Data
+### 3. Start Everything
 
 ```bash
-python -m backend.seed_demo
+./dev.sh
 ```
 
-To include demo X-ray files:
-
-```bash
-python -m backend.seed_demo --include-xrays
-```
-
-### 4. Start Everything
-
-```bash
-./dev.py
-```
-
-`dev.sh` installs missing dependencies, runs database migrations, seeds demo data if the database is empty, then starts both services with a live dashboard.
+`dev.sh` handles migrations, seeds demo data on first run, and starts both services with a live terminal dashboard.
 
 | Flag | Effect |
 |---|---|
-| _(none)_ | Binds to `127.0.0.1` (localhost only) |
-| `--lan` | Binds to `0.0.0.0` so other devices on the network can connect |
-needed for unsupported Python versions) |
-
-```bash
-# LAN access (other devices on same network)
-./dev.sh --lan
-```
+| _(none)_ | Binds to `127.0.0.1` — localhost only |
+| `--lan` | Binds to `0.0.0.0` — accessible to other devices on the network |
+| `--from-source` | Compiles `llama-cpp-python` from source instead of using a prebuilt wheel |
 
 | Service | URL |
 |---|---|
@@ -153,8 +158,7 @@ TB-DOTS-CAR-CDSS/
 ├── slm_shap_pipeline/    # Offline SHAP faithfulness benchmark
 ├── evaluation/           # SLM explanation evaluation tools
 ├── data/                 # SQLite DB + X-ray storage (gitignored)
-├── process-compose.yaml  # Multi-process dev orchestration
-└── justfile              # Task runner recipes
+└── paper/apa/            # Thesis manuscript and PDF
 ```
 
 ---
@@ -171,11 +175,9 @@ SHAP values are computed at each time point and displayed as feature contributio
 
 ---
 
-## Agent / API Reference
+## API Reference
 
-The backend exposes a REST + SSE API suitable for agent integration.
-
-### Key Endpoints
+The backend exposes a REST + SSE API. Full interactive docs available at `/docs` when running locally.
 
 | Method | Path | Description |
 |---|---|---|
@@ -187,22 +189,6 @@ The backend exposes a REST + SSE API suitable for agent integration.
 | `POST` | `/api/xrays/{patient_id}` | Upload X-ray |
 | `GET` | `/api/xrays/{patient_id}` | List patient X-rays |
 | `POST` | `/api/ai/explain` | Stream LLM clinical narrative (SSE) |
-
-Full interactive docs: [http://localhost:8000/docs](http://localhost:8000/docs)
-
----
-
-## Research Context
-
-This system is the implementation artifact for a thesis on **Clinical Decision Support for TB-DOTS using Explainable AI** at the Cordillera Administrative Region.
-
-**[Read the full thesis (PDF)](paper/apa/thesis_apa.pdf)**
-
-The repository also contains:
-
-- `slm_shap_pipeline/` — offline SLM faithfulness-to-SHAP benchmark tooling
-- `evaluation/slm_shap_faithfulness/` — quantitative evaluation of LLM explanation fidelity
-- `paper/` — thesis manuscript drafts
 
 ---
 
