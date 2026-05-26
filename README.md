@@ -56,28 +56,28 @@ This system is the implementation artifact for a thesis on **Clinical Decision S
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────┐
-│                  Browser (PWA)                   │
-│          React 18 + Vite + Tailwind CSS          │
-│     Pages: Login, Dashboard, Patient Intake,     │
-│     Monthly Check-in, Profile, Risk Update       │
-└───────────────────┬─────────────────────────────┘
-                    │ HTTP / SSE
-┌───────────────────▼─────────────────────────────┐
-│              FastAPI Backend (Python)            │
-│  /api/patients   /api/xrays   /api/ai/explain   │
-│                                                  │
-│  ┌──────────────┐  ┌─────────────────────────┐  │
-│  │  ML Models   │  │  MedGemma LLM (llama.cpp)│  │
-│  │  XGBoost /   │  │  medgemma-1.5-4b-it      │  │
-│  │  LightGBM    │  │  (quantized, on-device)  │  │
-│  └──────────────┘  └─────────────────────────┘  │
-│                                                  │
-│  ┌──────────────────────────────────────────┐   │
-│  │           SQLite Database                │   │
-│  │  Patients · Monthly Records · Predictions│   │
-│  └──────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│                   Browser (PWA)                  │
+│           React 18 + Vite + Tailwind CSS         │
+│      Pages: Login, Dashboard, Patient Intake,    │
+│      Monthly Check-in, Profile, Risk Update      │
+└────────────────────┬─────────────────────────────┘
+                     │ HTTP / SSE
+┌────────────────────▼─────────────────────────────┐
+│              FastAPI Backend (Python)             │
+│   /api/patients   /api/xrays   /api/ai/explain   │
+│                                                   │
+│  ┌───────────────┐  ┌───────────────────────────┐ │
+│  │   ML Models   │  │  MedGemma LLM (llama.cpp) │ │
+│  │  XGBoost /    │  │  medgemma-1.5-4b-it       │ │
+│  │  LightGBM     │  │  (quantized, on-device)   │ │
+│  └───────────────┘  └───────────────────────────┘ │
+│                                                   │
+│  ┌─────────────────────────────────────────────┐  │
+│  │                SQLite Database              │  │
+│  │    Patients · Monthly Records · Predictions │  │
+│  └─────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────┘
 ```
 
 ---
