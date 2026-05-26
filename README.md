@@ -13,6 +13,12 @@ Department of Health — Cordillera Administrative Region
 [![Frontend](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61dafb?style=flat-square&logo=react)](https://dots-cdss.bennygil.me)
 [![AI](https://img.shields.io/badge/LLM-MedGemma%20(local%20only)-4285F4?style=flat-square&logo=google)](https://huggingface.co/bartowski/medgemma-1.5-4b-it-GGUF)
 
+<br/>
+
+<img src="web-app/public/amalgam-logo.png" alt="AMALGAM Team Logo" width="200" />
+
+*Developed by Team AMALGAM*
+
 </div>
 
 ---
@@ -53,85 +59,34 @@ This system is the implementation artifact for a thesis on **Clinical Decision S
 
 ---
 
-## Architecture
+## ML Pipeline
 
-```
-┌──────────────────────────────────────────────────┐
-│                   Browser (PWA)                  │
-│           React 18 + Vite + Tailwind CSS         │
-│      Pages: Login, Dashboard, Patient Intake,    │
-│      Monthly Check-in, Profile, Risk Update      │
-└────────────────────┬─────────────────────────────┘
-                     │ HTTP / SSE
-┌────────────────────▼─────────────────────────────┐
-│              FastAPI Backend (Python)             │
-│   /api/patients   /api/xrays   /api/ai/explain   │
-│                                                   │
-│  ┌───────────────┐  ┌───────────────────────────┐ │
-│  │   ML Models   │  │  MedGemma LLM (llama.cpp) │ │
-│  │  XGBoost /    │  │  medgemma-1.5-4b-it       │ │
-│  │  LightGBM     │  │  (quantized, on-device)   │ │
-│  └───────────────┘  └───────────────────────────┘ │
-│                                                   │
-│  ┌─────────────────────────────────────────────┐  │
-│  │                SQLite Database              │  │
-│  │    Patients · Monthly Records · Predictions │  │
-│  └─────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────┘
-```
+The system uses two complementary ML components, each trained on a separate dataset sourced from DOH-CAR TB treatment records.
 
----
+### Static Model (Non-Temporal)
 
-## Local Development
-
-### Prerequisites
-
-- Python 3.12
-- Node.js 18+
-
-### 1. Clone & Install
-
-```bash
-git clone https://github.com/Benny-Gil/TB-DOTS-CAR-CDSS.git
-cd TB-DOTS-CAR-CDSS
-python3.12 -m venv .venv && source .venv/bin/activate
-pip install -r backend/requirements.txt
-npm install --prefix web-app
-```
-
-### 2. Download the LLM Model
-
-> **Note:** MedGemma is for local development only. The live deployed system does **not** include the model — AI narrative generation is disabled in production.
-
-Download the quantized model (~2.4 GB) from Hugging Face:
-
-```bash
-mkdir -p models
-wget -O models/medgemma-1.5-4b-it-IQ4_XS.gguf \
-  "https://huggingface.co/bartowski/medgemma-1.5-4b-it-GGUF/resolve/main/medgemma-1.5-4b-it-IQ4_XS.gguf"
-```
-
-> Apple Silicon (M-series) is recommended — the backend enables Metal GPU offload automatically.
-
-### 3. Start Everything
-
-```bash
-./dev.sh
-```
-
-`dev.sh` handles migrations, seeds demo data on first run, and starts both services with a live terminal dashboard.
-
-| Flag | Effect |
+| | |
 |---|---|
-| _(none)_ | Binds to `127.0.0.1` — localhost only |
-| `--lan` | Binds to `0.0.0.0` — accessible to other devices on the network |
-| `--from-source` | Compiles `llama-cpp-python` from source instead of using a prebuilt wheel |
+| **Dataset** | 8,876 patient records · 2015–2025 · 23 features |
+| **Source** | `dataset/non-temporal/2015-2025-ml-ready.csv` |
+| **Configurations** | XGBoost / LightGBM / Random Forest × None / SMOTE-ENN (6 configs) |
 
-| Service | URL |
+The static model predicts treatment outcomes from patient data captured **at the time of enrollment** — before any follow-up information is available. Its purpose is to provide an **immediate intake-level risk signal** so clinicians can flag high-risk patients from day one and prioritize early intervention.
+
+### Temporal Model
+
+| | |
 |---|---|
-| Frontend | http://localhost:5173 |
-| Backend API | http://localhost:8000 |
-| API Docs | http://localhost:8000/docs |
+| **Dataset** | 599 patient records · 153 columns · monthly tracking M0–M12 |
+| **Source** | `dataset/temporal/combined_complete_dataset.csv` |
+| **Features** | 14 engineered features per time step (adherence, doses, clinical vitals) |
+
+The temporal model continuously **refines risk scores as treatment progresses** (M0–M6), incorporating monthly medication adherence data and clinical follow-up records. SHAP values are computed at each time point and displayed as feature contribution bars in the patient profile, with month-over-month deltas to show which factors are driving risk changes over time.
+
+| Time Point | Input | Purpose |
+|---|---|---|
+| **M0 (Intake)** | Enrollment features | Baseline risk score at registration |
+| **M1–M6** | Doses taken, missed doses, updated clinical data | Updated risk score per monthly check-in |
 
 ---
 
@@ -154,7 +109,8 @@ TB-DOTS-CAR-CDSS/
 │       ├── pages/        # Login, Dashboard, Intake, Profile…
 │       ├── components/   # Shared UI components
 │       └── lib/auth.ts   # Session-based auth
-├── models/               # ML model artifacts (ONNX / pickle)
+├── static-model/         # Non-temporal outcome classifier (research)
+├── models/               # Trained model artifacts (ONNX / pickle)
 ├── slm_shap_pipeline/    # Offline SHAP faithfulness benchmark
 ├── evaluation/           # SLM explanation evaluation tools
 ├── data/                 # SQLite DB + X-ray storage (gitignored)
@@ -163,15 +119,55 @@ TB-DOTS-CAR-CDSS/
 
 ---
 
-## ML Pipeline
+## Local Development
 
-The system uses a **6-configuration grid** (XGBoost / LightGBM / Random Forest × None / SMOTE-ENN) trained on a **599-patient** CAR TB dataset with a **14-feature** clinical feature set.
+### Prerequisites
 
-Risk scores are computed at:
-- **M0 (Intake)** — baseline prediction from enrollment features
-- **M1–M6** — updated monthly using medication adherence and clinical follow-up data
+- Python 3.12
+- Node.js 18+
 
-SHAP values are computed at each time point and displayed as feature contribution bars in the patient profile, with deltas shown month-over-month.
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Benny-Gil/TB-DOTS-CAR-CDSS.git
+cd TB-DOTS-CAR-CDSS
+```
+
+### 2. (Optional) Download the LLM Model
+
+> MedGemma is used for AI-generated clinical narratives. It is **optional** — the system runs fully without it; only the AI explanation feature will be unavailable. The live deployed system does not include the model.
+
+```bash
+mkdir -p models
+wget -O models/medgemma-1.5-4b-it-IQ4_XS.gguf \
+  "https://huggingface.co/bartowski/medgemma-1.5-4b-it-GGUF/resolve/main/medgemma-1.5-4b-it-IQ4_XS.gguf"
+```
+
+> Apple Silicon (M-series) is recommended — the backend enables Metal GPU offload automatically.
+
+### 3. Start Everything
+
+Two equivalent entrypoints are available — both handle virtualenv creation, dependency installation, database migrations, demo data seeding, and launching both services:
+
+```bash
+# Python TUI dashboard (recommended)
+python dev.py
+
+# Bash fallback
+./dev.sh
+```
+
+| Flag | Effect |
+|---|---|
+| _(none)_ | Binds to `127.0.0.1` — localhost only |
+| `--lan` | Binds to `0.0.0.0` — accessible to other devices on the network |
+| `--from-source` | Compiles `llama-cpp-python` from source instead of using a prebuilt wheel |
+
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:8000 |
+| API Docs | http://localhost:8000/docs |
 
 ---
 
