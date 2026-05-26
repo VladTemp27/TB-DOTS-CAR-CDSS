@@ -19,14 +19,14 @@ llama_cu121  := "0.3.23"
 default:
     @just --list
 
-# ── dev: start everything (delegates to process-compose or dev.sh) ───────────
+# ── dev: start everything (delegates to process-compose or dev.py) ───────────
 dev:
     #!/usr/bin/env bash
     if command -v process-compose &>/dev/null; then
         exec process-compose up
     else
-        echo "[just] process-compose not found — falling back to dev.sh"
-        exec "{{root}}/dev.sh"
+        echo "[just] process-compose not found — falling back to dev.py"
+        exec "{{python}}" "{{root}}/dev.py"
     fi
 
 # ── install: create venv + install all deps ───────────────────────────────────
