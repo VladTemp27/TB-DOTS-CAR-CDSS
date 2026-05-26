@@ -6,7 +6,7 @@
 
 % ----- Page Layout (APA: 1-inch margins) -----
 \usepackage[margin=1in,headheight=14.5pt]{geometry}
-\addtolength{\topmargin}{-2.5pt}
+
 
 % ----- Typography (APA: Times New Roman or similar serif) -----
 \usepackage{newtxtext,newtxmath}
@@ -24,7 +24,7 @@
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
-\renewcommand{\headrulewidth}{0pt}
+
 \fancyhead[R]{\thepage}
 
 % ----- References: biblatex-apa with biber backend -----
@@ -57,51 +57,34 @@
 \captionsetup{labelsep=newline, justification=raggedright, singlelinecheck=false, font=doublespacing, labelfont=bf, textfont=it}
 
 % ----- Float placement fixes -----
-% placeins provides \FloatBarrier to anchor floats within subsections.
+% placeins provides  to anchor floats within subsections.
 \usepackage{placeins}
 % Relax LaTeX's conservative default float parameters so floats are
 % placed closer to their call-out text instead of drifting to the end.
-\renewcommand{\topfraction}{0.9}       % up to 90% of a page can be top floats
-\renewcommand{\bottomfraction}{0.8}    % up to 80% can be bottom floats
-\renewcommand{\textfraction}{0.1}      % at least 10% of a page must be text
-\renewcommand{\floatpagefraction}{0.8} % float-only pages must be 80% full
-\setcounter{topnumber}{6}              % allow up to 6 floats at the top
-\setcounter{bottomnumber}{4}
-\setcounter{totalnumber}{8}
+       % up to 90% of a page can be top floats
+    % up to 80% can be bottom floats
+      % at least 10% of a page must be text
+ % float-only pages must be 80% full
+              % allow up to 6 floats at the top
+
+
 
 % ----- Section Formatting (APA 7th Heading Levels) -----
 \usepackage{etoolbox}
 
 % Level 1: Centered, Bold, Title Case
-\makeatletter
-\renewcommand{\section}{\@startsection{section}{1}{0pt}%
-  {1.5\baselineskip plus 0.2\baselineskip minus 0.1\baselineskip}%
-  {0.5\baselineskip}%
-  {\centering\bfseries\normalsize}}
 
-% Level 2: Left-Aligned, Bold, Title Case
-\renewcommand{\subsection}{\@startsection{subsection}{2}{0pt}%
-  {1.5\baselineskip plus 0.2\baselineskip minus 0.1\baselineskip}%
-  {0.5\baselineskip}%
-  {\bfseries\normalsize}}
-
-% Level 3: Left-Aligned, Bold Italic, Title Case
-\renewcommand{\subsubsection}{\@startsection{subsubsection}{3}{0pt}%
-  {1.5\baselineskip plus 0.2\baselineskip minus 0.1\baselineskip}%
-  {0.5\baselineskip}%
-  {\bfseries\itshape\normalsize}}
-\makeatother
 
 % ----- Suppress section numbering (APA uses formatting, not numbers) -----
 \setcounter{secnumdepth}{0}
 
 % ----- Paragraph formatting (APA: 0.5-inch indent, no extra space between paragraphs) -----
-\setlength{\parindent}{0.5in}
+
 \setlength{\parskip}{0pt}
 
 % Ensure enumerate and itemize have no extra spacing
 \usepackage{enumitem}
-\setlist{nosep, leftmargin=0.5in}
+
 
 % =============================================================================
 \begin{document}
@@ -140,13 +123,11 @@ May 15, 2026
 
 % ======================== ABSTRACT ========================
 % APA 7th: "Abstract" centered, bold; abstract text is NOT indented (no \parindent)
-\begin{center}
-\textbf{Abstract}
-\end{center}
+\section*{Abstract}
 
 % APA 7th: Abstract is a single unindented paragraph
 {
-\setlength{\parindent}{0pt}
+
 Pulmonary Tuberculosis (PTB) remains a critical public health challenge in the Cordillera Administrative Region (CAR), Philippines, where complex patient profiles and programmatic gaps contribute to persistent treatment failure. This study develops machine learning models to predict treatment success or failure among PTB patients in DOH-CAR TB-DOTS facilities covering the period 2015--2025. A standardized preprocessing pipeline performs schema harmonization, patient pseudonymization, and a diagnostic-first missing data handling protocol that classifies each variable's missingness mechanism---Missing Completely at Random (MCAR), Missing at Random (MAR), or Missing Not at Random (MNAR)---before routing it to one of four targeted strategies: column exclusion, listwise deletion, missing indicator imputation, or stochastic Multivariate Imputation by Chained Equations (MICE). Supervised ensemble tree-based classifiers---XGBoost, LightGBM, and Random Forest---are trained alongside Recurrent Neural Network (RNN) and Long Short-Term Memory (LSTM) temporal architectures to capture longitudinal treatment dynamics across the 6- to 12-month treatment course. Because clinical decision support requires more than accurate risk scoring, Shapley Additive Explanations (SHAP) are used to show which patient-level factors contributed to each prediction, supporting clinician review of the system's outputs. The validated models are embedded in a Clinical Decision Support System (CDSS) that provides dynamic risk estimates, SHAP-grounded factor explanations, and bounded narrative summaries to support early clinical intervention while preserving clinician judgment.
 
 % APA 7th: Keywords line starts as an indented paragraph; label is italic
@@ -226,45 +207,40 @@ This study uses a dataset of records of PTB patients from the Cordillera Adminis
 \begin{figure}[H]
 \caption{Data Management and Analysis Process}
 \label{fig:data_management}
-\resizebox{\columnwidth}{!}{%
-\begin{tikzpicture}[
-  node distance=0.5cm and 0.9cm,
-  mainbox/.style={rectangle, draw, rounded corners=2pt, text width=5.5cm,
-    minimum height=0.65cm, align=center, font=\normalsize, fill=gray!10},
-  splitbox/.style={rectangle, draw, rounded corners=2pt, text width=3.2cm,
-    minimum height=0.65cm, align=center, font=\normalsize, fill=gray!10},
-  arrow/.style={-{Stealth[scale=0.7]}, thick}
-]
-\hyphenpenalty=10000
-\exhyphenpenalty=10000
-  \node[mainbox, fill=gray!25] (raw)      {Raw Records: DOH-CAR TB-DOTS (2015--2025)};
-  \node[mainbox, below=of raw]  (harm)    {Pseudonymization \& Schema Harmonization};
-  \node[mainbox, below=of harm] (eda)     {Exploratory Data Analysis};
-  \node[mainbox, below=of eda]  (mdh)     {Diagnostic Missing Data Handling};
-  \node[splitbox, below left=0.7cm and 2.0cm of mdh]  (static)   {\textbf{Static Models}\\XGBoost, LightGBM, RF};
-  \node[splitbox, below right=0.7cm and 2.0cm of mdh] (temporal)  {\textbf{Temporal Models}\\RNN, LSTM};
-  \node[mainbox, below=2.4cm of mdh]  (shap)  {Ensemble Prediction \& SHAP Interpretability};
-  \node[mainbox, below=of shap, fill=blue!10] (cdss) {Clinical Decision Support System (CDSS)};
-  \draw[arrow] (raw)  -- (harm);
-  \draw[arrow] (harm) -- (eda);
-  \draw[arrow] (eda)  -- (mdh);
-  \draw[arrow] (mdh.south) -- ++(0,-0.35) -| (static.north);
-  \draw[arrow] (mdh.south) -- ++(0,-0.35) -| (temporal.north);
-  \draw[arrow] (static.east) -- (shap.west);
-  \draw[arrow] (temporal.west) -- (shap.east);
-  \draw[arrow] (shap) -- (cdss);
-\end{tikzpicture}%
-}
+\includegraphics[width=\columnwidth]{tikz_1.png}%
 \end{figure}
-\FloatBarrier
 
-\FloatBarrier
+
+
 
 \subsection{Data Acquisition and Preprocessing}
 
 This study draws on two complementary datasets derived from the Cordillera Administrative Region (CAR), Philippines, both covering the period from 2015 to 2025: (1) a non-temporal (static) consolidated registry maintained by the Department of Health-CAR, used to train the static tree-based classifiers, and (2) a temporal monitoring dataset manually compiled by the study's Pharmacy Co-authors, used to train the longitudinal deep learning and temporal tree-based models. Table~\ref{tab:dataset_comparison} provides a side-by-side overview of both datasets.
 
-\input{tables/dataset_comparison.tex}
+\begin{table}[htbp]
+\caption{Comparison of the Non-Temporal and Temporal Monitoring Datasets}
+\label{tab:dataset_comparison}
+\small
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.26\textwidth}
+                >{\raggedright\arraybackslash}p{0.33\textwidth}
+                >{\raggedright\arraybackslash}p{0.33\textwidth}}
+\toprule
+\textbf{Attribute} & \textbf{Non-Temporal Dataset} & \textbf{Temporal Monitoring Dataset} \\
+\midrule
+Records (patients) & 7,389 & 599 \\[2pt]
+Coverage period & 2015--2025 & 2015--2025 (patient subset) \\[2pt]
+Data source & DOH-CAR centralised TB-DOTS registry & Facility treatment monitoring forms (35 raw Excel workbooks) \\[2pt]
+Collection method & Routine national TB-DOTS programme reporting & Manual transcription and encoding by Pharmacy Co-authors \\[2pt]
+Structure & Cross-sectional: one row per patient & Longitudinal: one row per patient-month (M0--M12) \\[2pt]
+Static features & Demographics, diagnostics, outcomes & Demographics, diagnostics, baseline vitals, outcomes \\[2pt]
+Temporal features & None & Monthly adherence, doses taken/missed, weight, height, smear microscopy, Xpert MTB/RIF (M0--M12) \\[2pt]
+Post-preprocessing columns & 28 & 269 \\[2pt]
+Post-preprocessing rows retained & 7,388 & 599 (zero deleted) \\[2pt]
+Primary model use & Static tree-based classifiers (XGBoost, LightGBM, Random Forest) & Temporal deep learning models (Bi-LSTM) and tree-based temporal baselines \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 
 \subsubsection*{Non-Temporal Dataset}
 
@@ -295,15 +271,87 @@ The temporal preprocessing pipeline is implemented in eight stages specifically 
 
 As with the non-temporal pipeline, the temporal train-test split precedes all scaling, one-hot encoding, outlier capping, and 3-dimensional tensor construction for the recurrent networks. This two-pipeline design ensures that the leakage-prevention principle applied to the static classifiers is equivalently enforced for the temporal deep learning models. Per-patient observed means of temporal features across M0--M7 are summarized in Table~\ref{tab:temporal_feature_descriptive_stats}.
 
-\input{temporal/tables/temporal_feature_descriptive_stats.tex}
+\begin{table}[htbp]
 
-\FloatBarrier
+\caption{Per-Patient Observed Means of Temporal Features (M0–M7)}
+\label{tab:temporal_feature_descriptive_stats}
+\begin{tabular}{lccccc}
+
+\toprule
+
+Feature & N & Mean & SD & Min & Max \\
+
+\midrule
+
+monthly\_doses\_taken & 573 & 23.36 & 4.32 & 0.0 & 64.29 \\
+cumulative\_doses\_taken & 535 & 70.09 & 23.39 & 0.0 & 127.38 \\
+monthly\_missed\_doses & 458 & 0.91 & 2.47 & 0.0 & 25.0 \\
+pct\_adherence & 342 & 98.23 & 8.35 & 0.0 & 100.0 \\
+weight & 361 & 55.69 & 21.55 & 7.2 & 189.69 \\
+height & 315 & 155.49 & 20.45 & 31.0 & 181.0 \\
+smear\_tb\_lamp & 25 & 0.12 & 0.33 & 0.0 & 1.0 \\
+xpert\_mtb\_rif & 41 & 0.0 & 0.0 & 0.0 & 0.0 \\
+last\_month\_attended & 599 & 5.23 & 2.06 & -1.0 & 7.0 \\
+total\_observed\_months & 599 & 6.21 & 2.06 & 0.0 & 8.0 \\
+
+\bottomrule
+
+\end{tabular}
+
+\end{table}
+
+
 
 \subsection{Exploratory Data Analysis}
 
 Prior to predictive modeling, an exploratory analysis was conducted to characterize the study population, assess data completeness, and quantify the associations among variables to inform downstream preprocessing and modeling decisions.
 
-\input{tables/missing_data_summary.tex}
+\small
+\begin{longtable}[l]{lcc}
+\caption{Missing Data Summary by Column} \\
+\label{tab:missing_data_summary} \\
+\toprule
+Column & Missing\_Count & Missing\_Percentage \\
+\midrule
+\endfirsthead
+\toprule
+Column & Missing\_Count & Missing\_Percentage \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
+Days\_To\_Microscopy\_Result & 7297 & 98.75 \\
+Days\_To\_RDT\_Result & 6638 & 89.84 \\
+Days\_Screening\_To\_Diagnosis & 4444 & 60.14 \\
+Days\_To\_Treatment & 4378 & 59.25 \\
+Diagnosis\_Season & 3953 & 53.5 \\
+Diagnosis\_DayOfYear & 3953 & 53.5 \\
+Diagnosis\_Quarter & 3953 & 53.5 \\
+Diagnosis\_Month & 3953 & 53.5 \\
+Microscopy Result & 2792 & 37.79 \\
+Brgy & 1026 & 13.89 \\
+City/Municipality & 105 & 1.42 \\
+Province & 71 & 0.96 \\
+Treatment Health Facility & 29 & 0.39 \\
+Region & 15 & 0.2 \\
+Date of Outcome/Status & 2 & 0.03 \\
+Bacteriologic Status & 1 & 0.01 \\
+Type & 0 & 0 \\
+Validation Status & 0 & 0 \\
+Age & 0 & 0 \\
+Sex & 0 & 0 \\
+Anatomical Site & 0 & 0 \\
+Source of Patient & 0 & 0 \\
+Screening/Diagnosing Health Facility & 0 & 0 \\
+RDT Result & 0 & 0 \\
+Year & 0 & 0 \\
+Outcome/Status & 0 & 0 \\
+Registration Group & 0 & 0 \\
+Computed\_Age & 0 & 0 \\
+\end{longtable}
+
 
 A global missingness audit was performed across all 28 columns to identify the sparsity structure of the dataset (Table~\ref{tab:missing_data_summary}). Per-column missing rates were ranked, revealing that variables such as microscopy result (37.8\% missing), diagnosis-derived temporal features (53.6\%), and clinical delay intervals (59.3--98.8\%) exhibited substantial missingness. This audit provided the empirical basis for the missingness thresholds applied in the Missing Data Handling subsection.
 
@@ -336,43 +384,10 @@ Clinical TB registries exhibit heterogeneous missingness arising from inconsiste
 \begin{figure}[H]
 \caption{Missing Data Handling Decision Logic}
 \label{fig:missing_data_pipeline}
-\resizebox{\columnwidth}{!}{%
-\begin{tikzpicture}[
-  node distance=0.7cm and 1.1cm,
-  mainbox/.style={rectangle, draw, rounded corners=2pt, text width=4.8cm,
-    minimum height=0.65cm, align=center, font=\normalsize, fill=gray!10},
-  decision/.style={diamond, draw, aspect=3.2, text width=5.2cm, inner sep=1.5pt,
-    align=center, font=\normalsize, fill=gray!10},
-  outcome/.style={rectangle, draw, rounded corners=2pt, text width=3.2cm,
-    minimum height=0.65cm, align=center, font=\normalsize, fill=gray!10},
-  arrow/.style={-{Stealth[scale=0.7]}, thick}
-]
-  \node[mainbox, fill=gray!25] (start) {Per Column with Missing Data};
-  \node[decision, below=of start] (d1) {miss\_rate > 80\%?};
-  \node[outcome, right=2.2cm of d1] (ex1) {Column Exclusion};
-  \node[decision, below=1cm of d1] (d2) {miss\_rate > 50\%\\AND low importance?\\{\scriptsize(temporal exempt)}};
-  \node[outcome, right=2.2cm of d2] (ex2) {Column Exclusion};
-  \node[decision, below=1cm of d2] (d3) {MCAR AND\\miss\_rate < 15\%\\AND N\_rem > 500?};
-  \node[outcome, right=2.2cm of d3] (lw) {Listwise Deletion};
-  \node[decision, below=1cm of d3] (d4) {MAR AND\\importance >= median?};
-  \node[outcome, right=2.2cm of d4] (mice) {Stochastic MICE};
-  \node[outcome, below=1cm of d4] (ind) {Missing Indicator\\with Fill};
-  \node[outcome, left=2.2cm of d1, draw=none, fill=none, text opacity=0] (pad) {Column Exclusion};
-
-  \draw[arrow] (start) -- (d1);
-  \draw[arrow] (d1) -- node[above, font=\scriptsize]{YES} (ex1);
-  \draw[arrow] (d1) -- node[left, font=\scriptsize]{NO} (d2);
-  \draw[arrow] (d2) -- node[above, font=\scriptsize]{YES} (ex2);
-  \draw[arrow] (d2) -- node[left, font=\scriptsize]{NO} (d3);
-  \draw[arrow] (d3) -- node[above, font=\scriptsize]{YES} (lw);
-  \draw[arrow] (d3) -- node[left, font=\scriptsize]{NO} (d4);
-  \draw[arrow] (d4) -- node[above, font=\scriptsize]{YES} (mice);
-  \draw[arrow] (d4) -- node[pos=0.22, left, align=right, font=\scriptsize, xshift=-2pt]{NO\\(MNAR or\\low imp.)} (ind.north);
-\end{tikzpicture}%
-}
+\includegraphics[width=\columnwidth]{tikz_2.png}%
 \end{figure}
 
-\FloatBarrier
+
 
 The first diagnostic step applies Little's MCAR test at the dataset level to evaluate whether data are Missing Completely at Random (MCAR). Under the null hypothesis of MCAR, missingness is independent of all observed and unobserved values, meaning that complete cases constitute an unbiased subsample of the population and listwise deletion would be permissible. The test returned a statistically significant result ($p < 0.05$), rejecting MCAR and confirming that missingness patterns in the dataset are systematically related to the observed data, thus ruling out blanket listwise deletion \citep{ref32}.
 
@@ -388,7 +403,7 @@ Variables classified as MNAR and all temporal features, regardless of mechanism,
 
 The four clinical vital signs confirmed MAR and ranking above the median importance threshold (oxygen saturation, heart rate, systolic blood pressure, diastolic blood pressure) are imputed using stochastic Multiple Imputation by Chained Equations with an ExtraTreesRegressor as the conditional model---a nonparametric, tree-based estimator that captures non-linear relationships in mixed-type clinical data without requiring variable standardization, analogous to the missForest framework \citep{ref35}. This estimator has been shown to outperform linear and $k$-nearest neighbor alternatives in mixed-type clinical datasets. To address the fraction of missing information (FMI) for each variable, the number of MICE iterations is scaled as $\max(20, \min(100, \lfloor \text{miss\_rate} \times 100 \rfloor))$, ensuring sufficient convergence for high-sparsity features while bounding computational cost; this scaling follows an analogous principle to Von Hippel's recommendation that the number of imputations should approximate the percentage of missing information \citep{ref38}, applied here to iteration counts rather than the number of imputed datasets. Stochastic rather than deterministic imputation is used to preserve the natural distributional variance of the imputed variables rather than collapsing them to conditional means \citep{ref1}.
 
-\FloatBarrier
+
 
 \subsection{Data Quality Assurance}
 
@@ -507,37 +522,262 @@ To improve the usability of model explanations for healthcare users, the CDSS in
 The SLM is operationally bounded to explanation tasks only. It is not used to infer new clinical causes, generate treatment prescriptions, recommend regimen changes, or replace clinician judgment. Its role is to make SHAP-grounded attribution easier to read so that healthcare providers can inspect why the CDSS flagged a patient and decide whether closer review is warranted. This role separation aligns with current medical-domain SLM framing and health AI governance expectations for bounded decision support, while keeping model interpretability grounded in the original attribution signal \citep{ref40, ref42, ref44}. Final clinical judgment remains with the treating healthcare professional.
 
 % ======================== RESULTS AND DISCUSSION ========================
-\FloatBarrier
+
 \section{Results and Discussion}
 
 This section presents the results of machine learning analyses aimed at predicting treatment success and failure among PTB patients under the DOH-CAR TB-DOTS program. Descriptive statistics summarize patient demographics, clinical characteristics, and treatment outcomes, while predictive model performance is evaluated using test and validation datasets. Both static tree-based models (XGBoost, LightGBM, Random Forest) under two sampling conditions and temporal models are compared, and feature importance analyses provide interpretable evidence about the factors influencing model predictions. The discussion interprets these findings in the context of clinical relevance, public health priorities, and CDSS usability, highlighting how risk estimates and explanation outputs can support early intervention, resource allocation, and strengthened TB management.
 
-\FloatBarrier
+
 \subsection{Missing Data Handling Outcomes}
 
 Of the 44 features identified with missing data, 15 were excluded via column exclusion. All 15 exceeded the hard missingness threshold of 80\%, including near-complete variables such as tuberculosis culture (99.8\%), other laboratory tests (99.8\%), and tuberculin skin test (93.5\%). One additional variable, the raw blood pressure string field, was soft-excluded at 67.3\% missingness and below-median predictive importance, as it had already been parsed into the structured systolic and diastolic blood pressure variables. All 599 patient records were retained in the dataset, with zero row deletion. Full sample retention is particularly consequential given the small cohort size and the severe class imbalance of 86.2\% treatment success versus 13.8\% failure; listwise deletion under these conditions would have compounded the minority class representation problem \citep{ref32}.
 
 The listwise deletion pathway was not activated, as the dataset-level MCAR test was rejected and no individual variable simultaneously satisfied all three conditions of confirmed MCAR mechanism, fewer than 15\% missing observations, and a post-deletion sample size exceeding 500. Twenty-five variables were routed to the missing indicator with fill strategy, encompassing eight temporal monthly features (including weight, percentage adherence, cumulative doses taken, and monthly smear results) and 17 static baseline variables with confirmed MNAR patterns. Four variables --- oxygen saturation, heart rate, systolic blood pressure, and diastolic blood pressure --- were imputed via stochastic MICE following confirmation of a MAR mechanism; their missingness indicators were significantly associated with visit attendance under the point-biserial correlation procedure described above --- a clinically plausible MAR mechanism, as vital sign recording depends on whether the patient attended the monthly monitoring visit rather than on the unobserved values of the measurements themselves. The concentration of stochastic imputation on this small subset of high-value features reflects the diagnostic-first design of the pipeline, which reserves computationally intensive probabilistic imputation for variables where the statistical assumptions required for its validity are met \citep{ref31, ref33}.
 
-\input{temporal/tables/raw_missingness_summary}
-\FloatBarrier
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}[l]{>{\raggedright\arraybackslash}p{0.44\textwidth}cc>{\centering\arraybackslash}p{0.18\textwidth}}
+\caption{Global Feature Missingness Rates in the Raw Temporal Dataset} \\
+\label{tab:raw_missingness_summary} \\
+\toprule
+Feature & Missing Count & Missing \% & Column Exclusion (>=80\%) \\
+\midrule
+\endfirsthead
+\toprule
+Feature & Missing Count & Missing \% & Column Exclusion (>=80\%) \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
+m8\_weight & 599 & 100.0 & Yes \\
+m12\_weight & 599 & 100.0 & Yes \\
+m11\_height & 599 & 100.0 & Yes \\
+m9\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
+m9\_smear\_tb\_lamp & 599 & 100.0 & Yes \\
+m7\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
+m7\_smear\_tb\_lamp & 599 & 100.0 & Yes \\
+m10\_smear\_tb\_lamp & 599 & 100.0 & Yes \\
+m10\_weight & 599 & 100.0 & Yes \\
+\path{risk\_factor\_s\_for\_drug\_resistance\_tuberculosis} & 599 & 100.0 & Yes \\
+m12\_height & 599 & 100.0 & Yes \\
+m12\_smear\_tb\_lamp & 599 & 100.0 & Yes \\
+m12\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
+m9\_weight & 599 & 100.0 & Yes \\
+m8\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
+m8\_smear\_tb\_lamp & 599 & 100.0 & Yes \\
+m1\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
+m11\_weight & 599 & 100.0 & Yes \\
+m10\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
+m11\_smear\_tb\_lamp & 599 & 100.0 & Yes \\
+m11\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
+m3\_xpert\_mtb\_rif & 599 & 100.0 & Yes \\
+m4\_xpert\_mtb\_rif & 598 & 99.83 & Yes \\
+m10\_height & 598 & 99.83 & Yes \\
+tuberculosis\_culture & 598 & 99.83 & Yes \\
+m12\_monthly\_missed\_doses & 598 & 99.83 & Yes \\
+other\_lab\_test & 598 & 99.83 & Yes \\
+m12\_pct\_adherence & 598 & 99.83 & Yes \\
+m8\_height & 598 & 99.83 & Yes \\
+m9\_height & 598 & 99.83 & Yes \\
+m12\_monthly\_doses\_taken & 597 & 99.67 & Yes \\
+m4\_smear\_tb\_lamp & 597 & 99.67 & Yes \\
+m1\_smear\_tb\_lamp & 597 & 99.67 & Yes \\
+others & 597 & 99.67 & Yes \\
+m11\_monthly\_missed\_doses & 597 & 99.67 & Yes \\
+m11\_pct\_adherence & 597 & 99.67 & Yes \\
+m12\_cumulative\_doses\_taken & 597 & 99.67 & Yes \\
+m10\_monthly\_missed\_doses & 596 & 99.5 & Yes \\
+m9\_pct\_adherence & 596 & 99.5 & Yes \\
+m10\_pct\_adherence & 596 & 99.5 & Yes \\
+m11\_monthly\_doses\_taken & 595 & 99.33 & Yes \\
+m9\_monthly\_missed\_doses & 595 & 99.33 & Yes \\
+m11\_cumulative\_doses\_taken & 595 & 99.33 & Yes \\
+m8\_pct\_adherence & 593 & 99.0 & Yes \\
+m3\_smear\_tb\_lamp & 593 & 99.0 & Yes \\
+m8\_monthly\_missed\_doses & 592 & 98.83 & Yes \\
+m10\_monthly\_doses\_taken & 592 & 98.83 & Yes \\
+m10\_cumulative\_doses\_taken & 592 & 98.83 & Yes \\
+m6\_smear\_tb\_lamp & 590 & 98.5 & Yes \\
+m9\_cumulative\_doses\_taken & 588 & 98.16 & Yes \\
+m7\_height & 588 & 98.16 & Yes \\
+m5\_smear\_tb\_lamp & 588 & 98.16 & Yes \\
+m9\_monthly\_doses\_taken & 588 & 98.16 & Yes \\
+m6\_xpert\_mtb\_rif & 587 & 98.0 & Yes \\
+m2\_smear\_tb\_lamp & 587 & 98.0 & Yes \\
+m0\_smear\_tb\_lamp & 586 & 97.83 & Yes \\
+m7\_weight & 586 & 97.83 & Yes \\
+m5\_xpert\_mtb\_rif & 585 & 97.66 & Yes \\
+m8\_cumulative\_doses\_taken & 582 & 97.16 & Yes \\
+m8\_monthly\_doses\_taken & 581 & 96.99 & Yes \\
+dat\_supported\_dup & 576 & 96.16 & Yes \\
+m2\_xpert\_mtb\_rif & 572 & 95.49 & Yes \\
+other & 570 & 95.16 & Yes \\
+m5\_height & 563 & 93.99 & Yes \\
+m4\_height & 562 & 93.82 & Yes \\
+m6\_height & 562 & 93.82 & Yes \\
+m6\_weight & 561 & 93.66 & Yes \\
+tuberculin\_skin\_test & 559 & 93.32 & Yes \\
+m3\_height & 558 & 93.16 & Yes \\
+m5\_weight & 557 & 92.99 & Yes \\
+m2\_height & 555 & 92.65 & Yes \\
+m0\_xpert\_mtb\_rif & 554 & 92.49 & Yes \\
+m4\_weight & 554 & 92.49 & Yes \\
+m1\_height & 554 & 92.49 & Yes \\
+nationality\_raw & 551 & 91.99 & Yes \\
+m3\_weight & 550 & 91.82 & Yes \\
+dat\_supported & 549 & 91.65 & Yes \\
+prior\_history\_of\_tb & 549 & 91.65 & Yes \\
+m2\_weight & 543 & 90.65 & Yes \\
+m1\_weight & 540 & 90.15 & Yes \\
+m7\_pct\_adherence & 519 & 86.64 & Yes \\
+\path{regimen\_type\_at\_6th\_month\_of\_treatment} & 518 & 86.48 & Yes \\
+smear\_microscopy & 502 & 83.81 & Yes \\
+m7\_monthly\_missed\_doses & 502 & 83.81 & Yes \\
+respiratory\_rate & 501 & 83.64 & Yes \\
+height & 492 & 82.14 & Yes \\
+temperature & 481 & 80.3 & Yes \\
+weight & 476 & 79.47 & No \\
+m7\_cumulative\_doses\_taken & 465 & 77.63 & No \\
+o2\_sat & 462 & 77.13 & No \\
+m7\_monthly\_doses\_taken & 453 & 75.63 & No \\
+heart\_rate & 441 & 73.62 & No \\
+blood\_pressure & 403 & 67.28 & No \\
+m6\_pct\_adherence & 398 & 66.44 & No \\
+\path{regimen\_type\_at\_end\_of\_treatment} & 355 & 59.27 & No \\
+m6\_monthly\_missed\_doses & 347 & 57.93 & No \\
+m5\_pct\_adherence & 336 & 56.09 & No \\
+m4\_pct\_adherence & 319 & 53.26 & No \\
+m3\_pct\_adherence & 312 & 52.09 & No \\
+m2\_pct\_adherence & 302 & 50.42 & No \\
+m1\_pct\_adherence & 293 & 48.91 & No \\
+\path{name\_of\_treatment\_unit} & 290 & 48.41 & No \\
+m0\_pct\_adherence & 277 & 46.24 & No \\
+\path{treatment\_regimen} & 273 & 45.58 & No \\
+m6\_cumulative\_doses\_taken & 263 & 43.91 & No \\
+co\_morbidities & 253 & 42.24 & No \\
+m5\_monthly\_missed\_doses & 252 & 42.07 & No \\
+m0\_cumulative\_doses\_taken & 244 & 40.73 & No \\
+\path{continuation\_phase\_start\_date} & 239 & 39.9 & No \\
+m3\_monthly\_missed\_doses & 235 & 39.23 & No \\
+m0\_height & 235 & 39.23 & No \\
+\path{date\_of\_outcome} & 235 & 39.23 & No \\
+m4\_monthly\_missed\_doses & 233 & 38.9 & No \\
+m6\_monthly\_doses\_taken & 228 & 38.06 & No \\
+\path{continuation\_phase\_end\_date} & 228 & 38.06 & No \\
+m0\_monthly\_missed\_doses & 226 & 37.73 & No \\
+m2\_monthly\_missed\_doses & 222 & 37.06 & No \\
+\path{intensive\_phase\_end\_date} & 217 & 36.23 & No \\
+m3\_cumulative\_doses\_taken & 217 & 36.23 & No \\
+\path{drug\_resistance\_bacteriological\_status} & 217 & 36.23 & No \\
+\path{chest\_x\_ray\_at\_case\_notification} & 213 & 35.56 & No \\
+m1\_monthly\_missed\_doses & 186 & 31.05 & No \\
+m0\_weight & 185 & 30.88 & No \\
+xpert\_mtb\_rif & 182 & 30.38 & No \\
+civil\_status & 167 & 27.88 & No \\
+nationality & 166 & 27.71 & No \\
+\path{date\_of\_notification} & 159 & 26.54 & No \\
+m5\_cumulative\_doses\_taken & 157 & 26.21 & No \\
+m4\_cumulative\_doses\_taken & 152 & 25.38 & No \\
+\path{name\_of\_diagnosing\_facility} & 150 & 25.04 & No \\
+\path{intensive\_phase\_start\_date} & 136 & 22.7 & No \\
+outcome & 127 & 21.2 & No \\
+m2\_cumulative\_doses\_taken & 126 & 21.04 & No \\
+\path{regimen\_type\_at\_start\_of\_treatment} & 122 & 20.37 & No \\
+\path{case\_registration\_group} & 117 & 19.53 & No \\
+\path{date\_of\_diagnosis} & 110 & 18.36 & No \\
+m5\_monthly\_doses\_taken & 101 & 16.86 & No \\
+m1\_cumulative\_doses\_taken & 93 & 15.53 & No \\
+m4\_monthly\_doses\_taken & 90 & 15.03 & No \\
+m3\_monthly\_doses\_taken & 80 & 13.36 & No \\
+\path{bacteriologic\_status} & 79 & 13.19 & No \\
+diagnosis & 62 & 10.35 & No \\
+\path{treatment\_start\_date} & 57 & 9.52 & No \\
+m2\_monthly\_doses\_taken & 57 & 9.52 & No \\
+m1\_monthly\_doses\_taken & 39 & 6.51 & No \\
+sex & 33 & 5.51 & No \\
+no & 31 & 5.18 & No \\
+m0\_monthly\_doses\_taken & 30 & 5.01 & No \\
+\path{date\_of\_birth} & 20 & 3.34 & No \\
+age & 18 & 3.01 & No \\
+\path{data\_year} & 0 & 0.0 & No \\
+\path{source\_file} & 0 & 0.0 & No \\
+facility & 0 & 0.0 & No \\
+\end{longtable}
+
+
 
 Table~\ref{tab:raw_missingness_summary} presents the complete missingness profile of all features in the temporal dataset prior to preprocessing. Fifteen variables exceeded the 80\% hard threshold and were routed to column exclusion, including tuberculosis culture (99.8\%), other laboratory tests (99.8\%), and tuberculin skin test (93.5\%). An additional set of variables fell within the 50\%--80\% threshold band — including height (71.7\%), weight (71.7\%), smear microscopy (55.6\%), and risk factor fields (91.7\%) — where handling was contingent on predictive importance under the missing indicator with fill pathway.
 
-\input{temporal/tables/retention_stats_by_month}
-\FloatBarrier
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}[l]{>{\raggedright\arraybackslash}p{0.19\textwidth}cccc}
+\caption{Patient Data Retention by Month (M0–M12): Evidence for Missing Indicator with Fill} \\
+\label{tab:retention_stats_by_month} \\
+\toprule
+Month & Active Patients & \% Retained & \% Data Decay & Adherence Obs. \\
+\midrule
+\endfirsthead
+\caption*{Table \ref{tab:retention_stats_by_month} continued} \\
+\toprule
+Month & Active Patients & \% Retained & \% Data Decay & Adherence Obs. \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
+M0 & 572 & 95.49 & 4.51 & 322 \\
+M1 & 561 & 93.66 & 6.34 & 306 \\
+M2 & 543 & 90.65 & 9.35 & 297 \\
+M3 & 519 & 86.64 & 13.36 & 287 \\
+M4 & 509 & 84.97 & 15.03 & 280 \\
+M5 & 498 & 83.14 & 16.86 & 263 \\
+M6 & 373 & 62.27 & 37.73 & 201 \\
+M7 & 146 & 24.37 & 75.63 & 80 \\
+M8 & 18 & 3.01 & 96.99 & 6 \\
+M9 & 11 & 1.84 & 98.16 & 3 \\
+M10 & 7 & 1.17 & 98.83 & 3 \\
+M11 & 4 & 0.67 & 99.33 & 2 \\
+M12 & 2 & 0.33 & 99.67 & 1 \\
+\end{longtable}
+
+
 
 \begin{figure}[t]
 \caption{Patient Retention Cascade Across Treatment Months}
 \label{fig:temporal_persistence}
-\includegraphics[width=\columnwidth]{temporal/figures/temporal_persistence_cascade.pdf}
+\includegraphics[width=\columnwidth]{temporal/figures/temporal_persistence_cascade.png}
 \end{figure}
-\FloatBarrier
+
 
 Patient retention across the treatment course further clarifies the missingness mechanism. At treatment initiation (M0), 95.5\% of patients had available data, declining to 83.1\% at M5, then dropping sharply to 62.3\% at M6 and 24.4\% at M7. Beyond M7, fewer than 4\% of patients remained observable. This monotonic decay confirms that missingness in the temporal features is driven by treatment dropout rather than random absence, directly supporting the missing indicator with fill pathway's use of forward-fill with a missing indicator for temporal variables \citep{ref36}. The M7 cutoff also defines the temporal modeling scope: per-patient observed means are computed only across Months 0 through 7, as estimates beyond this window would rely on a non-representative surviving subset.
 
-\input{temporal/tables/vitals_descriptive_stats}
-\FloatBarrier
+\begin{longtable}[l]{lccccccccc}
+\caption{Descriptive Statistics and Skewness of Raw Vital Sign Features (Justifying Clinical Bound Clipping and MICE Imputation)} \\
+\label{tab:vitals_descriptive_stats} \\
+\toprule
+Feature & N & Mean & Median & SD & Min & Max & Skewness & Kurtosis & Missing \% \\
+\midrule
+\endfirsthead
+\caption*{Table \ref{tab:vitals_descriptive_stats} continued} \\
+\toprule
+Feature & N & Mean & Median & SD & Min & Max & Skewness & Kurtosis & Missing \% \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
+\small
+age & 581 & 46.2 & 48.0 & 21.24 & 0.42 & 93.0 & -0.06 & -0.824 & 3.01 \\
+heart\_rate & 141 & 89.6 & 88.0 & 15.16 & 59.0 & 129.0 & 0.41 & -0.408 & 73.62 \\
+respiratory\_rate & 73 & 19.21 & 19.0 & 1.62 & 16.0 & 24.0 & 0.459 & 0.683 & 83.64 \\
+temperature & 91 & 36.39 & 36.4 & 0.26 & 35.6 & 37.0 & -0.501 & 0.555 & 80.3 \\
+o2\_sat & 121 & 18.65 & 0.97 & 36.88 & 0.9 & 99.0 & 1.612 & 0.623 & 77.13 \\
+\end{longtable}
+
 
 Table~\ref{tab:vitals_descriptive_stats} reports the descriptive statistics and distributional properties of the vital sign features in the raw temporal dataset. The skewness values confirm several vitals exhibit moderate right-skew — particularly heart rate (skew = 1.52) and respiratory rate (skew = 1.83) — supporting the use of a tree-based MICE estimator (ExtraTreesRegressor) that does not assume normality. The four variables selected for stochastic MICE — oxygen saturation, heart rate, systolic blood pressure, and diastolic blood pressure — each show a clinically plausible MAR mechanism, with missingness linked to visit attendance rather than unobserved measurement values.
 
@@ -548,15 +788,15 @@ The final validated dataset comprised 7,389 complete patient records encompassin
 \begin{figure}[t]
     \caption{TB Case Notifications by Year (2015--2025)}
     \label{fig:yearly_case_counts}
-    \includegraphics[width=\columnwidth]{figures/yearly_case_counts.pdf}
+    \includegraphics[width=\columnwidth]{figures/yearly_case_counts.png}
 \end{figure}
 
 \begin{figure}[t]
     \caption{Age-Sex Pyramid of the Study Cohort}
     \label{fig:age_sex_pyramid}
-    \includegraphics[width=\columnwidth]{figures/age_sex_pyramid.pdf}
+    \includegraphics[width=\columnwidth]{figures/age_sex_pyramid.png}
 \end{figure}
-\FloatBarrier
+
 
 Resampling using SMOTE combined with Edited Nearest Neighbors (SMOTE+ENN) was applied exclusively to the training set. This technique increased the minority (failure) class by 433\% to achieve a near-balanced 0.70:1 ratio, mitigating algorithm bias toward the majority class while preserving realistic, imbalanced evaluation conditions in the test and validation sets.
 
@@ -569,9 +809,9 @@ Conversely, adverse outcomes accounted for a critical minority of the dataset. P
 \begin{figure}[t]
     \caption{Distribution of Treatment Outcomes Among PTB Patients}
     \label{fig:outcome_distribution}
-    \includegraphics[width=0.7\textwidth]{figures/treatment_outcomes_pie.pdf}
+    \includegraphics[width=0.7\textwidth]{figures/treatment_outcomes_pie.png}
 \end{figure}
-\FloatBarrier
+
 
 \subsection{Longitudinal Trends (2015--2025)}
 
@@ -584,8 +824,36 @@ An analysis of annual treatment outcomes from 2015 to 2025 revealed significant 
     \item \textbf{2025 Cohort Anomaly:} The data for 2025 showed a drastic drop in recorded success (30.01\%) and a massive spike in unresolved cases (64.80\%). This is indicative of an incomplete reporting year, where the majority of recent patients are still undergoing their 6- to 12-month treatment regimens and have not yet been assigned a final programmatic outcome.
 \end{enumerate}
 
-\input{tables/outcome_trends_by_year.tex}
-\FloatBarrier
+\begin{table}[htbp]
+
+\caption{Treatment Outcome Distribution by Year (\%)}
+\label{tab:outcome_trends_by_year}
+\begin{tabular}{lcccc}
+
+\toprule
+
+Year & Died & Lost to Follow-up & Other & Success \\
+
+\midrule
+
+2015 & 2.65 & 9.56 & 3.82 & 83.97 \\
+2016 & 2.98 & 11.57 & 1.32 & 84.13 \\
+2017 & 3.84 & 8.8 & 1.28 & 86.08 \\
+2018 & 4.25 & 11.53 & 3.19 & 81.03 \\
+2019 & 3.65 & 11.8 & 3.51 & 81.04 \\
+2020 & 5.47 & 11.99 & 0.88 & 81.66 \\
+2021 & 6.63 & 6.82 & 0.97 & 85.58 \\
+2022 & 4.72 & 7.08 & 0.92 & 87.29 \\
+2023 & 3.92 & 6.35 & 0.81 & 88.92 \\
+2024 & 3.66 & 5.56 & 4.55 & 86.24 \\
+2025 & 2.05 & 3.14 & 64.8 & 30.01 \\
+
+\bottomrule
+
+\end{tabular}
+
+\end{table}
+
 
 \subsection{Diagnostic and Treatment Intervals}
 
@@ -599,36 +867,93 @@ The temporal intervals between screening, diagnosis, and treatment initiation we
 
 These skewed distributions demonstrate that while the median programmatic response is efficient, the long tails represent significant delays for high-risk patients. These interval metrics served as crucial continuous features in the machine learning models, allowing the algorithms to correlate logistical delays with the eventual probability of patient mortality or loss to follow-up.
 
-\input{tables/time_interval_summary.tex}
-\FloatBarrier
+\begin{table}[htbp]
+
+\caption{Summary Statistics for Time Intervals (Days)}
+\label{tab:time_interval_summary}
+\begin{tabular}{lcccc}
+
+\toprule
+
+Interval & Count & Median & Q1 & Q3 \\
+
+\midrule
+
+Days\_Screening\_To\_Diagnosis & 2945 & 0 & 0 & 7 \\
+Days\_To\_Treatment & 3011 & 1 & 0 & 6 \\
+Days\_To\_Microscopy\_Result & 92 & 4 & 0 & 13 \\
+Days\_To\_RDT\_Result & 751 & 0 & -1 & 3 \\
+
+\bottomrule
+
+\end{tabular}
+
+\end{table}
+
 
 \subsection{Correlation Analysis}
 
 \begin{figure}[H]
     \caption{Pearson Correlation Matrix of Continuous Variables}
     \label{fig:numerical_pearson}
-    \includegraphics[width=0.7\columnwidth]{figures/numerical_pearson_correlation.pdf}
+    \includegraphics[width=0.7\columnwidth]{figures/numerical_pearson_correlation.png}
 \end{figure}
-\FloatBarrier
+
 
 The Pearson correlation matrix (Figure~\ref{fig:numerical_pearson}) reveals the pairwise relationships among age, clinical delay intervals, and diagnosis timing. Age exhibited weak negative correlations with the time intervals ($|r| < 0.10$), indicating that older patients experienced marginally shorter delays. The clinical delay variables showed moderate positive inter-correlations (screening-to-diagnosis with diagnosis-to-treatment: $r = 0.32$), suggesting that delays at one stage of the care cascade are associated with delays at subsequent stages. Diagnosis day-of-year was essentially uncorrelated with all other variables ($|r| < 0.05$), confirming that seasonal timing is independent of patient demographic and operational factors.
 
 \begin{figure}[H]
     \caption{Cram\'{e}r's V Correlation Matrix of Categorical Variables}
     \label{fig:categorical_cramersv}
-    \includegraphics[width=\columnwidth]{figures/categorical_cramersv_correlation.pdf}
+    \includegraphics[width=\columnwidth]{figures/categorical_cramersv_correlation.png}
 \end{figure}
-\FloatBarrier
+
 
 The Cram\'{e}r's V matrix (Figure~\ref{fig:categorical_cramersv}) quantifies pairwise associations among the categorical feature set. Most pairwise associations fell in the moderate range ($V \approx 0.3$--$0.5$), indicating meaningful but not redundant categorical structure. Geographic variables (province, region, and health facility) formed a cluster of elevated mutual associations ($V > 0.6$), as expected given the hierarchical nesting of administrative units. The outcome variable showed modest associations with registration group and anatomical site ($V \approx 0.25$), suggesting that categorical features carry a measurable but limited signal for treatment outcome prediction.
 
-\FloatBarrier
+
 \subsection{Validation Set Performance and Generalization}
 
-\input{tables/model_comparison.tex}
+\begin{table}[htbp]
+\caption{Comprehensive Performance Metrics for All Static Model Configurations (Improved Feature Set)}
+\label{tab:model_comparison}
+\begin{tabular}{llcccccccccccc}
+\toprule
+Model & Sampler & AUC & CV-AUC & $\pm$Std & Acc. & MCC & Prec.\ (F) & Recall (F) & F1 (F) & Prec.\ (S) & Recall (S) & F1 (S) & Score \\
+\midrule
+XGBoost & None & 0.7175 & 0.6904 & 0.0058 & 0.7090 & 0.2582 & 0.2663 & 0.6290 & 0.3742 & 0.9238 & 0.7219 & 0.8104 & 0.6821 \\
+LightGBM & None & 0.7041 & 0.6893 & 0.0091 & 0.7040 & 0.2066 & 0.2449 & 0.5475 & 0.3385 & 0.9094 & 0.7291 & 0.8094 & 0.6415 \\
+Random Forest & None & 0.6985 & 0.6921 & 0.0083 & 0.7785 & 0.1461 & 0.2509 & 0.3032 & 0.2746 & 0.8843 & 0.8548 & 0.8693 & 0.5403 \\
+Random Forest & SMOTE - ENN & 0.6920 & 0.6910 & 0.0110 & 0.7384 & 0.1973 & 0.2556 & 0.4661 & 0.3301 & 0.9013 & 0.7821 & 0.8375 & 0.6016 \\
+\textbf{XGBoost} & \textbf{SMOTE - ENN} & \textbf{0.6873} & \textbf{0.6904} & \textbf{0.0119} & \textbf{0.5501} & \textbf{0.1753} & \textbf{0.1971} & \textbf{0.7330} & \textbf{0.3106} & \textbf{0.9240} & \textbf{0.5207} & \textbf{0.6660} & \textbf{0.7056} \\
+LightGBM & SMOTE - ENN & 0.6830 & 0.6898 & 0.0148 & 0.7941 & 0.1996 & 0.2939 & 0.3484 & 0.3188 & 0.8922 & 0.8656 & 0.8787 & 0.5492 \\
+\bottomrule
+\end{tabular}%
+\smallskip
 
-\input{tables/static_confusion_matrix.tex}
-\FloatBarrier
+{\footnotesize \textit{Note.} F~=~Failure class; S~=~Success class; AUC~=~test-set ROC-AUC; CV-AUC~=~5-fold CV mean; $\pm$Std~=~CV standard deviation; Acc.~=~Accuracy; MCC~=~Matthews Correlation Coefficient; Prec.~=~Precision; Score~=~composite $0.6 \times \text{AUC} + 0.4 \times \text{Recall\,(F)}$. Bold row indicates recommended model.}
+\end{table}
+
+\begin{table}[htbp]
+\caption{Static Model Confusion Matrix Counts on Test Set}
+\label{tab:static_confusion_matrix}
+\small
+\begin{tabular}{llcccc}
+\toprule
+Model & Sampler & TP & FN & FP & TN \\
+\midrule
+\textbf{XGBoost} & \textbf{SMOTE - ENN} & \textbf{162} & \textbf{59} & \textbf{660} & \textbf{717} \\
+XGBoost & None & 139 & 82 & 383 & 994 \\
+LightGBM & None & 121 & 100 & 373 & 1004 \\
+Random Forest & SMOTE - ENN & 103 & 118 & 300 & 1077 \\
+LightGBM & SMOTE - ENN & 77 & 144 & 185 & 1192 \\
+Random Forest & None & 67 & 154 & 200 & 1177 \\
+\bottomrule
+\end{tabular}
+
+{\footnotesize \textit{Note.} Failure is treated as the positive class. TP~=~actual Failure predicted as Failure; FN~=~actual Failure predicted as Success; FP~=~actual Success predicted as Failure; TN~=~actual Success predicted as Success. Bold row indicates recommended model. Test set: 1{,}598 samples (221 Failure, 1{,}377 Success).}
+\end{table}
+
 
 \subsection{Model Performance Visualizations}
 
@@ -637,25 +962,25 @@ The Cram\'{e}r's V matrix (Figure~\ref{fig:categorical_cramersv}) quantifies pai
 Figure~\ref{fig:roc_pr} presents the Receiver Operating Characteristic (ROC) curves~(a) and Precision-Recall curves~(b) for the best configuration of each classifier. Panel~(a) summarizes each model's ability to discriminate between treatment success and failure across decision thresholds, with the dashed diagonal representing random chance. Panel~(b) provides a more informative view under class imbalance (approximately 86\% success rate), where the horizontal dashed line marks the no-skill baseline at the failure class prevalence. Together, these two panels reveal both the overall discriminative capacity and the precision--recall trade-off that clinicians must navigate when setting alert thresholds.
 
 \begin{figure}[htbp]
-  \includegraphics[width=0.95\textwidth]{figures/fig_roc_pr_curves.pdf}
+  \includegraphics[width=0.95\textwidth]{figures/fig_roc_pr_curves.png}
   \caption{(a) ROC curves and (b) Precision-Recall curves for XGBoost, LightGBM, and
            Random Forest under both sampling conditions. AUC and Average Precision (AP)
            values are shown in the legend. The dashed lines denote random chance (a)
            and the no-skill baseline at failure prevalence~(b).}
   \label{fig:roc_pr}
 \end{figure}
-\FloatBarrier
+
 
 Figure~\ref{fig:cv_feat} presents the cross-validation stability of all six model configurations~(c) and the top 15 feature importances from the best-performing classifier~(d). Panel~(c) shows the 5-fold CV ROC-AUC mean with standard deviation bars for each model--sampler combination, color-coded by sampling strategy; configurations with narrower error bars indicate more stable generalization. Panel~(d) ranks the most predictive features by normalized importance, providing clinically interpretable signals for which patient attributes drive the risk prediction. These ranked contributors support the XAI objective of making model behavior inspectable: they help clinicians and program administrators see which variables the model relied on, while SHAP-based patient-level explanations provide the case-specific version of this interpretability for CDSS use.
 
 \begin{figure}[htbp]
-  \includegraphics[width=0.95\textwidth]{figures/fig_cv_feature_importance.pdf}
+  \includegraphics[width=0.95\textwidth]{figures/fig_cv_feature_importance.png}
   \caption{(c) 5-fold cross-validation ROC-AUC (mean $\pm$ std) for all six model--sampler
            configurations, color-coded by sampling strategy. (d) Top 15 feature importances
            from the best-performing classifier, normalized to sum to~1.}
   \label{fig:cv_feat}
 \end{figure}
-\FloatBarrier
+
 
 Table~\ref{tab:model_comparison} presents the full metric breakdown for all six configurations. Models were ranked by a composite clinical score $S = 0.6 \times \text{AUC} + 0.4 \times \text{Recall\,(Failure)}$, which weights discriminative ability alongside sensitivity to treatment failure --- the outcome that CDSS alerts must prioritize.
 
@@ -665,13 +990,12 @@ Among models without resampling, XGBoost (no sampling) achieved the highest test
 
 The MCC values reported in Table~\ref{tab:model_comparison} reveal the cost of this recall-focused selection. XGBoost with SMOTE-ENN achieved an MCC of 0.175, the lowest among all six test-set configurations. In contrast, XGBoost without resampling yielded the highest MCC (0.258), reflecting its superior balance across all four confusion matrix quadrants. This divergence illustrates a fundamental tension in imbalanced clinical classification: SMOTE-ENN raises failure recall by generating a large volume of synthetic minority-class samples during training, but the resulting model produces proportionally more false positives on the real test distribution, which MCC penalizes symmetrically. Accordingly, the recommended XGBoost with SMOTE-ENN configuration is best suited for a screening-oriented deployment where catching every at-risk patient takes precedence over minimizing false alerts, whereas XGBoost without resampling is the preferred choice when the operational cost of unnecessary clinical reviews is a binding constraint.
 
-\FloatBarrier
+
 \subsection{Temporal Models Performance}
 
 \begin{table}[H]
 \caption{Version 1 (v1) Test Set Performance Metrics of Temporal Models for TB Treatment Outcome Prediction}
 \label{tab:temporal_performance_v1}
-\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lcccccc}
 \toprule
 Metric & Bi-LSTM Baseline & Bi-LSTM Augmented & XGBoost Baseline & XGBoost SMOTE-ENN & LightGBM SMOTE-ENN & Random Forest SMOTE-ENN \\
@@ -686,7 +1010,6 @@ PR-AUC & 0.8847 & 0.9099 & 0.9501 & 0.8356 & 0.8500 & 0.9419 \\
 Threshold & 0.15 & 0.86 & 0.10 & 0.34 & 0.43 & 0.70 \\
 \bottomrule
 \end{tabular}%
-}
 \end{table}
 
 Table~\ref{tab:temporal_performance_v1} reports the v1 temporal-model results on the held-out test split. Although several models achieved high accuracy (0.9048) and F1 score (0.9500), these values were largely driven by the dominant Success class under severe class imbalance. The v1 specificity of 0.0000 indicates that none of the actual Failure cases were correctly identified on the test split, motivating the corrected v2 temporal modeling iteration.
@@ -694,7 +1017,6 @@ Table~\ref{tab:temporal_performance_v1} reports the v1 temporal-model results on
 \begin{table}[H]
 \caption{Version 2 (v2) Test Set Performance Metrics of Temporal Models (M12)}
 \label{tab:temporal_performance_v2}
-\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lcccccccccc}
 \toprule
 Model & Accuracy & Bal. Acc. & Precision & Recall & F1 & Specificity & ROC-AUC & PR-AUC & Threshold \\
@@ -707,7 +1029,6 @@ Hybrid Bi-LSTM (Baseline) & 0.8409 & 0.9079 & 1.0000 & 0.8158 & 0.8986 & 1.0000 
 Hybrid Bi-LSTM (Augmented) & 0.7500 & 0.8553 & 1.0000 & 0.7105 & 0.8308 & 1.0000 & 0.9474 & 0.9910 & 0.89 \\
 \bottomrule
 \end{tabular}%
-}
 \end{table}
 
 The v2 results (Table~\ref{tab:temporal_performance_v2}) reflect the corrected temporal modeling workflow after addressing data leakage risk, outcome-label handling, and improved temporal feature preparation. On the v2 held-out test set, the SMOTE-ENN tree models (Random Forest, LightGBM, and XGBoost) converged to the same hard-label confusion matrix and correctly identified 5 of 6 Failure cases while correctly classifying 36 of 38 Success cases, yielding 0.9318 accuracy and 0.8333 specificity. Random Forest achieved the strongest held-out ranking performance among the tree models by ROC-AUC (0.9693) and PR-AUC (0.9950). In contrast, the v2 Hybrid Bi-LSTM baseline detected all Failure cases (specificity 1.0000) but generated more false Failure alerts among true Success cases, reducing overall accuracy; this reflects a sensitivity-specificity tradeoff relevant for screening-oriented clinical decision support.
@@ -738,7 +1059,6 @@ Note. Failure is treated as the positive class. TP = actual Failure predicted as
 \begin{table}[H]
 \caption{Methodological Differences Between Temporal Modeling Iterations (v1 vs v2)}
 \label{tab:temporal_v1_v2_method_comparison}
-\resizebox{\columnwidth}{!}{%
 \begin{tabular}{llll}
 \toprule
 Aspect & v1 & v2 & Interpretation \\
@@ -750,13 +1070,11 @@ Tree-model features & 204 engineered features & 399 engineered features & v2 exp
 Failure detection on test & Specificity 0.0000 & Specificity 0.8333--1.0000 & v2 meaningfully improves Failure identification \\
 \bottomrule
 \end{tabular}%
-}
 \end{table}
 
 \begin{table}[H]
 \caption{Model-Level Performance Comparison Between Temporal Model v1 and v2 (Test Sets)}
 \label{tab:temporal_v1_v2_model_comparison}
-\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lccccccc}
 \toprule
 Model & v1 Acc & v1 Spec & v1 ROC-AUC & v2 Acc & v2 Spec & v2 ROC-AUC & Change Summary \\
@@ -769,7 +1087,6 @@ Hybrid Bi-LSTM (Baseline) & 0.9048 & 0.0000 & 0.4737 & 0.8409 & 1.0000 & 0.9868 
 Hybrid Bi-LSTM (Augmented) & 0.9048 & 0.0000 & 0.3684 & 0.7500 & 1.0000 & 0.9474 & Higher sensitivity; reduced overall accuracy \\
 \bottomrule
 \end{tabular}%
-}
 \end{table}
 
 % Optional: Per-month v2 performance plots for each model family.
@@ -800,24 +1117,24 @@ Hybrid Bi-LSTM (Augmented) & 0.9048 & 0.0000 & 0.3684 & 0.7500 & 1.0000 & 0.9474
 
 Figures~\ref{fig:temporal_v2_lstm_per_month_performance}--\ref{fig:temporal_v2_rf_per_month_performance} summarize v2 temporal performance as treatment monitoring data accumulates from M0 to M12 across the Hybrid Bi-LSTM, XGBoost, LightGBM, and Random Forest temporal models. This month-by-month view is operationally important for TB-DOTS decision support because it indicates when the models begin to provide stable discrimination beyond baseline information. The plots complement the single-point M12 metrics in Tables~\ref{tab:temporal_performance_v2} and \ref{tab:temporal_confusion_v2} by showing that temporal prediction quality evolves over the course of therapy rather than being a single end-of-treatment estimate.
 
-\FloatBarrier
+
 \subsection{Correlation Analysis of Clinical and Temporal Features}
 
 \begin{figure}[t]
 \caption{Pearson Correlation Matrix of Vital Sign Features in the Temporal Dataset}
 \label{fig:vitals_pearson}
-\includegraphics[width=\columnwidth]{temporal/figures/vitals_pearson_correlation.pdf}
+\includegraphics[width=\columnwidth]{temporal/figures/vitals_pearson_correlation.png}
 \end{figure}
-\FloatBarrier
+
 
 Pairwise correlations among vital signs within the temporal monitoring dataset confirm that several clinical measurements are moderately associated, supporting the use of MICE. The strongest observed correlation was between age and heart rate ($r = -0.32$), followed by oxygen saturation and heart rate ($r = -0.30$), and systolic with diastolic blood pressure ($r = 0.24$). These magnitudes, while modest, indicate that multivariate imputation can leverage shared variance across vital signs to produce more plausible estimates than univariate mean-fill. Respiratory rate and temperature showed uniformly low correlations with all other vitals ($|r| < 0.10$), suggesting that their missingness is best handled by the missing indicator with fill rather than MICE.
 
 \begin{figure}[t]
 \caption{Categorical Feature Raw Cardinality — Justification for Stage 4 Harmonization}
 \label{fig:categorical_cardinality}
-\includegraphics[width=\columnwidth]{temporal/figures/categorical_cardinality_audit.pdf}
+\includegraphics[width=\columnwidth]{temporal/figures/categorical_cardinality_audit.png}
 \end{figure}
-\FloatBarrier
+
 
 The cardinality audit of raw categorical features (Figure~\ref{fig:categorical_cardinality}) confirms that data entry inconsistency was widespread across the temporal dataset. Several features exhibited far more unique values than expected under standardized coding: \texttt{chest\_x\_ray\_at\_case\_notification} contained over 300 unique free-text entries, \texttt{co\_morbidities} exceeded 150 variants, and \texttt{prior\_history\_of\_tb} and \texttt{drug\_resistance\_status} each had more than 20 distinct raw representations. Even nominally binary fields such as \linebreak[0]\texttt{sex} and \texttt{outcome} showed 5 to 12 unique raw values due to inconsistent abbreviation conventions across facilities.
 
@@ -826,39 +1143,64 @@ This heterogeneity directly motivated the Stage 4 categorical harmonization step
 \begin{figure}[t]
 \caption{Cram\'{e}r's V Correlation Matrix of Raw Categorical Variables in the Temporal Dataset}
 \label{fig:cramers_raw}
-\includegraphics[width=\columnwidth]{temporal/figures/categorical_cramersv_correlation.pdf}
+\includegraphics[width=\columnwidth]{temporal/figures/categorical_cramersv_correlation.png}
 \end{figure}
-\FloatBarrier
+
 
 Cram\'{e}r's V associations among raw categorical variables in the temporal dataset reveal widespread strong associations, with numerous pairwise values exceeding 0.80. These inflated coefficients are driven primarily by \texttt{chest\_x\_ray\_at\_case\_notification}, which contains over 300 unique free-text entries in the raw data, rather than by genuine clinical association. Similarly, \texttt{co\_morbidities} contributed artificially elevated associations due to inconsistent coding across facilities. This finding directly motivated the Stage 4 categorical harmonization step, which standardizes free-text entries into clinically meaningful groupings and eliminates spurious associations arising from data entry inconsistencies rather than true patient characteristics.
 
 \begin{figure}[t]
 \caption{Cram\'{e}r's V Correlation Matrix of Imputed Categorical Variables}
 \label{fig:cramers_imputed}
-\includegraphics[width=\columnwidth]{temporal/figures/categorical_cramersv_imputed.pdf}
+\includegraphics[width=\columnwidth]{temporal/figures/categorical_cramersv_imputed.png}
 \end{figure}
-\FloatBarrier
+
 
 The imputed Cram\'{e}r's V matrix (Figure~\ref{fig:cramers_imputed}) confirms that the preprocessing pipeline reduced spurious categorical associations, with median off-diagonal V dropping from approximately 0.46 to 0.07. Three columns from the raw matrix — \texttt{prior\_history\_of\_tb}, \texttt{dat\_supported}, and \texttt{nationality} — are absent because they lacked sufficient variance or non-missing pairs in the cleaned data to compute reliable associations.
 
 \begin{figure}[t]
 \caption{Temporal Feature Correlation Matrix of Treatment Variables}
 \label{fig:temporal_feature_corr}
-\includegraphics[width=\columnwidth]{temporal/figures/temporal_feature_correlation.pdf}
+\includegraphics[width=\columnwidth]{temporal/figures/temporal_feature_correlation.png}
 \end{figure}
-\FloatBarrier
+
 
 The temporal feature correlation matrix (Figure~\ref{fig:temporal_feature_corr}) reveals the relational structure among key treatment variables aggregated over the M0--M7 window. Adherence metrics — including \texttt{percentage\_adherence}, \texttt{doses\_taken\_per\_month}, and \texttt{cumulative\_doses\_taken} — form a tight, strongly inter-correlated cluster ($r > 0.85$), confirming internal measurement consistency. Anthropometric features (\texttt{weight}, \texttt{height}) are orthogonal to all adherence measures ($r \sim 0$), indicating that body-size variation is independent of treatment compliance in this cohort. Retention features (\texttt{last\_month\_attended}, \texttt{total\_observed\_months}) show only weak positive associations with adherence ($r \approx 0.2$), suggesting that visit persistence and dose compliance capture distinct dimensions of patient engagement. \linebreak[0] Diagnostic variables such as \texttt{smear\_microscopy\_result} exhibit near-zero correlations with adherence and retention, consistent with their role as outcome indicators rather than behavioral predictors. Xpert MTB/RIF does not appear in the matrix because all observed values in the temporal subset were identical (zero variance), producing undefined Pearson coefficients.
 
 \begin{figure}[t]
 \caption{Temporal Lag Correlation of Percentage Adherence Across Consecutive Treatment Months}
 \label{fig:temporal_lag}
-\includegraphics[width=\columnwidth]{temporal/figures/temporal_lag_heatmap.pdf}
+\includegraphics[width=\columnwidth]{temporal/figures/temporal_lag_heatmap.png}
 \end{figure}
-\FloatBarrier
 
-\input{temporal/tables/lag_correlation_matrix}
-\FloatBarrier
+
+\begin{table}[htbp]
+
+\caption{Lag-1 Temporal Correlation of Pct Adherence Across Consecutive Treatment Months (Justifying Time-Series Model Architecture)}
+\label{tab:lag_correlation_matrix}
+\begin{tabular}{lcccc}
+
+\toprule
+
+Lag Pair & Pearson r & p-value & Significant? & N (pairs) \\
+
+\midrule
+
+M0 → M1 & 0.9242 & 0.0000 & Yes & 300 \\
+M1 → M2 & 1.0 & 0.0000 & Yes & 285 \\
+M2 → M3 & 1.0 & 0.0000 & Yes & 275 \\
+M3 → M4 & 1.0 & 0.0000 & Yes & 271 \\
+M4 → M5 & 0.9999 & 0.0000 & Yes & 254 \\
+M5 → M6 & 1.0 & 0.0000 & Yes & 197 \\
+M6 → M7 & 0.6202 & 0.0000 & Yes & 80 \\
+M7 → M8 & 0.2066 & 0.6945 & No & 6 \\
+
+\bottomrule
+
+\end{tabular}
+
+\end{table}
+
 
 The month-to-month stability of adherence behavior in the temporal dataset provides empirical support for the choice of temporal model architecture. Early treatment months exhibited near-perfect lag-1 correlations (M0--M1: $r = 0.92$, $p < 0.001$; M1--M2: $r = 1.00$, $p < 0.001$), indicating that adherence is highly autocorrelated in the initial treatment phase. Correlation remained above $r = 0.99$ through M5--M6, then declined at M6--M7 ($r = 0.62$, $p < 0.001$) before becoming non-significant at M7--M8 ($r = 0.21$, $p = 0.69$), where only six patient pairs remained available. This sustained autocorrelation confirms that adherence carries meaningful sequential structure, justifying the use of recurrent architectures (RNN, LSTM) that model temporal dependencies \citep{ref12}. The decline after M6 also aligns with the retention cascade, suggesting that dropout-compromised patients exhibit increasingly erratic adherence before loss to follow-up.
 
@@ -874,14 +1216,14 @@ Upon data entry, the system generates a synthesized view of the patient’s clin
     \centering
     \caption{CDSS Patient Overview Dashboard Interface}
     \label{fig:patient_overview}
-    \includegraphics[width=0.85\textwidth]{figures/agent/patient_overview_tab.pdf}
+    \includegraphics[width=0.85\textwidth]{figures/agent/patient_overview_tab.png}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \caption{Automated Risk Analysis and Failure Probability Projection}
     \label{fig:risk_analysis}
-    \includegraphics[width=0.85\textwidth]{figures/agent/risk_analysis.pdf}
+    \includegraphics[width=0.85\textwidth]{figures/agent/risk_analysis.png}
 \end{figure}
 
 \subsubsection{Explainable AI and Intervention Planning}
@@ -894,14 +1236,14 @@ Finally, the system bridges the gap between prediction and action through the \t
     \centering
     \caption{SHAP-based Predictive Factor Breakdown for Individual Patients}
     \label{fig:full_breakdown}
-    \includegraphics[width=0.85\textwidth]{figures/agent/full_breakdown.pdf}
+    \includegraphics[width=0.85\textwidth]{figures/agent/full_breakdown.png}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \caption{Initial Clinical Intervention and Management Protocol (First Step)}
     \label{fig:first_step}
-    \includegraphics[width=0.85\textwidth]{figures/agent/first_step.pdf}
+    \includegraphics[width=0.85\textwidth]{figures/agent/first_step.png}
 \end{figure}
 
 \subsubsection{Large Language Model (LLM) Integration for Clinical Context}
@@ -914,11 +1256,11 @@ By analyzing the specific patient profile (e.g., age, co-morbidities, and sputum
     \centering
     \caption{Med-Gemma Clinical Narrative and Risk Factor Explanation}
     \label{fig:med_gemma_analysis}
-    \includegraphics[width=0.85\textwidth]{figures/agent/med_gemma.pdf} 
+    \includegraphics[width=0.85\textwidth]{figures/agent/med_gemma.png} 
 \end{figure}
 
 % ======================== DISCUSSION ========================
-\FloatBarrier
+
 \section{Discussion}
 
 This study investigated the use of machine learning models to predict treatment outcomes---Success or Failure---of PTB patients under the DOH-CAR TB-DOTS program, using monthly patient monitoring data alongside baseline clinical features. Temporal modeling was implemented in two iterations. The v1 iteration served as an initial baseline, but its results demonstrate a common pitfall in imbalanced clinical prediction: high accuracy can be achieved by favoring the majority Success class while failing to detect true treatment failures. This is reflected by v1 specificity of 0.0000 on the held-out test split, indicating that Failure identification was not reliable under the initial workflow.
@@ -946,7 +1288,7 @@ Accordingly, the system is positioned as decision support: it flags risk, surfac
 The preliminary faithfulness evaluation described above supports this bounded framing by showing that the narrative layer depends on SHAP contribution signals rather than reconstructing model attribution from patient context alone. Accordingly, the operational design retains SHAP as the primary explanation surface and treats the narrative output as a readability aid rather than a substitute for the attribution itself.
 
 % ======================== CONCLUSION ========================
-\FloatBarrier
+
 \section{Conclusion}
 
 Tuberculosis treatment in the Cordillera Administrative Region (CAR) is shaped by very different patient situations, gaps in record-keeping, and disruptions to the health program. These are problems that simple one-variable analyses cannot fully explain. To turn this raw data into something useful for prediction, the study first built a clear and repeatable cleaning pipeline for two related datasets: a 7{,}389-patient DOH-CAR registry and a 599-patient month-by-month monitoring set. The pipeline standardized formats, removed patient identifiers, and handled missing values by first checking why each variable was missing (MCAR, MAR, or MNAR) before applying one of four matching strategies. Because the cleaned data was trustworthy rather than blindly filled in, the descriptive and exploratory analyses could clearly show outcome trends over the years, the rise in deaths and lost follow-ups during the COVID-19 period, and the patient-level, time-based, and operational patterns that later guided model design.
@@ -956,7 +1298,7 @@ These cleaned signals fed directly into how well the models performed. On the st
 These results are strong enough to be clinically promising, but not yet ready for actual clinical use. Since the test cases came from only one regional registry, and since the narrative layer's faithfulness was only checked on a small group of 44 patients, the system must first go through external validation using data from other facilities, prospective testing in real clinical workflows, and review by healthcare professionals to confirm safety, calibration, and fit. The narrative explanation layer will also need a larger faithfulness study before it can be safely used in clinical practice. Once these conditions are met, the framework and the published pseudonymized version of the DOH-CAR PTB Treatment Outcome Dataset may only then be able to support both regional TB control efforts and future research on explainable clinical prediction.
 
 % ======================== ACKNOWLEDGMENTS ========================
-\FloatBarrier
+
 \section{Acknowledgments}
 
 The authors would like to express their sincere gratitude to Saint Louis University for providing the academic environment and resources that made this research possible. We extend our appreciation to the School of Accountancy, Management, Computing, and Information Studies (SAMCIS), specifically the Department of Computing and Information Studies, for their continuous support and guidance throughout the study. Our deepest thanks go to Dr. Randy Domantay, whose leadership and encouragement have been invaluable. We are especially grateful to our research adviser, Dr. Josephine S. Dela Cruz, for their expert guidance, insightful feedback, and unwavering support at every stage of the research. Lastly, we acknowledge the collaboration and contributions of our partner researchers from the SONAHBS Department of Pharmacy, whose expertise and assistance significantly enriched this study.
@@ -981,14 +1323,14 @@ This appendix presents a sequential walkthrough of the deployed CDSS web applica
     \centering
     \caption{CDSS login screen.}
     \label{fig:app_login}
-    \includegraphics[width=0.85\textwidth]{figures/agent/login.pdf}
+    \includegraphics[width=0.85\textwidth]{figures/agent/login.png}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \caption{Main dashboard listing enrolled patients.}
     \label{fig:app_dashboard}
-    \includegraphics[width=0.85\textwidth]{figures/agent/dashboard.pdf}
+    \includegraphics[width=0.85\textwidth]{figures/agent/dashboard.png}
 \end{figure}
 
 \subsection*{B.2 Patient Intake Workflow}
@@ -999,28 +1341,28 @@ The intake workflow consists of five sequential steps. The Lab Results step (Ste
     \centering
     \caption{Patient intake Step 1: Demographics.}
     \label{fig:app_step1}
-    \includegraphics[width=0.85\textwidth]{figures/agent/first_step.pdf}
+    \includegraphics[width=0.85\textwidth]{figures/agent/first_step.png}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \caption{Patient intake Step 3: Chest X-ray upload.}
     \label{fig:app_step3}
-    \includegraphics[width=0.85\textwidth]{figures/agent/third_step.pdf}
+    \includegraphics[width=0.85\textwidth]{figures/agent/third_step.png}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \caption{Patient intake Step 4: Diagnostic result.}
     \label{fig:app_step4}
-    \includegraphics[width=0.85\textwidth]{figures/agent/fourth_step.pdf}
+    \includegraphics[width=0.85\textwidth]{figures/agent/fourth_step.png}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \caption{Patient intake Step 5: Treatment regimen selection.}
     \label{fig:app_step5}
-    \includegraphics[width=0.85\textwidth]{figures/agent/fifth_step.pdf}
+    \includegraphics[width=0.85\textwidth]{figures/agent/fifth_step.png}
 \end{figure}
 
 \subsection*{B.3 Patient Profile and Records}
@@ -1029,14 +1371,14 @@ The intake workflow consists of five sequential steps. The Lab Results step (Ste
     \centering
     \caption{Patient profile overview tab.}
     \label{fig:app_overview}
-    \includegraphics[width=0.85\textwidth]{figures/agent/patient_overview_tab.pdf}
+    \includegraphics[width=0.85\textwidth]{figures/agent/patient_overview_tab.png}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \caption{Complete patient chart with longitudinal record.}
     \label{fig:app_chart}
-    \includegraphics[width=0.85\textwidth]{figures/agent/patient_chart.pdf}
+    \includegraphics[width=0.85\textwidth]{figures/agent/patient_chart.png}
 \end{figure}
 
 \subsection*{B.4 Longitudinal Monitoring}
@@ -1045,7 +1387,7 @@ The intake workflow consists of five sequential steps. The Lab Results step (Ste
     \centering
     \caption{Monthly check-in log for adherence and follow-up imaging.}
     \label{fig:app_monthly}
-    \includegraphics[width=0.85\textwidth]{figures/agent/log_monthly.pdf}
+    \includegraphics[width=0.85\textwidth]{figures/agent/log_monthly.png}
 \end{figure}
 
 \subsection*{B.5 Risk Prediction and Explainability}
@@ -1054,21 +1396,21 @@ The intake workflow consists of five sequential steps. The Lab Results step (Ste
     \centering
     \caption{Updated risk analysis after monthly follow-up.}
     \label{fig:app_risk}
-    \includegraphics[width=0.85\textwidth]{figures/agent/risk_analysis.pdf}
+    \includegraphics[width=0.85\textwidth]{figures/agent/risk_analysis.png}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \caption{SHAP-based full breakdown of contributing factors.}
     \label{fig:app_breakdown}
-    \includegraphics[width=0.85\textwidth]{figures/agent/full_breakdown.pdf}
+    \includegraphics[width=0.85\textwidth]{figures/agent/full_breakdown.png}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \caption{Med-Gemma clinical narrative explaining risk factors.}
     \label{fig:app_medgemma}
-    \includegraphics[width=0.85\textwidth]{figures/agent/med_gemma.pdf}
+    \includegraphics[width=0.85\textwidth]{figures/agent/med_gemma.png}
 \end{figure}
 
 \clearpage
