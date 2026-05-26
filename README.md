@@ -68,7 +68,7 @@ The system uses two complementary ML components, each trained on a separate data
 | | |
 |---|---|
 | **Dataset** | 8,876 patient records · 2015–2025 · 23 features |
-| **Source** | `dataset/non-temporal/2015-2025-ml-ready.csv` |
+| **Source** | [`dataset/non-temporal/2015-2025-ml-ready.csv`](https://github.com/VladTemp27/TB-DOTS-CAR-CDSS/blob/main/dataset/non-temporal/2015-2025-ml-ready.csv) |
 | **Configurations** | XGBoost / LightGBM / Random Forest × None / SMOTE-ENN (6 configs) |
 
 The static model predicts treatment outcomes from patient data captured **at the time of enrollment** — before any follow-up information is available. Its purpose is to provide an **immediate intake-level risk signal** so clinicians can flag high-risk patients from day one and prioritize early intervention.
@@ -78,7 +78,7 @@ The static model predicts treatment outcomes from patient data captured **at the
 | | |
 |---|---|
 | **Dataset** | 599 patient records · 153 columns · monthly tracking M0–M12 |
-| **Source** | `dataset/temporal/combined_complete_dataset.csv` |
+| **Source** | [`dataset/temporal/combined_complete_dataset.csv`](https://github.com/VladTemp27/TB-DOTS-CAR-CDSS/blob/main/dataset/temporal/combined_complete_dataset.csv) |
 | **Features** | 14 engineered features per time step (adherence, doses, clinical vitals) |
 
 The temporal model continuously **refines risk scores as treatment progresses** (M0–M6), incorporating monthly medication adherence data and clinical follow-up records. SHAP values are computed at each time point and displayed as feature contribution bars in the patient profile, with month-over-month deltas to show which factors are driving risk changes over time.
