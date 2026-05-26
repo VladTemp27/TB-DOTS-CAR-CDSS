@@ -13,15 +13,7 @@ Department of Health — Cordillera Administrative Region
 [![Frontend](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61dafb?style=flat-square&logo=react)](https://dots-cdss.bennygil.me)
 [![AI](https://img.shields.io/badge/LLM-MedGemma%20(local%20only)-4285F4?style=flat-square&logo=google)](https://huggingface.co/bartowski/medgemma-1.5-4b-it-GGUF)
 
-<br/>
-
-<img src="web-app/public/amalgam-logo.png" alt="AMALGAM Team Logo" width="200" />
-
-*Developed by Team AMALGAM*
-
 </div>
-
----
 
 ## Overview
 
@@ -29,7 +21,7 @@ TB-DOTS CAR CDSS is an AI-powered clinical decision support system for managing 
 
 This system is the implementation artifact for a thesis on **Clinical Decision Support for TB-DOTS using Explainable AI**. **[Read the full thesis (PDF)](paper/apa/thesis_apa.pdf)**
 
----
+
 
 ## Live System
 
@@ -42,20 +34,8 @@ This system is the implementation artifact for a thesis on **Clinical Decision S
 | **Username** | `admin123` |
 | **Password** | `password123` |
 
-> These are demo credentials for evaluation purposes. The system is intended for authorized DOH-CAR personnel only.
+> These are demo credentials for evaluation purposes. The system is intended for testing purposes only.
 
----
-
-## Key Features
-
-| Feature | Description |
-|---|---|
-| **Risk Stratification** | XGBoost/LightGBM ensemble predicts treatment outcome risk at intake (M0) and each monthly follow-up |
-| **Temporal SHAP** | Month-over-month SHAP contribution tracking shows which clinical factors drive risk changes |
-| **AI Clinical Narratives** | MedGemma 1.5B local LLM generates plain-language clinical interpretations of risk scores |
-| **Patient Registry** | Full patient intake, monthly check-in workflow, and longitudinal profile tracking |
-| **X-ray Management** | Upload, store, and view chest X-rays per patient |
-| **Offline-first LLM** | Model runs fully on-device — no external API calls for clinical inference |
 
 ---
 
@@ -90,6 +70,16 @@ The temporal model continuously **refines risk scores as treatment progresses** 
 
 ---
 
+## Key Features
+
+| Feature | Description |
+|---|---|
+| **Risk Stratification** | XGBoost/LightGBM ensemble predicts treatment outcome risk at intake (M0) and each monthly follow-up |
+| **Temporal SHAP** | Month-over-month SHAP contribution tracking shows which clinical factors drive risk changes |
+| **AI Clinical Narratives** | MedGemma 1.5B local LLM generates plain-language clinical interpretations of risk scores |
+| **Patient Registry** | Full patient intake, monthly check-in workflow, and longitudinal profile tracking |
+| **X-ray Management** | Upload, store, and view chest X-rays per patient |
+| **Offline-first LLM** | Model runs fully on-device — no external API calls for clinical inference |
 ## Project Structure
 
 ```
@@ -147,21 +137,18 @@ wget -O models/medgemma-1.5-4b-it-IQ4_XS.gguf \
 
 ### 3. Start Everything
 
-Two equivalent entrypoints are available — both handle virtualenv creation, dependency installation, database migrations, demo data seeding, and launching both services:
-
 ```bash
-# Python TUI dashboard (recommended)
 python dev.py
-
-# Bash fallback
-./dev.sh
 ```
+
+`dev.py` handles everything: creates the Python virtualenv, installs all backend and frontend dependencies, runs database migrations, seeds demo data on first run, and launches both services with a live Rich TUI dashboard. No manual install step needed.
 
 | Flag | Effect |
 |---|---|
-| _(none)_ | Binds to `127.0.0.1` — localhost only |
-| `--lan` | Binds to `0.0.0.0` — accessible to other devices on the network |
-| `--from-source` | Compiles `llama-cpp-python` from source instead of using a prebuilt wheel |
+| _(none)_ | Standard startup — binds to `127.0.0.1` |
+| `--from-source` | Compiles `llama-cpp-python` from C++ source instead of a prebuilt wheel |
+
+> **Bash alternative:** `./dev.sh` also works and additionally supports `--lan` (bind to `0.0.0.0` for LAN access).
 
 | Service | URL |
 |---|---|
@@ -189,7 +176,10 @@ The backend exposes a REST + SSE API. Full interactive docs available at `/docs`
 ---
 
 <div align="center">
+<img src="web-app/public/amalgam-logo.png" alt="AMALGAM Team Logo" width="200" />
 
-Built for the Department of Health — Cordillera Administrative Region
+*Developed by Team AMALGAM*
+
+*Built for the Department of Health — Cordillera Administrative Region*
 
 </div>
