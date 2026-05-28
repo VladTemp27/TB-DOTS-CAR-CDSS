@@ -15,6 +15,7 @@
 \renewcommand{\ttdefault}{cmtt}
 % url package: allow line breaks in bibliography URLs
 \usepackage[hyphens]{url}
+\usepackage{afterpage}
 
 % ----- Spacing (APA: double-spaced throughout) -----
 \usepackage{setspace}
@@ -961,11 +962,6 @@ These results are strong enough to be clinically promising, but not yet ready fo
 
 The authors would like to express their sincere gratitude to Saint Louis University for providing the academic environment and resources that made this research possible. We extend our appreciation to the School of Accountancy, Management, Computing, and Information Studies (SAMCIS), specifically the Department of Computing and Information Studies, for their continuous support and guidance throughout the study. Our deepest thanks go to Dr. Randy Domantay, whose leadership and encouragement have been invaluable. We are especially grateful to our research adviser, Dr. Josephine S. Dela Cruz, for their expert guidance, insightful feedback, and unwavering support at every stage of the research. Lastly, we acknowledge the collaboration and contributions of our partner researchers from the SONAHBS Department of Pharmacy, whose expertise and assistance significantly enriched this study.
 
-% ======================== REFERENCES ========================
-% APA 7th: References heading is centered, bold, on its own page
-\newpage
-\printbibliography[title={References}]
-
 % ======================== APPENDICES ========================
 \newpage
 \appendix
@@ -975,7 +971,7 @@ The authors would like to express their sincere gratitude to Saint Louis Univers
 
 This appendix presents a sequential walkthrough of the deployed CDSS web application, following the order in which a clinical user would traverse the system: authentication, patient intake, profile review, longitudinal monitoring, and risk explanation. Several interfaces shown here also appear in the body of the paper; they are reproduced in this appendix for continuity of the walkthrough.
 
-\subsection*{B.1 Authentication and Dashboard}
+\subsection*{A.1 Authentication and Dashboard}
 
 \begin{figure}[H]
     \centering
@@ -991,7 +987,7 @@ This appendix presents a sequential walkthrough of the deployed CDSS web applica
     \includegraphics[width=0.85\textwidth]{figures/agent/dashboard.pdf}
 \end{figure}
 
-\subsection*{B.2 Patient Intake Workflow}
+\subsection*{A.2 Patient Intake Workflow}
 
 The intake workflow consists of five sequential steps. The Lab Results step (Step 2) is omitted here as it was not captured in the available screenshot set.
 
@@ -1023,7 +1019,7 @@ The intake workflow consists of five sequential steps. The Lab Results step (Ste
     \includegraphics[width=0.85\textwidth]{figures/agent/fifth_step.pdf}
 \end{figure}
 
-\subsection*{B.3 Patient Profile and Records}
+\subsection*{A.3 Patient Profile and Records}
 
 \begin{figure}[H]
     \centering
@@ -1039,7 +1035,7 @@ The intake workflow consists of five sequential steps. The Lab Results step (Ste
     \includegraphics[width=0.85\textwidth]{figures/agent/patient_chart.pdf}
 \end{figure}
 
-\subsection*{B.4 Longitudinal Monitoring}
+\subsection*{A.4 Longitudinal Monitoring}
 
 \begin{figure}[H]
     \centering
@@ -1048,7 +1044,7 @@ The intake workflow consists of five sequential steps. The Lab Results step (Ste
     \includegraphics[width=0.85\textwidth]{figures/agent/log_monthly.pdf}
 \end{figure}
 
-\subsection*{B.5 Risk Prediction and Explainability}
+\subsection*{A.5 Risk Prediction and Explainability}
 
 \begin{figure}[H]
     \centering
@@ -1077,5 +1073,28 @@ The intake workflow consists of five sequential steps. The Lab Results step (Ste
 
 The following pages reproduce the original iCreate 2026 supplementary material in its source format for archival completeness.
 \includepdf[pages=-,pagecommand={\thispagestyle{fancy}}]{iCreate.pdf}
+
+\clearpage
+\section{Appendix C: Publication Paper for MSJI}
+\label{app:publication}
+
+The following pages reproduce the original iCreate 2026 supplementary material in its source format for archival completeness.
+\includepdf[pages=-,pagecommand={\thispagestyle{fancy}}]{AMALGAM_Publication.pdf}
+
+\begingroup
+\makeatletter
+\let\clearpage\relax
+\makeatother
+
+\clearpage
+\section{Appendix D: Proof of Presentation}
+\label{app:presentation}
+\vspace{-\baselineskip} 
+\noindent\includegraphics[width=\textwidth]{figures/presentation_day.pdf}
+
+% ======================== REFERENCES ========================
+% APA 7th: References heading is centered, bold, on its own page
+\newpage
+\printbibliography[title={References}]
 
 \end{document}
