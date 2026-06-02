@@ -101,6 +101,19 @@
   {\bfseries\itshape\normalsize}}
 \makeatother
 
+% ----- Prevent orphaned headings (heading stranded at page bottom with its
+%       content starting on the next page). \keepwithnext reserves space before
+%       a heading so it migrates to the next page if its body/float cannot
+%       follow it here. Self-contained (no needspace package): probes the page
+%       by briefly contributing the requested height; if it would overflow, the
+%       earlier low penalty becomes the chosen breakpoint. Applied surgically at
+%       the few headings that orphaned (see \keepwithnext calls in the body). -----
+\makeatletter
+\newcommand{\keepwithnext}[1]{%
+  \penalty-100\begingroup\setlength\dimen@{#1}%
+  \vskip\dimen@\penalty9999\vskip-\dimen@\endgroup}
+\makeatother
+
 % ----- Suppress section numbering (APA uses formatting, not numbers) -----
 \setcounter{secnumdepth}{0}
 
@@ -214,6 +227,7 @@ But raw accuracy is not enough on its own. A model that only outputs a number is
 
 Single-factor risk studies tend to hit a ceiling, and interpretable ML is one way past it. Understanding what actually drives TB outcomes means combining several dimensions of patient data at once rather than examining them one at a time. This study is built on that premise. The framework spans demographic, clinical, diagnostic, and treatment-related variables. Descriptive analysis lays out the patient profiles and treatment patterns. Supervised models estimate outcome risk on top of that. SHAP explanations then surface which factors moved each estimate in a given case. Our intent is to keep predictive accuracy high while keeping the output legible to providers \citep{ref23, ref24}. Clinicians should be able to see not only who is at higher risk of failure, but why the model thinks so, and where it might make sense to step in earlier with closer monitoring or modified case management.
 
+\keepwithnext{3\baselineskip}
 \subsection{Contributions}
 
 DOH-CAR TB-DOTS operates under the National Tuberculosis Program (NTP) protocol. Case finding is passive. It starts at the facility, with a patient walking in. Someone with the warning signs of TB, a cough that will not go away, persistent weight loss, recurring fever, is sent for testing. That means sputum smear microscopy, a GeneXpert MTB/RIF test, and a chest X-ray \citep{ref5, ref6}. If TB is confirmed, the patient is enrolled on the Treatment Card and Master List, slotted into a registration group, and paired with either a health worker or a trained treatment partner who is supposed to watch each dose over the six- to twelve-month treatment course \citep{ref6}. Every month a monitoring visit happens. The visit records sputum results, the vital signs, and weight, and it checks whether the patient is keeping up with the regimen. At the end, the patient's outcome gets filed under NTP criteria, as Cured, Treatment Completed, Failed, Died, or Lost to Follow-up \citep{ref19}. Most of this paperwork is still on actual paper. Risk, as a result, tends to be read in hindsight rather than forecast. A worsening condition, missed doses, a complication from another illness, these surface only after they have already bent the course of treatment in the wrong direction. By then the high-risk patient was never flagged in time. The cost is avoidable failures, more deaths than necessary, and continued spread of drug-resistant TB across the region \citep{ref28, ref30}.
@@ -628,6 +642,7 @@ The Pearson matrix (Figure~\ref{fig:numerical_pearson}) covers age, the clinical
 The Cram\'{e}r's V matrix (Figure~\ref{fig:categorical_cramersv}) measures the same kind of pairwise association for the categorical features. Most fell in the moderate range ($V \approx 0.3$--$0.5$), so the categorical structure is meaningful without being redundant. Geographic variables (province, region, and health facility) clustered at higher values ($V > 0.6$), which follows from the way administrative units nest inside one another. The outcome variable associated only modestly with registration group and anatomical site ($V \approx 0.25$), so the categorical features carry real but limited signal for predicting treatment outcome.
 
 \FloatBarrier
+\keepwithnext{3\baselineskip}
 \subsection{Validation Set Performance and Generalization}
 
 \input{tables/model_comparison.tex}
@@ -806,9 +821,10 @@ Hybrid Bi-LSTM (Augmented) & 0.9048 & 0.0000 & 0.3684 & 0.7500 & 1.0000 & 0.9474
 Figures~\ref{fig:temporal_v2_lstm_per_month_performance}--\ref{fig:temporal_v2_rf_per_month_performance} follow v2 performance as monitoring data accumulates from M0 through M12, across the Hybrid Bi-LSTM, XGBoost, LightGBM, and Random Forest models. We think the month-by-month view earns its place in TB-DOTS decision support, since it lets a reviewer see when each model actually starts discriminating reliably beyond baseline. Tables~\ref{tab:temporal_performance_v2} and~\ref{tab:temporal_confusion_v2} give the single-point M12 numbers, which is one moment in the treatment course. The figures show how prediction quality builds up over the course of therapy rather than only crystallizing at the end.
 
 \FloatBarrier
+\keepwithnext{3\baselineskip}
 \subsection{Correlation Analysis of Clinical and Temporal Features}
 
-\begin{figure}[t]
+\begin{figure}[H]
 \caption{Pearson Correlation Matrix of Vital Sign Features in the Temporal Dataset}
 \label{fig:vitals_pearson}
 \includegraphics[width=\columnwidth]{temporal/figures/vitals_pearson_correlation.pdf}
