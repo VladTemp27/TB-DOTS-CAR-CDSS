@@ -1,0 +1,15 @@
+Rank,Feature,Normalized Importance,Raw Importance,In Figure (Top 14)
+1,cat__Microscopy Result,0.15461813,0.15461811,True
+2,cat__Type,0.116179556,0.11617954,True
+3,num__Year,0.10143503,0.10143501,True
+4,cat__Bacteriologic Status,0.0972933,0.09729329,True
+5,cat__Anatomical Site,0.09500852,0.09500851,True
+6,num__Age_Final,0.07975431,0.0797543,True
+7,cat__Treatment Health Facility,0.053489584,0.053489577,True
+8,cat__Source of Patient,0.050276075,0.050276067,True
+9,cat__City/Municipality,0.046109486,0.046109483,True
+10,cat__Screening/Diagnosing Health Facility,0.045735665,0.04573566,True
+11,cat__Sex,0.04414181,0.044141807,True
+12,cat__Registration Group,0.04074971,0.040749706,True
+13,cat__Province,0.03800042,0.038000416,True
+14,num__Days_To_Treatment,0.037208453,0.03720845,True

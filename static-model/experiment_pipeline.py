@@ -299,16 +299,29 @@ class TBExperimentPipeline:
         cv_stds = cv_stds[order]
         colors = ['steelblue' if 'None' in lbl else 'coral' for lbl in cv_labels]
 
-        ax_cv.barh(range(len(cv_labels)), cv_means, xerr=cv_stds,
-                   color=colors, alpha=0.8, capsize=4)
+        bars_cv = ax_cv.barh(range(len(cv_labels)), cv_means, xerr=cv_stds,
+                             color=colors, alpha=0.8, capsize=4)
         ax_cv.set_yticks(range(len(cv_labels)))
         ax_cv.set_yticklabels(cv_labels, fontsize=8)
         ax_cv.set_xlabel('5-Fold CV ROC-AUC (Mean ± Std)')
         ax_cv.set_title('(c) Cross-Validation Performance')
+        # Value labels past the error cap
+        for bar, m, s in zip(bars_cv, cv_means, cv_stds):
+            ax_cv.text(m + s + 0.006, bar.get_y() + bar.get_height() / 2,
+                       f"{m:.3f}", va='center', ha='left', fontsize=7.5, color='#333333')
+        ax_cv.set_xlim(0, float((cv_means + cv_stds).max()) * 1.16)
         ax_cv.legend(handles=[
             Patch(facecolor='steelblue', alpha=0.8, label='No Sampling'),
             Patch(facecolor='coral', alpha=0.8, label='SMOTE-ENN'),
         ], loc='lower right', fontsize=8)
+
+        # Export panel (c) raw data
+        panel_c = (master_df[['Model', 'Sampler', 'CV-AUC Mean', 'CV-AUC Std']]
+                   .sort_values('CV-AUC Mean', ascending=False).reset_index(drop=True))
+        panel_c.insert(0, 'Rank', panel_c.index + 1)
+        panel_c_path = self.fig_dir / 'fig_cv_feature_importance_panel_c_cv.csv'
+        panel_c.to_csv(panel_c_path, index=False)
+        logger.info("Saved %s", panel_c_path.name)
 
         # Feature importance
         best_clf = best_pipeline.steps[-1][1]
@@ -328,11 +341,30 @@ class TBExperimentPipeline:
             n = min(15, len(importances))
             imp_norm = importances / importances.sum()
             idx = np.argsort(imp_norm)[-n:]
-            ax_feat.barh(range(n), imp_norm[idx], color='steelblue', alpha=0.8)
+            bars_feat = ax_feat.barh(range(n), imp_norm[idx], color='steelblue', alpha=0.8)
             ax_feat.set_yticks(range(n))
             ax_feat.set_yticklabels([feature_names[i] for i in idx], fontsize=8)
             ax_feat.set_xlabel('Normalized Importance')
             ax_feat.set_title(f'(d) Top {n} Feature Importances — Best Model')
+            # Value labels at each bar end
+            for bar, v in zip(bars_feat, imp_norm[idx]):
+                ax_feat.text(v + 0.0015, bar.get_y() + bar.get_height() / 2,
+                             f"{v:.3f}", va='center', ha='left', fontsize=7.5, color='#333333')
+            ax_feat.set_xlim(0, float(imp_norm[idx].max()) * 1.15)
+
+            # Export panel (d) raw data — ALL features ranked, flagging those plotted
+            order_d = np.argsort(imp_norm)[::-1]
+            plotted = {feature_names[i] for i in idx}
+            panel_d = pd.DataFrame({
+                'Rank': np.arange(1, len(order_d) + 1),
+                'Feature': [feature_names[i] for i in order_d],
+                'Normalized Importance': imp_norm[order_d],
+                'Raw Importance': importances[order_d],
+                f'In Figure (Top {n})': [feature_names[i] in plotted for i in order_d],
+            })
+            panel_d_path = self.fig_dir / 'fig_cv_feature_importance_panel_d_importances.csv'
+            panel_d.to_csv(panel_d_path, index=False)
+            logger.info("Saved %s", panel_d_path.name)
         else:
             ax_feat.text(0.5, 0.5, 'Feature importances not available',
                          ha='center', va='center', transform=ax_feat.transAxes)
